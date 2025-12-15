@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = "~>0.87"
+    }
+  }
+}
 resource "proxmox_virtual_environment_vm" "talos" {
   name        = var.name
   description = var.description
