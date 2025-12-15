@@ -15,7 +15,7 @@ resource "proxmox_virtual_environment_vm" "talos" {
   bios = "ovmf"
 
   agent {
-    enabled = false
+    enabled = true
   }
 
   cpu {
@@ -54,4 +54,16 @@ resource "proxmox_virtual_environment_vm" "talos" {
   }
 
   on_boot = var.on_boot
+
+  initialization {
+    ip_config {
+      ipv4 {
+        address = "${var.ipv4_addr}/24"
+        gateway = var.default_gateway
+      }
+      ipv6 {
+        address = "dhcp"
+      }
+    }
+  }
 }

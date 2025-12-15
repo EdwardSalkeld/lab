@@ -54,3 +54,13 @@ variable "on_boot" {
   type        = bool
   default     = true
 }
+
+variable "ipv4_addr" {
+  description = "IPv4 address for the VM"
+  type        = string
+}
+
+variable "default_gateway" {
+  description = "Default gateway for the VM"
+  type        = string
+}
