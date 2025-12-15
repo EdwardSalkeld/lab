@@ -38,7 +38,6 @@ resource "proxmox_virtual_environment_vm" "talos" {
 
   # Boot from Talos ISO
   cdrom {
-    enabled   = true
     file_id   = var.iso_file_id
     interface = "ide3"
   }

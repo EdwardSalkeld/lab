@@ -63,7 +63,7 @@ resource "proxmox_virtual_environment_container" "this" {
 }
 
 resource "random_password" "container_password" {
-  length           = 16
+  length           = 24
   override_special = "_%@"
   special          = true
 }
