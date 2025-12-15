@@ -17,3 +17,8 @@ output "mac_addresses" {
   description = "The MAC addresses of the VM"
   value       = proxmox_virtual_environment_vm.talos.mac_addresses
 }
+
+output "vm" {
+  description = "The Proxmox VM resource"
+  value       = proxmox_virtual_environment_vm.talos
+}

@@ -15,7 +15,7 @@ data "talos_machine_configuration" "machineconfig_cp" {
 }
 
 resource "talos_machine_configuration_apply" "cp_config_apply" {
-  depends_on                  = [proxmox_virtual_environment_vm.talos_cp_01]
+  depends_on                  = [module.talos_control_plane.vm]
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
   machine_configuration_input = data.talos_machine_configuration.machineconfig_cp.machine_configuration
   count                       = 1
@@ -30,14 +30,14 @@ data "talos_machine_configuration" "machineconfig_worker" {
 }
 
 resource "talos_machine_configuration_apply" "worker1_config_apply" {
-  depends_on                  = [proxmox_virtual_environment_vm.talos_worker_01]
+  depends_on                  = [module.talos_worker_1.vm]
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
   machine_configuration_input = data.talos_machine_configuration.machineconfig_worker.machine_configuration
   count                       = 1
   node                        = var.talos_ips[1]
 }
 resource "talos_machine_configuration_apply" "worker2_config_apply" {
-  depends_on                  = [proxmox_virtual_environment_vm.talos_worker_01]
+  depends_on                  = [module.talos_worker_2.vm]
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
   machine_configuration_input = data.talos_machine_configuration.machineconfig_worker.machine_configuration
   count                       = 1
