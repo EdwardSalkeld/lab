@@ -1,4 +1,12 @@
 terraform {
+  cloud {
+
+    organization = "alcachofa"
+
+    workspaces {
+      name = "house"
+    }
+  }
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"

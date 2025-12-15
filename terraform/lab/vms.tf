@@ -1,6 +1,6 @@
 # Talos Control Plane
 module "talos_control_plane" {
-  source = "../modules/talos-vm"
+  source = "./modules/talos-vm"
 
   name        = "talos-control-1"
   description = "Talos Linux Control Plane"
@@ -15,7 +15,7 @@ module "talos_control_plane" {
 
 # Talos Worker 1
 module "talos_worker_1" {
-  source = "../modules/talos-vm"
+  source = "./modules/talos-vm"
 
   name        = "talos-work-1"
   description = "Talos Linux Worker Node 1"
@@ -30,7 +30,7 @@ module "talos_worker_1" {
 
 # Talos Worker 2
 module "talos_worker_2" {
-  source = "../modules/talos-vm"
+  source = "./modules/talos-vm"
 
   name        = "talos-work-2"
   description = "Talos Linux Worker Node 2"

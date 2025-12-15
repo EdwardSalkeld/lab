@@ -1,6 +1,6 @@
 # Debian 12 (Bookworm) - Oldstable
 module "debian_12_container" {
-  source = "../modules/lxc-container"
+  source = "./modules/lxc-container"
 
   node_name = "sol"
   hostname  = "debian-12-oldstable"
@@ -28,7 +28,7 @@ resource "random_password" "debian_12_password" {
 
 # Debian 13 (Trixie) - Stable
 module "debian_13_container" {
-  source = "../modules/lxc-container"
+  source = "./modules/lxc-container"
 
   node_name = "sol"
   hostname  = "debian-13-stable"
