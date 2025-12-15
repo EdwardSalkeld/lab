@@ -2,7 +2,7 @@
 resource "proxmox_virtual_environment_download_file" "debian_12_lxc" {
   content_type = "vztmpl"
   datastore_id = "local"
-  node_name    = "pve"
+  node_name    = "sol"
 
   url = "http://download.proxmox.com/images/system/debian-12-standard_12.2-1_amd64.tar.zst"
 
@@ -16,7 +16,7 @@ resource "proxmox_virtual_environment_download_file" "debian_12_lxc" {
 resource "proxmox_virtual_environment_download_file" "debian_13_lxc" {
   content_type = "vztmpl"
   datastore_id = "local"
-  node_name    = "pve"
+  node_name    = "sol"
 
   url = "http://download.proxmox.com/images/system/debian-13-standard_13.1-2_amd64.tar.zst"
 
@@ -33,7 +33,7 @@ resource "proxmox_virtual_environment_download_file" "debian_13_lxc" {
 resource "proxmox_virtual_environment_download_file" "talos_nocloud_image" {
   content_type = "iso"
   datastore_id = "local"
-  node_name    = "pve"
+  node_name    = "sol"
 
   # Using factory.talos.dev with custom schematic for qemu-guest-agent
   # Schematic ID: 376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba

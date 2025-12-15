@@ -4,7 +4,7 @@ module "talos_control_plane" {
 
   name        = "talos-control-1"
   description = "Talos Linux Control Plane"
-  node_name   = "pve"
+  node_name   = "sol"
 
   iso_file_id = proxmox_virtual_environment_download_file.talos_nocloud_image.id
 
@@ -19,7 +19,7 @@ module "talos_worker_1" {
 
   name        = "talos-work-1"
   description = "Talos Linux Worker Node 1"
-  node_name   = "pve"
+  node_name   = "sol"
 
   iso_file_id = proxmox_virtual_environment_download_file.talos_nocloud_image.id
 
@@ -34,7 +34,7 @@ module "talos_worker_2" {
 
   name        = "talos-work-2"
   description = "Talos Linux Worker Node 2"
-  node_name   = "pve"
+  node_name   = "sol"
 
   iso_file_id = proxmox_virtual_environment_download_file.talos_nocloud_image.id
 
