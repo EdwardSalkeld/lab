@@ -23,7 +23,7 @@ module "talos_control_plane" {
   cpu_cores       = 2
   memory          = 4096 # Control plane needs more memory
   disk_size       = 20
-  ipv4_addr       = local.talos_ips[0]
+  ipv4_addr       = var.talos_ips[0]
   default_gateway = local.default_gateway
 }
 
@@ -40,7 +40,7 @@ module "talos_worker_1" {
   cpu_cores       = 2
   memory          = 2048
   disk_size       = 20
-  ipv4_addr       = local.talos_ips[1]
+  ipv4_addr       = var.talos_ips[1]
   default_gateway = local.default_gateway
 }
 
@@ -57,6 +57,6 @@ module "talos_worker_2" {
   cpu_cores       = 2
   memory          = 2048
   disk_size       = 20
-  ipv4_addr       = local.talos_ips[2]
+  ipv4_addr       = var.talos_ips[2]
   default_gateway = local.default_gateway
 }
