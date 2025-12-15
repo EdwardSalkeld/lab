@@ -38,7 +38,7 @@ resource "proxmox_virtual_environment_download_file" "talos_nocloud_image" {
   # Using factory.talos.dev with custom schematic for qemu-guest-agent
   # Schematic ID: 376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba
   # Using .iso for bootable CDROM
-  url       = "https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.11.5/nocloud-amd64.iso"
+  url       = "https://factory.talos.dev/image/ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515/v1.11.5/nocloud-amd64.iso"
   file_name = "talos-v1.11.5-nocloud-amd64.iso"
 
   overwrite_unmanaged = true
