@@ -36,17 +36,12 @@ resource "proxmox_virtual_environment_vm" "talos" {
     datastore_id = var.datastore_id
   }
 
-  # Boot from Talos ISO
-  cdrom {
-    file_id   = var.iso_file_id
-    interface = "ide3"
-  }
-
   # Disk for Talos to install to
   disk {
-    datastore_id = var.datastore_id
-    interface    = "virtio0"
-    size         = var.disk_size
+    file_id     = var.iso_file_id
+    file_format = "raw"
+    interface   = "virtio0"
+    size        = 20
   }
 
   operating_system {

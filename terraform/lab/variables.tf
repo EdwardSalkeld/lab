@@ -16,13 +16,3 @@ variable "public_ssh_keys" {
   ]
 }
 
-variable "talos_version" {
-  description = "Version of Talos Linux to deploy"
-  type        = string
-  default     = "v1.11.0"
-}
-variable "talos_cluster_name" {
-  description = "Name of the Talos Linux cluster"
-  type        = string
-  default     = "talos-cluster"
-}
