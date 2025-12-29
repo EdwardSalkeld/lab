@@ -6,14 +6,14 @@ data "talos_client_configuration" "talosconfig" {
   endpoints            = [var.talos_ips[0]]
   nodes                = var.talos_ips
 }
-#
-# data "talos_machine_configuration" "machineconfig_cp" {
-#   cluster_name     = var.talos_cluster_name
-#   cluster_endpoint = "https://${var.talos_ips[0]}:6443"
-#   machine_type     = "controlplane"
-#   machine_secrets  = talos_machine_secrets.machine_secrets.machine_secrets
-# }
-#
+
+data "talos_machine_configuration" "machineconfig_cp" {
+  cluster_name     = var.talos_cluster_name
+  cluster_endpoint = "https://${var.talos_ips[0]}:6443"
+  machine_type     = "controlplane"
+  machine_secrets  = talos_machine_secrets.machine_secrets.machine_secrets
+}
+
 # resource "talos_machine_configuration_apply" "cp_config_apply" {
 #   depends_on                  = [module.talos_control_plane.vm]
 #   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration

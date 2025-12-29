@@ -15,6 +15,12 @@ module "talos_control_plane" {
   default_gateway = local.default_gateway
 }
 
+output "vmc" {
+  description = "The Proxmox VM resource"
+  value       = module.talos_control_plane.vm
+}
+
+
 # Talos Worker 1
 module "talos_worker_1" {
   source = "../talos-vm"
