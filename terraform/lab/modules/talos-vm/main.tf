@@ -1,8 +1,7 @@
 terraform {
   required_providers {
     proxmox = {
-      source  = "bpg/proxmox"
-      version = "~>0.87"
+      source = "bpg/proxmox"
     }
   }
 }
@@ -16,6 +15,9 @@ resource "proxmox_virtual_environment_vm" "talos" {
 
   agent {
     enabled = true
+    wait_for_ip {
+      ipv4 = true
+    }
   }
 
   cpu {
@@ -53,8 +55,7 @@ resource "proxmox_virtual_environment_vm" "talos" {
   initialization {
     ip_config {
       ipv4 {
-        address = "${var.ipv4_addr}/24"
-        gateway = var.default_gateway
+        address = "dhcp"
       }
       ipv6 {
         address = "dhcp"

@@ -1,9 +1,7 @@
 terraform {
   required_providers {
     proxmox = {
-      source  = "bpg/proxmox"
-      version = "~>0.87"
-
+      source = "bpg/proxmox"
     }
     random = {
       source = "hashicorp/random"
