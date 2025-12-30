@@ -43,16 +43,3 @@ module "talos_worker_2" {
   memory    = 2048
   disk_size = 20
 }
-module "talos_worker_3" {
-  source = "../talos-vm"
-
-  name        = "talos-work-3"
-  description = "Talos Linux Worker Node 3"
-  node_name   = var.proxmox_node_name
-
-  iso_file_id = var.iso_file_id
-
-  cpu_cores = 2
-  memory    = 2048
-  disk_size = 20
-}
