@@ -69,7 +69,8 @@ resource "kubernetes_manifest" "metallb_core" {
       manifest.metadata.name
     ) => manifest
   }
-  manifest   = each.value
+  manifest        = each.value
+  computed_fields = each.value.kind == "ValidatingWebhookConfiguration" ? ["metadata.creationTimestamp"] : []
   depends_on = [kubernetes_manifest.metallb_namespace, kubernetes_manifest.metallb_crds]
 }
 
