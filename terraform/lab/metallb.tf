@@ -1,20 +1,24 @@
 locals {
-  metallb_native_docs = [
-    for doc in split("\n---\n", trimspace(file("${path.module}/metallb-native.yaml"))) :
-    yamldecode(doc)
-  ]
+  metallb_manifest_dir = "${path.module}/metallb/manifests"
   metallb_namespace = one([
-    for manifest in local.metallb_native_docs : manifest
-    if manifest.kind == "Namespace" && manifest.metadata.name == "metallb-system"
+    for doc in split("\n---\n", trimspace(file("${local.metallb_manifest_dir}/namespace.yaml"))) :
+    yamldecode(doc)
   ])
-  metallb_crd_docs = [
-    for manifest in local.metallb_native_docs : manifest
-    if manifest.kind == "CustomResourceDefinition"
-  ]
-  metallb_core_docs = [
-    for manifest in local.metallb_native_docs : manifest
-    if manifest.kind != "Namespace" && manifest.kind != "CustomResourceDefinition"
-  ]
+  metallb_crd_docs = flatten([
+    for path in ["${local.metallb_manifest_dir}/crds.yaml"] :
+    [for doc in split("\n---\n", trimspace(file(path))) : yamldecode(doc)]
+  ])
+  metallb_core_docs = flatten([
+    for path in [
+      "${local.metallb_manifest_dir}/rbac.yaml",
+      "${local.metallb_manifest_dir}/configmap.yaml",
+      "${local.metallb_manifest_dir}/secret.yaml",
+      "${local.metallb_manifest_dir}/service.yaml",
+      "${local.metallb_manifest_dir}/controller.yaml",
+      "${local.metallb_manifest_dir}/speaker.yaml",
+      "${local.metallb_manifest_dir}/webhook.yaml",
+    ] : [for doc in split("\n---\n", trimspace(file(path))) : yamldecode(doc)]
+  ])
   metallb_pool = yamldecode(<<-YAML
     apiVersion: metallb.io/v1beta1
     kind: IPAddressPool
