@@ -53,3 +53,9 @@ variable "ARGOCD_REPO_PASSWORD" {
   default     = ""
   sensitive   = true
 }
+
+variable "ARGOCD_APP_ENABLED" {
+  description = "Whether to create the Argo CD Application (enable after Argo CD CRDs exist)"
+  type        = bool
+  default     = false
+}

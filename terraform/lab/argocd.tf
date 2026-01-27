@@ -5,13 +5,43 @@ locals {
     yamldecode(doc)
   ]
   argocd_docs_nonnull = [for manifest in local.argocd_docs : manifest if manifest != null]
-  argocd_namespace = one([
-    for manifest in local.argocd_docs_nonnull : manifest
-    if manifest.kind == "Namespace" && manifest.metadata.name == "argocd"
+  argocd_namespace = yamldecode(<<-YAML
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: argocd
+    YAML
+  )
+  argocd_namespaced_kinds = toset([
+    "ConfigMap",
+    "Secret",
+    "Service",
+    "ServiceAccount",
+    "Role",
+    "RoleBinding",
+    "Deployment",
+    "StatefulSet",
+    "DaemonSet",
+    "ReplicaSet",
+    "NetworkPolicy",
+    "PodDisruptionBudget",
+    "Ingress",
   ])
   argocd_other_manifests = [
-    for manifest in local.argocd_docs_nonnull : manifest
-    if !(manifest.kind == "Namespace" && manifest.metadata.name == "argocd")
+    for manifest in local.argocd_docs_nonnull :
+    jsondecode(jsonencode(
+      merge(
+        manifest,
+        {
+          metadata = merge(
+            lookup(manifest, "metadata", {}),
+            contains(local.argocd_namespaced_kinds, manifest.kind) && try(manifest.metadata.namespace, null) == null
+            ? { namespace = "argocd" }
+            : {}
+          )
+        }
+      )
+    ))
   ]
   argocd_webhook_kinds = toset([
     "MutatingWebhookConfiguration",
@@ -73,6 +103,7 @@ resource "kubernetes_manifest" "argocd_repo_secret" {
 }
 
 resource "kubernetes_manifest" "argocd_app" {
+  count = var.ARGOCD_APP_ENABLED ? 1 : 0
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
