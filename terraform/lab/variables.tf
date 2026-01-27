@@ -16,3 +16,40 @@ variable "public_ssh_keys" {
   ]
 }
 
+variable "ARGOCD_REPO_URL" {
+  description = "Git repo URL Argo CD should sync from (SSH or HTTPS)"
+  type        = string
+  default     = "git@github.com:EdwardSalkeld/lab.git"
+}
+
+variable "ARGOCD_REPO_REVISION" {
+  description = "Git revision Argo CD should track"
+  type        = string
+  default     = "main"
+}
+
+variable "ARGOCD_REPO_PATH" {
+  description = "Repo path Argo CD should sync"
+  type        = string
+  default     = "terraform/lab/gitops/stack"
+}
+
+variable "ARGOCD_REPO_SSH_PRIVATE_KEY" {
+  description = "SSH private key for Argo CD repo access (leave empty to skip)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "ARGOCD_REPO_USERNAME" {
+  description = "Username for HTTPS repo access (leave empty to skip)"
+  type        = string
+  default     = ""
+}
+
+variable "ARGOCD_REPO_PASSWORD" {
+  description = "Password/token for HTTPS repo access (leave empty to skip)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
