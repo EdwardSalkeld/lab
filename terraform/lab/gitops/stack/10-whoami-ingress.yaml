@@ -3,6 +3,10 @@ kind: Ingress
 metadata:
   name: whoami
   namespace: apps-talos
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cfalcachofa
 spec:
   ingressClassName: traefik-talos
   rules:
@@ -16,3 +20,6 @@ spec:
                 name: whoami
                 port:
                   number: 80
+  tls:
+    - hosts:
+        - whoami.talos.alcachofa.faith
