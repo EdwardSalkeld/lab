@@ -4,6 +4,7 @@ metadata:
   name: argocd-server
   namespace: argocd
   annotations:
+    kubernetes.io/ingress.class: traefik-talos
     traefik.ingress.kubernetes.io/service.serversscheme: https
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
