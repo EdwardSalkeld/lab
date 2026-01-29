@@ -20,6 +20,8 @@ spec:
           args:
             - --entrypoints.web.address=:80
             - --entrypoints.websecure.address=:443
+            - --entrypoints.web.http.redirections.entrypoint.to=websecure
+            - --entrypoints.web.http.redirections.entrypoint.scheme=https
             - --providers.kubernetesingress
             - --providers.kubernetesingress.ingressclass=traefik-talos
             - --certificatesresolvers.cfalcachofa.acme.email=administrator@alcachofa.faith
