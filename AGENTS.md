@@ -26,6 +26,19 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + whoami).
 
 The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 
+## Storage (GitOps)
+
+- Storage is provided by Rancher Local Path Provisioner.
+- Manifest: `terraform/lab/gitops/stack/17-local-path-storage.yaml`
+- StorageClass: `local-path` (set as default).
+- PVCs are backed by a hostPath on the node:
+  - path: `/opt/local-path-provisioner`
+- Pod Security: `local-path-storage` namespace is labeled `privileged` to
+  allow the helper pods that create hostPath volumes.
+- Traefik ACME storage uses:
+  - PVC `traefik-acme` in `traefik-talos`
+  - StorageClass `local-path`
+
 ## How to export kubeconfig from Terraform
 
 Terraform exposes `kubeconfig` and `talosconfig` as **sensitive outputs** in
