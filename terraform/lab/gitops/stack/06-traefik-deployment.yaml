@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: traefik-talos
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: traefik-talos
+  template:
+    metadata:
+      labels:
+        app: traefik-talos
+    spec:
+      serviceAccountName: traefik-talos
+      containers:
+        - name: traefik
+          image: traefik:v2.11
+          args:
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            - --entrypoints.web.http.redirections.entrypoint.to=websecure
+            - --entrypoints.web.http.redirections.entrypoint.scheme=https
+            - --providers.kubernetesingress
+            - --providers.kubernetesingress.ingressclass=traefik-talos
+            - --certificatesresolvers.cfalcachofa.acme.email=administrator@alcachofa.faith
+            - --certificatesresolvers.cfalcachofa.acme.storage=/data/acme.json
+            - --certificatesresolvers.cfalcachofa.acme.dnschallenge.provider=cloudflare
+            - --certificatesresolvers.cfalcachofa.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+            - --api.insecure=true
+          env:
+            - name: CF_DNS_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cf-api-token
+                  key: CF_DNS_API_TOKEN
+          ports:
+            - name: web
+              containerPort: 80
+            - name: websecure
+              containerPort: 443
+            - name: admin
+              containerPort: 8080
+          volumeMounts:
+            - name: acme-data
+              mountPath: /data
+      volumes:
+        - name: acme-data
+          persistentVolumeClaim:
+            claimName: traefik-acme
