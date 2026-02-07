@@ -19,7 +19,7 @@ variable "public_ssh_keys" {
 variable "ARGOCD_REPO_URL" {
   description = "Git repo URL Argo CD should sync from (SSH or HTTPS)"
   type        = string
-  default     = "git@github.com:EdwardSalkeld/lab.git"
+  default     = "https://github.com/EdwardSalkeld/lab.git"
 }
 
 variable "ARGOCD_REPO_REVISION" {
