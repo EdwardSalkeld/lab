@@ -46,4 +46,3 @@ jobs:
       - name: kube-linter (gitops stack)
         run: |
           kube-linter lint terraform/lab/gitops/stack
-        continue-on-error: true
