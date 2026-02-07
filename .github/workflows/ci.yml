@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  pull_request:
+
+jobs:
+  terraform:
+    name: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+      - name: terraform init (no backend)
+        run: terraform -chdir=terraform/lab init -backend=false
+      - name: terraform validate
+        run: terraform -chdir=terraform/lab validate
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform/lab
+        continue-on-error: true
+
+  kubernetes:
+    name: kubernetes
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: install kubeconform
+        run: |
+          curl -L https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz -o /tmp/kubeconform.tgz
+          tar -xzf /tmp/kubeconform.tgz -C /tmp
+          sudo mv /tmp/kubeconform /usr/local/bin/kubeconform
+      - name: install kube-linter
+        run: |
+          curl -L https://github.com/stackrox/kube-linter/releases/download/0.6.8/kube-linter-linux.tar.gz -o /tmp/kube-linter.tgz
+          tar -xzf /tmp/kube-linter.tgz -C /tmp
+          sudo mv /tmp/kube-linter /usr/local/bin/kube-linter
+      - name: kubeconform (gitops stack)
+        run: |
+          kubeconform -summary -ignore-missing-schemas terraform/lab/gitops/stack/*.yaml
+      - name: kube-linter (gitops stack)
+        run: |
+          kube-linter lint terraform/lab/gitops/stack
+        continue-on-error: true
