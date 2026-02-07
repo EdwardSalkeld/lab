@@ -8,10 +8,8 @@ cluster add-ons (MetalLB, Traefik, whoami) using the Kubernetes provider.
 1. Proxmox resources (VMs/containers, images) are created.
 2. Talos config is generated and applied to bootstrap the cluster.
 3. A kubeconfig is derived from Talos.
-4. Kubernetes provider applies MetalLB and app manifests.
-5. MetalLB allocates `10.4.1.88` for the Traefik LoadBalancer service.
-6. Traefik exposes `whoami.k8s.alcachofa.faith` and `dashboard.k8s.alcachofa.faith`.
-7. Argo CD can manage a parallel GitOps stack under `terraform/lab/gitops/stack`.
+4. Kubernetes provider applies MetalLB and Argo CD.
+5. Argo CD manages the GitOps stack under `terraform/lab/gitops/stack`.
 
 ## Terraform files
 
@@ -22,22 +20,6 @@ cluster add-ons (MetalLB, Traefik, whoami) using the Kubernetes provider.
 - `terraform/lab/vms.tf` — Talos VM definitions for control plane and workers.
 - `terraform/lab/containers.tf` — Debian LXC containers.
 - `terraform/lab/modules/` — reusable Terraform modules (Talos cluster pieces).
-
-## Kubernetes add-ons
-
-- `terraform/lab/kubernetes.tf` — applies Kubernetes manifests from `k8s/manifests`.
-- `terraform/lab/k8s/manifests/` — ordered Kubernetes YAML:
-  - `00-namespace.yaml` — `traefik` namespace.
-  - `01-serviceaccount.yaml` — Traefik service account.
-  - `02-clusterrole.yaml` — Traefik RBAC role.
-  - `03-clusterrolebinding.yaml` — Traefik RBAC binding.
-  - `04-ingressclass.yaml` — Traefik ingress class.
-  - `05-traefik-deployment.yaml` — Traefik controller pod.
-  - `06-traefik-service.yaml` — LoadBalancer service pinned to `10.4.1.88`.
-  - `07-whoami-deployment.yaml` — whoami app.
-  - `08-whoami-service.yaml` — whoami service.
-  - `09-whoami-ingress.yaml` — `whoami.k8s.alcachofa.faith` routing.
-  - `10-traefik-dashboard-ingress.yaml` — dashboard routing.
 
 ## GitOps (Argo CD)
 
@@ -70,9 +52,7 @@ cluster add-ons (MetalLB, Traefik, whoami) using the Kubernetes provider.
 
 ## Notes
 
-- DNS should point `whoami.k8s.alcachofa.faith` and
-  `dashboard.k8s.alcachofa.faith` to `10.4.1.88`.
-- GitOps parallel stack uses `10.4.1.89` and `*.talos.alcachofa.faith`.
+- GitOps stack uses `10.4.1.89` and `*.talos.alcachofa.faith`.
 - If the Git repo is private, set Argo CD repo credentials via
   `ARGOCD_REPO_SSH_PRIVATE_KEY` or `ARGOCD_REPO_USERNAME`/`ARGOCD_REPO_PASSWORD`.
-- TLS is intentionally not configured yet.
+- TLS is configured via Traefik + Let's Encrypt (Cloudflare DNS-01).
