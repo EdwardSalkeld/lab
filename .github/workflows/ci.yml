@@ -37,7 +37,7 @@ jobs:
           sudo mv /tmp/kubeconform /usr/local/bin/kubeconform
       - name: install kube-linter
         run: |
-          curl -L https://github.com/stackrox/kube-linter/releases/download/0.6.8/kube-linter-linux.tar.gz -o /tmp/kube-linter.tgz
+          curl -fL https://github.com/stackrox/kube-linter/releases/download/0.6.8/kube-linter-linux-amd64.tar.gz -o /tmp/kube-linter.tgz
           tar -xzf /tmp/kube-linter.tgz -C /tmp
           sudo mv /tmp/kube-linter /usr/local/bin/kube-linter
       - name: kubeconform (gitops stack)

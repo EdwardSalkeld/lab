@@ -56,7 +56,7 @@ resource "kubernetes_manifest" "metallb_crds" {
   }
   manifest        = each.value
   computed_fields = ["spec.conversion.webhook.clientConfig.caBundle"]
-  depends_on = [kubernetes_manifest.metallb_namespace]
+  depends_on      = [kubernetes_manifest.metallb_namespace]
 }
 
 resource "kubernetes_manifest" "metallb_core" {
@@ -71,7 +71,7 @@ resource "kubernetes_manifest" "metallb_core" {
   }
   manifest        = each.value
   computed_fields = each.value.kind == "ValidatingWebhookConfiguration" ? ["metadata.creationTimestamp"] : null
-  depends_on = [kubernetes_manifest.metallb_namespace, kubernetes_manifest.metallb_crds]
+  depends_on      = [kubernetes_manifest.metallb_namespace, kubernetes_manifest.metallb_crds]
 }
 
 resource "kubernetes_manifest" "metallb_config" {
