@@ -25,7 +25,7 @@ variable "ARGOCD_REPO_URL" {
 variable "ARGOCD_REPO_REVISION" {
   description = "Git revision Argo CD should track"
   type        = string
-  default     = "main"
+  default     = "argo"
 }
 
 variable "ARGOCD_REPO_PATH" {
@@ -57,5 +57,5 @@ variable "ARGOCD_REPO_PASSWORD" {
 variable "ARGOCD_APP_ENABLED" {
   description = "Whether to create the Argo CD Application (enable after Argo CD CRDs exist)"
   type        = bool
-  default     = false
+  default     = true
 }
