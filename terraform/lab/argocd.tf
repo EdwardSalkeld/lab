@@ -103,7 +103,6 @@ resource "kubernetes_manifest" "argocd_repo_secret" {
 }
 
 resource "kubernetes_manifest" "argocd_app" {
-  count = var.ARGOCD_APP_ENABLED ? 1 : 0
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
