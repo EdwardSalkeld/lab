@@ -2,3 +2,5 @@ terraform/lab/.terraform/providers/registry.terraform.io
 terraform/lab/.env
 terraform/lab/.terraform
 CFTOK
+.kubeconfig
+CFTOK

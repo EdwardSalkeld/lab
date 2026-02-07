@@ -81,16 +81,18 @@ If you tear the cluster down and rebuild:
 ## How to export kubeconfig from Terraform
 
 Terraform exposes `kubeconfig` and `talosconfig` as **sensitive outputs** in
-`terraform/lab/vms.tf` (from the `cluster1` module). To write a kubeconfig file:
+`terraform/lab/vms.tf` (from the `cluster1` module).
+
+To write a kubeconfig file into the repo (gitignored):
 
 ```sh
-terraform -chdir=terraform/lab output -raw kubeconfig > /tmp/kubeconfig
+./scripts/write-kubeconfig.sh
 ```
 
 Then use it with kubectl:
 
 ```sh
-KUBECONFIG=/tmp/kubeconfig kubectl get nodes
+KUBECONFIG=.kubeconfig kubectl get nodes
 ```
 
 If you also need the Talos config:
