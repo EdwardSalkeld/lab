@@ -15,6 +15,11 @@ spec:
         app: traefik-talos
     spec:
       serviceAccountName: traefik-talos
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: traefik
           image: traefik:v2.11
@@ -36,6 +41,21 @@ spec:
                 secretKeyRef:
                   name: cf-api-token
                   key: CF_DNS_API_TOKEN
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
+            readOnlyRootFilesystem: true
           ports:
             - name: web
               containerPort: 80
@@ -46,7 +66,11 @@ spec:
           volumeMounts:
             - name: acme-data
               mountPath: /data
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: acme-data
           persistentVolumeClaim:
             claimName: traefik-acme
+        - name: tmp
+          emptyDir: {}

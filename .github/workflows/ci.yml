@@ -22,7 +22,6 @@ jobs:
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: terraform/lab
-        continue-on-error: true
 
   kubernetes:
     name: kubernetes
