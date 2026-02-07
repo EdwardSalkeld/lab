@@ -25,7 +25,7 @@ variable "ARGOCD_REPO_URL" {
 variable "ARGOCD_REPO_REVISION" {
   description = "Git revision Argo CD should track"
   type        = string
-  default     = "argo"
+  default     = "main"
 }
 
 variable "ARGOCD_REPO_PATH" {
