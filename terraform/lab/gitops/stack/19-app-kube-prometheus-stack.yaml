@@ -18,6 +18,8 @@ spec:
         kubeScheduler:
           enabled: false
         prometheusOperator:
+          tls:
+            enabled: false
           admissionWebhooks:
             enabled: false
             patch:
