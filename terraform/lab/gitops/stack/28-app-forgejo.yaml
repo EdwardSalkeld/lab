@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: forgejo
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   project: default
   source:
@@ -15,6 +17,12 @@ spec:
           admin:
             existingSecret: forgejo-admin-credentials
           config:
+            database:
+              DB_TYPE: postgres
+              HOST: forgejo-postgresql:5432
+              NAME: forgejo
+              USER: forgejo
+              SSL_MODE: disable
             server:
               DOMAIN: git.talos.alcachofa.faith
               ROOT_URL: https://git.talos.alcachofa.faith/
@@ -24,6 +32,12 @@ spec:
               DISABLE_SSH: false
             service:
               DISABLE_REGISTRATION: true
+          additionalConfigFromEnvs:
+            - name: FORGEJO__DATABASE__PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-postgresql-auth
+                  key: password
         service:
           http:
             type: ClusterIP
@@ -52,15 +66,6 @@ spec:
           accessModes:
             - ReadWriteOnce
           size: 50Gi
-        postgresql:
-          enabled: true
-          primary:
-            persistence:
-              enabled: true
-              storageClass: forgejo-nfs
-              accessModes:
-                - ReadWriteOnce
-              size: 20Gi
   destination:
     server: https://kubernetes.default.svc
     namespace: forgejo-talos
