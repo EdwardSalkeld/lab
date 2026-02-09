@@ -31,8 +31,7 @@ spec:
             - -c
             - >
               touch /data/acme.json &&
-              chown 65532:65532 /data/acme.json &&
-              chmod 600 /data/acme.json
+              chmod 666 /data/acme.json
           securityContext:
             runAsNonRoot: false
             runAsUser: 0
