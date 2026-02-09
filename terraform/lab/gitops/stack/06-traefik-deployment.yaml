@@ -31,7 +31,7 @@ spec:
             - -c
             - >
               touch /data/acme.json &&
-              chmod 666 /data/acme.json
+              chmod 600 /data/acme.json
           securityContext:
             runAsNonRoot: false
             runAsUser: 0
@@ -75,6 +75,9 @@ spec:
               memory: 512Mi
           securityContext:
             allowPrivilegeEscalation: false
+            runAsNonRoot: false
+            runAsUser: 0
+            runAsGroup: 0
             capabilities:
               drop:
                 - ALL
