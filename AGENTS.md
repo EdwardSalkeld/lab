@@ -6,8 +6,8 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + whoami).
 ## High-level layout
 
 - `terraform/lab/` is the main Terraform root.
-- `terraform/lab/k8s/manifests/` contains the direct (non-GitOps) Kubernetes
-  add-ons for the base cluster.
+- `terraform/lab/metallb/manifests/` contains the direct (non-GitOps)
+  Kubernetes manifests applied by Terraform for MetalLB.
 - `terraform/lab/argocd/` contains the upstream Argo CD install manifest.
 - `terraform/lab/gitops/stack/` contains the GitOps-managed stack that Argo CD
   syncs (Traefik, whoami, Argo CD ingress, etc.).
@@ -15,14 +15,16 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + whoami).
 ## Current setup (as of today)
 
 - Base cluster uses MetalLB for LoadBalancer IPs.
-- Traefik (base stack) serves:
-  - `whoami.k8s.alcachofa.faith`
-  - `dashboard.k8s.alcachofa.faith`
-- GitOps stack uses a parallel Traefik (`traefik-talos`) and serves:
+- Base (non-GitOps) resources managed by Terraform are MetalLB + Argo CD.
+- GitOps stack uses Traefik (`traefik-talos`) and serves:
   - `whoami.talos.alcachofa.faith`
   - `dashboard.talos.alcachofa.faith`
 - Argo CD UI is exposed via GitOps Traefik at:
   - `https://argo.talos.alcachofa.faith`
+- Observability is GitOps-managed in namespace `observability-talos`:
+  - `kube-prometheus-stack` (Prometheus, Alertmanager, Grafana)
+  - `loki` + `promtail`
+  - Grafana URL: `https://grafana.talos.alcachofa.faith`
 
 The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 

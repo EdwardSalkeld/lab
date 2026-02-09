@@ -1,7 +1,7 @@
 # Terraform Lab Overview
 
 This repo provisions a Proxmox-based Talos Kubernetes cluster and then applies
-cluster add-ons (MetalLB, Traefik, whoami) using the Kubernetes provider.
+cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
 
 ## Flow at a glance
 
@@ -38,6 +38,16 @@ cluster add-ons (MetalLB, Traefik, whoami) using the Kubernetes provider.
   - `09-whoami-service.yaml` — whoami service.
   - `10-whoami-ingress.yaml` — `whoami.talos.alcachofa.faith` routing.
   - `11-traefik-dashboard-ingress.yaml` — dashboard routing.
+  - `12-argocd-ingress.yaml` — `argo.talos.alcachofa.faith` routing.
+  - `13-argocd-cmd-params.yaml` — Argo CD server CLI params (`server.insecure`).
+  - `14-sealed-secrets-controller.yaml` — Sealed Secrets controller.
+  - `15-sealedsecret-cf-api-token.yaml` — Sealed Cloudflare token for Traefik DNS-01.
+  - `16-traefik-acme-pvc.yaml` — Traefik ACME PVC (`local-path`).
+  - `17-local-path-storage.yaml` — Local Path Provisioner + default StorageClass.
+  - `18-namespace-observability.yaml` — `observability-talos` namespace.
+  - `19-app-kube-prometheus-stack.yaml` — Argo CD app for metrics + Grafana.
+  - `20-app-loki.yaml` — Argo CD app for Loki log storage.
+  - `21-app-promtail.yaml` — Argo CD app for Promtail log shipping.
 
 ## MetalLB (LoadBalancer IPs)
 
@@ -53,6 +63,7 @@ cluster add-ons (MetalLB, Traefik, whoami) using the Kubernetes provider.
 ## Notes
 
 - GitOps stack uses `10.4.1.89` and `*.talos.alcachofa.faith`.
+- Grafana is exposed via `grafana.talos.alcachofa.faith`.
 - If the Git repo is private, set Argo CD repo credentials via
   `ARGOCD_REPO_SSH_PRIVATE_KEY` or `ARGOCD_REPO_USERNAME`/`ARGOCD_REPO_PASSWORD`.
 - TLS is configured via Traefik + Let's Encrypt (Cloudflare DNS-01).

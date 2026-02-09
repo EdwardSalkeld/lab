@@ -4,6 +4,8 @@ metadata:
   name: traefik
   namespace: traefik-talos
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   revisionHistoryLimit: 3
   selector:
@@ -30,6 +32,7 @@ spec:
             - --entrypoints.web.http.redirections.entrypoint.scheme=https
             - --providers.kubernetesingress
             - --providers.kubernetesingress.ingressclass=traefik-talos
+            - --providers.kubernetesingress.ingressendpoint.ip=10.4.1.89
             - --certificatesresolvers.cfalcachofa.acme.email=administrator@alcachofa.faith
             - --certificatesresolvers.cfalcachofa.acme.storage=/data/acme.json
             - --certificatesresolvers.cfalcachofa.acme.dnschallenge.provider=cloudflare
