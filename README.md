@@ -1,6 +1,10 @@
 ## Home v2: Lab
 
-I've long had a private git rpeo for home infra. Moving towards more IaC and fewer scripts now
-and looking to make it all public, so I can reference examples in it and so on.
+Home infrastructure lab for a Proxmox + Talos Kubernetes cluster, managed with
+Terraform and GitOps (Argo CD).
 
-Hopefully means I'll keep it a bit neater and tidier too.
+Start here:
+
+- `AGENTS.md` for day-to-day operational runbook (rebuild, token rotation, TLS troubleshooting).
+- `terraform/lab/README.md` for quick commands.
+- `terraform/lab/OVERVIEW.md` for detailed architecture and file map.

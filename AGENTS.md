@@ -25,6 +25,9 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + whoami).
   - `kube-prometheus-stack` (Prometheus, Alertmanager, Grafana)
   - `loki` + `promtail`
   - Grafana URL: `https://grafana.talos.alcachofa.faith`
+  - Preloaded dashboards:
+    - `Talos Cluster Overview`
+    - `Talos Workloads Health`
 
 The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 
@@ -51,6 +54,18 @@ If you tear the cluster down and rebuild:
    ```
 2. Re-seal the Cloudflare token (SealedSecrets are cluster-specific).
 3. Expect Traefik to re-issue certs (local-path volumes are node-local).
+
+## DNS prerequisites (for HTTPS routes)
+
+Create DNS records that point to the Traefik LB IP (`10.4.1.89`) for:
+
+- `whoami.talos.alcachofa.faith`
+- `dashboard.talos.alcachofa.faith`
+- `argo.talos.alcachofa.faith`
+- `grafana.talos.alcachofa.faith`
+
+If a hostname is missing in DNS, the origin may still work by IP+SNI, but the
+public hostname may fail at the edge.
 
 ## Replace the Cloudflare token (SealedSecrets)
 
@@ -79,6 +94,37 @@ If you tear the cluster down and rebuild:
    ```sh
    KUBECONFIG=/tmp/kubeconfig kubectl -n traefik-talos rollout restart deploy/traefik
    ```
+
+## Grafana access
+
+- URL: `https://grafana.talos.alcachofa.faith`
+- Initial credentials (chart default in this repo):
+  - username: `admin`
+  - password: `prom-operator`
+
+## Traefik TLS troubleshooting
+
+If certificates fall back to `TRAEFIK DEFAULT CERT`, check:
+
+1. Traefik logs:
+   ```sh
+   KUBECONFIG=/tmp/kubeconfig kubectl -n traefik-talos logs deploy/traefik --tail=200 | rg -n 'acme|resolver|permission|default certificate'
+   ```
+2. ACME file is present and readable:
+   ```sh
+   KUBECONFIG=/tmp/kubeconfig kubectl -n traefik-talos exec deploy/traefik -- ls -l /data/acme.json
+   ```
+3. Cloudflare token secret exists:
+   ```sh
+   KUBECONFIG=/tmp/kubeconfig kubectl -n traefik-talos get secret cf-api-token
+   ```
+
+Current known-good behavior for this repo:
+
+- Traefik uses `/data/acme.json` on PVC `traefik-acme`.
+- An init container creates `acme.json` with mode `600`.
+- Traefik container runs as root so ACME file permissions are acceptable to
+  Traefik and writable on local-path volumes.
 
 ## How to export kubeconfig from Terraform
 

@@ -48,6 +48,8 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
   - `19-app-kube-prometheus-stack.yaml` — Argo CD app for metrics + Grafana.
   - `20-app-loki.yaml` — Argo CD app for Loki log storage.
   - `21-app-promtail.yaml` — Argo CD app for Promtail log shipping.
+  - `22-grafana-dashboard-cluster-overview.yaml` — Grafana dashboard ConfigMap.
+  - `23-grafana-dashboard-workloads.yaml` — Grafana dashboard ConfigMap.
 
 ## MetalLB (LoadBalancer IPs)
 
@@ -64,6 +66,11 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
 
 - GitOps stack uses `10.4.1.89` and `*.talos.alcachofa.faith`.
 - Grafana is exposed via `grafana.talos.alcachofa.faith`.
+- DNS records must exist for each hostname (`argo`, `dashboard`, `whoami`,
+  `grafana`) and resolve to the Traefik LB endpoint.
 - If the Git repo is private, set Argo CD repo credentials via
   `ARGOCD_REPO_SSH_PRIVATE_KEY` or `ARGOCD_REPO_USERNAME`/`ARGOCD_REPO_PASSWORD`.
 - TLS is configured via Traefik + Let's Encrypt (Cloudflare DNS-01).
+- Grafana default login in this setup: `admin` / `prom-operator`.
+- If Traefik serves `TRAEFIK DEFAULT CERT`, inspect Traefik logs for ACME
+  resolver errors and verify `/data/acme.json` exists on the `traefik-acme` PVC.
