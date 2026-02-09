@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: forgejo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: oci://code.forgejo.org/forgejo-helm/forgejo
+    targetRevision: "16.0.1"
+    path: .
+    helm:
+      values: |
+        gitea:
+          admin:
+            existingSecret: forgejo-admin-credentials
+          config:
+            server:
+              DOMAIN: git.talos.alcachofa.faith
+              ROOT_URL: https://git.talos.alcachofa.faith/
+              SSH_DOMAIN: git.talos.alcachofa.faith
+              SSH_PORT: 22
+              START_SSH_SERVER: true
+              DISABLE_SSH: false
+            service:
+              DISABLE_REGISTRATION: true
+        service:
+          http:
+            type: ClusterIP
+          ssh:
+            type: ClusterIP
+            port: 22
+        ingress:
+          enabled: true
+          className: traefik-talos
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+            traefik.ingress.kubernetes.io/router.tls.certresolver: cfalcachofa
+          hosts:
+            - host: git.talos.alcachofa.faith
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: forgejo-tls
+              hosts:
+                - git.talos.alcachofa.faith
+        persistence:
+          enabled: true
+          storageClass: forgejo-nfs
+          accessModes:
+            - ReadWriteOnce
+          size: 50Gi
+        postgresql:
+          enabled: true
+          primary:
+            persistence:
+              enabled: true
+              storageClass: forgejo-nfs
+              accessModes:
+                - ReadWriteOnce
+              size: 20Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: forgejo-talos
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

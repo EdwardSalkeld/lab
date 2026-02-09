@@ -16,6 +16,9 @@ spec:
     - name: websecure
       port: 443
       targetPort: websecure
+    - name: ssh
+      port: 22
+      targetPort: ssh
     - name: admin
       port: 8080
       targetPort: admin
