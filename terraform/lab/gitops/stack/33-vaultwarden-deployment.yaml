@@ -32,7 +32,7 @@ spec:
             - name: WEBSOCKET_ENABLED
               value: "true"
             - name: SIGNUPS_ALLOWED
-              value: "true"
+              value: "false"
             - name: INVITATIONS_ALLOWED
               value: "false"
             - name: ADMIN_TOKEN
