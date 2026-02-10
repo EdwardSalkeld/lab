@@ -1,7 +1,7 @@
 # Lab Repo Guide (AGENTS)
 
 This repo provisions a Proxmox-based Talos Kubernetes cluster with Terraform,
-then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + whoami).
+then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + apps).
 
 ## High-level layout
 
@@ -19,6 +19,9 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + whoami).
 - GitOps stack uses Traefik (`traefik-talos`) and serves:
   - `whoami.talos.alcachofa.faith`
   - `dashboard.talos.alcachofa.faith`
+  - `git.talos.alcachofa.faith` (Forgejo HTTP UI)
+- Traefik also exposes Forgejo SSH on:
+  - `git.talos.alcachofa.faith:22`
 - Argo CD UI is exposed via GitOps Traefik at:
   - `https://argo.talos.alcachofa.faith`
 - Observability is GitOps-managed in namespace `observability-talos`:
@@ -28,6 +31,10 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + whoami).
   - Preloaded dashboards:
     - `Talos Cluster Overview`
     - `Talos Workloads Health`
+- Forgejo is GitOps-managed in namespace `forgejo-talos`:
+  - chart source: `oci://code.forgejo.org/forgejo-helm/forgejo`
+  - uses external PostgreSQL service `forgejo-postgresql` (also GitOps-managed)
+  - app and DB PVCs use `forgejo-nfs`
 
 The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 
@@ -43,6 +50,18 @@ The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 - Traefik ACME storage uses:
   - PVC `traefik-acme` in `traefik-talos`
   - StorageClass `local-path`
+- Durable app storage for Forgejo uses NFS dynamic provisioning:
+  - namespace: `storage-talos`
+  - app manifest: `terraform/lab/gitops/stack/26-app-nfs-subdir-provisioner.yaml`
+  - StorageClass: `forgejo-nfs`
+  - current configured NFS endpoint:
+    - server: `10.4.1.32`
+    - path: `/srv/k8s/forgejo-nfs`
+
+Important:
+- The NFS export must exist on the Proxmox host before sync.
+- Recommended backing for `/srv/k8s/forgejo-nfs` is a host-backed durable
+  filesystem/LVM volume, so data survives Talos VM recreation.
 
 ## Rebuild checklist
 
@@ -52,8 +71,12 @@ If you tear the cluster down and rebuild:
    ```sh
    terraform -chdir=terraform/lab apply
    ```
-2. Re-seal the Cloudflare token (SealedSecrets are cluster-specific).
-3. Expect Traefik to re-issue certs (local-path volumes are node-local).
+2. Ensure Proxmox NFS export (`10.4.1.32:/srv/k8s/forgejo-nfs`) exists.
+3. Re-seal all app credentials (SealedSecrets are cluster-specific):
+  - Cloudflare token
+  - Forgejo admin credentials
+  - Forgejo PostgreSQL auth
+4. Expect Traefik to re-issue certs (local-path volumes are node-local).
 
 ## DNS prerequisites (for HTTPS routes)
 
@@ -63,9 +86,13 @@ Create DNS records that point to the Traefik LB IP (`10.4.1.89`) for:
 - `dashboard.talos.alcachofa.faith`
 - `argo.talos.alcachofa.faith`
 - `grafana.talos.alcachofa.faith`
+- `git.talos.alcachofa.faith`
 
 If a hostname is missing in DNS, the origin may still work by IP+SNI, but the
 public hostname may fail at the edge.
+
+For Forgejo SSH, clients connect to:
+- `git.talos.alcachofa.faith:22`
 
 ## Replace the Cloudflare token (SealedSecrets)
 
@@ -79,7 +106,7 @@ public hostname may fail at the edge.
    KUBECONFIG=/tmp/kubeconfig kubectl -n traefik-talos create secret generic cf-api-token \
      --from-literal=CF_DNS_API_TOKEN="$TOKEN" \
      --dry-run=client -o yaml | \
-     KUBECONFIG=/tmp/kubeconfig /tmp/kubeseal \
+     KUBECONFIG=/tmp/kubeconfig kubeseal \
        --controller-namespace kube-system \
        --controller-name sealed-secrets-controller \
        --format yaml > terraform/lab/gitops/stack/15-sealedsecret-cf-api-token.yaml
@@ -93,6 +120,49 @@ public hostname may fail at the edge.
 4. Restart Traefik to pick up the new secret (optional but fast):
    ```sh
    KUBECONFIG=/tmp/kubeconfig kubectl -n traefik-talos rollout restart deploy/traefik
+   ```
+
+## Replace Forgejo admin credentials (SealedSecrets)
+
+1. Put admin credentials in files (ignored by git):
+   ```sh
+   echo "forgejo-admin" > FORGEJO_ADMIN_USER
+   echo "strong_password_here" > FORGEJO_ADMIN_PASS
+   echo "admin@alcachofa.faith" > FORGEJO_ADMIN_EMAIL
+   ```
+2. Re-seal and overwrite the SealedSecret:
+   ```sh
+   USER=$(tr -d '\n' < FORGEJO_ADMIN_USER)
+   PASS=$(tr -d '\n' < FORGEJO_ADMIN_PASS)
+   EMAIL=$(tr -d '\n' < FORGEJO_ADMIN_EMAIL)
+   KUBECONFIG=/tmp/kubeconfig kubectl -n forgejo-talos create secret generic forgejo-admin-credentials \
+     --from-literal=username="$USER" \
+     --from-literal=password="$PASS" \
+     --from-literal=email="$EMAIL" \
+     --dry-run=client -o yaml | \
+     KUBECONFIG=/tmp/kubeconfig kubeseal \
+       --controller-namespace kube-system \
+       --controller-name sealed-secrets-controller \
+       --format yaml > terraform/lab/gitops/stack/29-sealedsecret-forgejo-admin.yaml
+   ```
+
+## Replace Forgejo PostgreSQL auth (SealedSecrets)
+
+1. Put the DB password in `FORGEJO_DB_PASSWORD` (ignored by git):
+   ```sh
+   echo "strong_db_password_here" > FORGEJO_DB_PASSWORD
+   ```
+2. Re-seal and overwrite the SealedSecret:
+   ```sh
+   DBPASS=$(tr -d '\n' < FORGEJO_DB_PASSWORD)
+   KUBECONFIG=/tmp/kubeconfig kubectl -n forgejo-talos create secret generic forgejo-postgresql-auth \
+     --from-literal=password="$DBPASS" \
+     --from-literal=postgres-password="$DBPASS" \
+     --dry-run=client -o yaml | \
+     KUBECONFIG=/tmp/kubeconfig kubeseal \
+       --controller-namespace kube-system \
+       --controller-name sealed-secrets-controller \
+       --format yaml > terraform/lab/gitops/stack/31-sealedsecret-forgejo-postgresql-auth.yaml
    ```
 
 ## Grafana access

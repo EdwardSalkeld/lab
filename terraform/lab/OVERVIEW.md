@@ -56,7 +56,6 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
   - `27-namespace-forgejo.yaml` — `forgejo-talos` namespace.
   - `28-app-forgejo.yaml` — Argo CD app for Forgejo (configured for external PostgreSQL).
   - `29-sealedsecret-forgejo-admin.yaml` — Sealed Forgejo admin credentials.
-  - `30-sealedsecret-github-mirror-pat.yaml` — Sealed GitHub PAT for mirror workflows.
   - `31-sealedsecret-forgejo-postgresql-auth.yaml` — Sealed PostgreSQL auth for Forgejo DB user.
   - `32-app-forgejo-postgresql.yaml` — Argo CD app for in-cluster PostgreSQL backend.
 
