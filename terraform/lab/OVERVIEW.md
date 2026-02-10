@@ -56,6 +56,12 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
   - `27-namespace-forgejo.yaml` — `forgejo-talos` namespace.
   - `28-app-forgejo.yaml` — Argo CD app for Forgejo (SQLite on persistent volume).
   - `29-sealedsecret-forgejo-admin.yaml` — Sealed Forgejo admin credentials.
+  - `30-namespace-vaultwarden.yaml` — `vaultwarden-talos` namespace.
+  - `31-sealedsecret-vaultwarden-admin-token.yaml` — Sealed VaultWarden admin token.
+  - `32-vaultwarden-pvc.yaml` — VaultWarden PVC on `forgejo-nfs` (`5Gi`).
+  - `33-vaultwarden-deployment.yaml` — VaultWarden deployment (single-user settings).
+  - `34-vaultwarden-service.yaml` — VaultWarden ClusterIP service.
+  - `35-vaultwarden-ingress.yaml` — `vault.talos.alcachofa.faith` ingress via Traefik.
 
 ## MetalLB (LoadBalancer IPs)
 
@@ -73,13 +79,17 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
 - GitOps stack uses `10.4.1.89` and `*.talos.alcachofa.faith`.
 - Grafana is exposed via `grafana.talos.alcachofa.faith`.
 - Forgejo is exposed via `git.talos.alcachofa.faith` (HTTPS + SSH on port 22).
+- VaultWarden is exposed via `vault.talos.alcachofa.faith`.
 - DNS records must exist for each hostname (`argo`, `dashboard`, `whoami`,
-  `grafana`, `git`) and resolve to the Traefik LB endpoint.
+  `grafana`, `git`, `vault`) and resolve to the Traefik LB endpoint.
 - If the Git repo is private, set Argo CD repo credentials via
   `ARGOCD_REPO_SSH_PRIVATE_KEY` or `ARGOCD_REPO_USERNAME`/`ARGOCD_REPO_PASSWORD`.
 - TLS is configured via Traefik + Let's Encrypt (Cloudflare DNS-01).
 - Forgejo data is configured to use `forgejo-nfs` StorageClass (backed by
   `nfs-subdir-external-provisioner`).
+- VaultWarden data is configured to use `forgejo-nfs` StorageClass.
+- VaultWarden is operated as a manual one-way mirror target from Bitwarden
+  cloud exports.
 - Grafana default login in this setup: `admin` / `prom-operator`.
 - If Traefik serves `TRAEFIK DEFAULT CERT`, inspect Traefik logs for ACME
   resolver errors and verify `/data/acme.json` exists on the `traefik-acme` PVC.

@@ -22,6 +22,7 @@
 - `https://whoami.talos.alcachofa.faith`
 - `https://grafana.talos.alcachofa.faith`
 - `https://git.talos.alcachofa.faith`
+- `https://vault.talos.alcachofa.faith`
 
 All hostnames above must have DNS records pointing to the Traefik LoadBalancer IP (`10.4.1.89`).
 
@@ -29,3 +30,5 @@ Forgejo Git SSH is exposed on `git.talos.alcachofa.faith:22` through the same Tr
 
 Forgejo persistence uses `forgejo-nfs` StorageClass via `nfs-subdir-external-provisioner` (`10.4.1.32:/srv/k8s/forgejo-nfs`).
 Forgejo uses embedded SQLite persisted on its `forgejo-nfs` PVC.
+VaultWarden uses embedded SQLite persisted on `vaultwarden-data` (`5Gi`) on `forgejo-nfs`.
+VaultWarden is intended as a manual one-way mirror from Bitwarden cloud exports.

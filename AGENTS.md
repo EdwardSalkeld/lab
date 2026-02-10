@@ -35,6 +35,10 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + apps).
   - chart source: `oci://code.forgejo.org/forgejo-helm/forgejo`
   - uses embedded SQLite on persistent volume
   - app PVC uses `forgejo-nfs`
+- VaultWarden is GitOps-managed in namespace `vaultwarden-talos`:
+  - deployed as a single replica with SQLite
+  - signups disabled, invite flow enabled for controlled single-user access
+  - app PVC uses `forgejo-nfs` (5Gi)
 
 The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 
@@ -50,7 +54,7 @@ The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 - Traefik ACME storage uses:
   - PVC `traefik-acme` in `traefik-talos`
   - StorageClass `local-path`
-- Durable app storage for Forgejo uses NFS dynamic provisioning:
+- Durable app storage for Forgejo and VaultWarden uses NFS dynamic provisioning:
   - namespace: `storage-talos`
   - app manifest: `terraform/lab/gitops/stack/26-app-nfs-subdir-provisioner.yaml`
   - StorageClass: `forgejo-nfs`
@@ -75,6 +79,7 @@ If you tear the cluster down and rebuild:
 3. Re-seal all app credentials (SealedSecrets are cluster-specific):
   - Cloudflare token
   - Forgejo admin credentials
+  - VaultWarden admin token
 4. Expect Traefik to re-issue certs (local-path volumes are node-local).
 
 ## DNS prerequisites (for HTTPS routes)
@@ -86,6 +91,7 @@ Create DNS records that point to the Traefik LB IP (`10.4.1.89`) for:
 - `argo.talos.alcachofa.faith`
 - `grafana.talos.alcachofa.faith`
 - `git.talos.alcachofa.faith`
+- `vault.talos.alcachofa.faith`
 
 If a hostname is missing in DNS, the origin may still work by IP+SNI, but the
 public hostname may fail at the edge.
@@ -142,8 +148,37 @@ For Forgejo SSH, clients connect to:
      KUBECONFIG=/tmp/kubeconfig kubeseal \
        --controller-namespace kube-system \
        --controller-name sealed-secrets-controller \
-       --format yaml > terraform/lab/gitops/stack/29-sealedsecret-forgejo-admin.yaml
+     --format yaml > terraform/lab/gitops/stack/29-sealedsecret-forgejo-admin.yaml
    ```
+
+## Replace VaultWarden admin token (SealedSecrets)
+
+1. Put the admin token in `VAULTWARDEN_ADMIN_TOKEN` (ignored by git):
+   ```sh
+   echo "your_long_admin_token_here" > VAULTWARDEN_ADMIN_TOKEN
+   ```
+2. Re-seal and overwrite the SealedSecret:
+   ```sh
+   TOKEN=$(tr -d '\n' < VAULTWARDEN_ADMIN_TOKEN)
+   KUBECONFIG=/tmp/kubeconfig kubectl -n vaultwarden-talos create secret generic vaultwarden-admin \
+     --from-literal=ADMIN_TOKEN="$TOKEN" \
+     --dry-run=client -o yaml | \
+     KUBECONFIG=/tmp/kubeconfig kubeseal \
+       --controller-namespace kube-system \
+       --controller-name sealed-secrets-controller \
+       --format yaml > terraform/lab/gitops/stack/31-sealedsecret-vaultwarden-admin-token.yaml
+   ```
+
+## VaultWarden mirror workflow (manual)
+
+Current intended flow is one-way manual mirror from Bitwarden cloud:
+
+1. Open `https://vault.talos.alcachofa.faith/admin` (token from `vaultwarden-admin` secret).
+2. Invite your user account and complete initial login.
+3. Export Bitwarden data and import into VaultWarden:
+  - personal vault items
+  - organization exports/collections as needed
+4. Keep VaultWarden signups disabled and repeat export/import on your desired cadence.
 
 ## Grafana access
 
