@@ -37,7 +37,7 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + apps).
   - app PVC uses `forgejo-nfs`
 - VaultWarden is GitOps-managed in namespace `vaultwarden-talos`:
   - deployed as a single replica with SQLite
-  - signups disabled, invite flow enabled for controlled single-user access
+  - signups disabled and invitations disabled in steady state
   - app PVC uses `forgejo-nfs` (5Gi)
 
 The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
@@ -174,11 +174,22 @@ For Forgejo SSH, clients connect to:
 Current intended flow is one-way manual mirror from Bitwarden cloud:
 
 1. Open `https://vault.talos.alcachofa.faith/admin` (token from `vaultwarden-admin` secret).
-2. Invite your user account and complete initial login.
-3. Export Bitwarden data and import into VaultWarden:
+2. Export Bitwarden data and import into VaultWarden:
   - personal vault items
   - organization exports/collections as needed
-4. Keep VaultWarden signups disabled and repeat export/import on your desired cadence.
+3. Repeat export/import on your desired cadence.
+
+Current expected security posture:
+- `SIGNUPS_ALLOWED=false`
+- `INVITATIONS_ALLOWED=false`
+- no SMTP required for normal operation
+
+If you ever need to bootstrap a fresh user without SMTP:
+1. Temporarily set `SIGNUPS_ALLOWED=true` and `INVITATIONS_ALLOWED=false` in `33-vaultwarden-deployment.yaml`.
+2. Sync Argo and create the account from `/register`.
+3. Set `SIGNUPS_ALLOWED=false` again and re-sync.
+4. If registration is still blocked/open unexpectedly, check `/data/config.json` in the pod:
+   VaultWarden admin settings are persisted and can override env vars.
 
 ## Grafana access
 

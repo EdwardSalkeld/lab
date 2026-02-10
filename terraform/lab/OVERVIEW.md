@@ -90,6 +90,7 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
 - VaultWarden data is configured to use `forgejo-nfs` StorageClass.
 - VaultWarden is operated as a manual one-way mirror target from Bitwarden
   cloud exports.
+- VaultWarden registration and invitations are disabled in steady state (no SMTP flow required).
 - Grafana default login in this setup: `admin` / `prom-operator`.
 - If Traefik serves `TRAEFIK DEFAULT CERT`, inspect Traefik logs for ACME
   resolver errors and verify `/data/acme.json` exists on the `traefik-acme` PVC.

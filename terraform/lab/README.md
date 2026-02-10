@@ -32,3 +32,4 @@ Forgejo persistence uses `forgejo-nfs` StorageClass via `nfs-subdir-external-pro
 Forgejo uses embedded SQLite persisted on its `forgejo-nfs` PVC.
 VaultWarden uses embedded SQLite persisted on `vaultwarden-data` (`5Gi`) on `forgejo-nfs`.
 VaultWarden is intended as a manual one-way mirror from Bitwarden cloud exports.
+VaultWarden is currently locked down (`SIGNUPS_ALLOWED=false`, `INVITATIONS_ALLOWED=false`) with no SMTP dependency.
