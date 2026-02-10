@@ -33,8 +33,8 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + apps).
     - `Talos Workloads Health`
 - Forgejo is GitOps-managed in namespace `forgejo-talos`:
   - chart source: `oci://code.forgejo.org/forgejo-helm/forgejo`
-  - uses external PostgreSQL service `forgejo-postgresql` (also GitOps-managed)
-  - app and DB PVCs use `forgejo-nfs`
+  - uses embedded SQLite on persistent volume
+  - app PVC uses `forgejo-nfs`
 
 The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 
@@ -75,7 +75,6 @@ If you tear the cluster down and rebuild:
 3. Re-seal all app credentials (SealedSecrets are cluster-specific):
   - Cloudflare token
   - Forgejo admin credentials
-  - Forgejo PostgreSQL auth
 4. Expect Traefik to re-issue certs (local-path volumes are node-local).
 
 ## DNS prerequisites (for HTTPS routes)
@@ -144,25 +143,6 @@ For Forgejo SSH, clients connect to:
        --controller-namespace kube-system \
        --controller-name sealed-secrets-controller \
        --format yaml > terraform/lab/gitops/stack/29-sealedsecret-forgejo-admin.yaml
-   ```
-
-## Replace Forgejo PostgreSQL auth (SealedSecrets)
-
-1. Put the DB password in `FORGEJO_DB_PASSWORD` (ignored by git):
-   ```sh
-   echo "strong_db_password_here" > FORGEJO_DB_PASSWORD
-   ```
-2. Re-seal and overwrite the SealedSecret:
-   ```sh
-   DBPASS=$(tr -d '\n' < FORGEJO_DB_PASSWORD)
-   KUBECONFIG=/tmp/kubeconfig kubectl -n forgejo-talos create secret generic forgejo-postgresql-auth \
-     --from-literal=password="$DBPASS" \
-     --from-literal=postgres-password="$DBPASS" \
-     --dry-run=client -o yaml | \
-     KUBECONFIG=/tmp/kubeconfig kubeseal \
-       --controller-namespace kube-system \
-       --controller-name sealed-secrets-controller \
-       --format yaml > terraform/lab/gitops/stack/31-sealedsecret-forgejo-postgresql-auth.yaml
    ```
 
 ## Grafana access

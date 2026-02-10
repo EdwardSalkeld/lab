@@ -28,4 +28,4 @@ All hostnames above must have DNS records pointing to the Traefik LoadBalancer I
 Forgejo Git SSH is exposed on `git.talos.alcachofa.faith:22` through the same Traefik LoadBalancer IP.
 
 Forgejo persistence uses `forgejo-nfs` StorageClass via `nfs-subdir-external-provisioner` (`10.4.1.32:/srv/k8s/forgejo-nfs`).
-Forgejo uses an external in-cluster PostgreSQL (`forgejo-postgresql`) with its data PVC on `forgejo-nfs`.
+Forgejo uses embedded SQLite persisted on its `forgejo-nfs` PVC.

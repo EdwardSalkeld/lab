@@ -54,10 +54,8 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
   - `25-namespace-storage.yaml` — `storage-talos` namespace.
   - `26-app-nfs-subdir-provisioner.yaml` — Argo CD app for NFS dynamic provisioning.
   - `27-namespace-forgejo.yaml` — `forgejo-talos` namespace.
-  - `28-app-forgejo.yaml` — Argo CD app for Forgejo (configured for external PostgreSQL).
+  - `28-app-forgejo.yaml` — Argo CD app for Forgejo (SQLite on persistent volume).
   - `29-sealedsecret-forgejo-admin.yaml` — Sealed Forgejo admin credentials.
-  - `31-sealedsecret-forgejo-postgresql-auth.yaml` — Sealed PostgreSQL auth for Forgejo DB user.
-  - `32-app-forgejo-postgresql.yaml` — Argo CD app for in-cluster PostgreSQL backend.
 
 ## MetalLB (LoadBalancer IPs)
 
@@ -80,8 +78,8 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
 - If the Git repo is private, set Argo CD repo credentials via
   `ARGOCD_REPO_SSH_PRIVATE_KEY` or `ARGOCD_REPO_USERNAME`/`ARGOCD_REPO_PASSWORD`.
 - TLS is configured via Traefik + Let's Encrypt (Cloudflare DNS-01).
-- Forgejo data and its PostgreSQL backend are configured to use `forgejo-nfs`
-  StorageClass (backed by `nfs-subdir-external-provisioner`).
+- Forgejo data is configured to use `forgejo-nfs` StorageClass (backed by
+  `nfs-subdir-external-provisioner`).
 - Grafana default login in this setup: `admin` / `prom-operator`.
 - If Traefik serves `TRAEFIK DEFAULT CERT`, inspect Traefik logs for ACME
   resolver errors and verify `/data/acme.json` exists on the `traefik-acme` PVC.

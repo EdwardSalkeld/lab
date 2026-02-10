@@ -18,11 +18,8 @@ spec:
             existingSecret: forgejo-admin-credentials
           config:
             database:
-              DB_TYPE: postgres
-              HOST: forgejo-postgresql:5432
-              NAME: forgejo
-              USER: forgejo
-              SSL_MODE: disable
+              DB_TYPE: sqlite3
+              PATH: /data/gitea/gitea.db
             server:
               DOMAIN: git.talos.alcachofa.faith
               ROOT_URL: https://git.talos.alcachofa.faith/
@@ -32,12 +29,6 @@ spec:
               DISABLE_SSH: false
             service:
               DISABLE_REGISTRATION: true
-          additionalConfigFromEnvs:
-            - name: FORGEJO__DATABASE__PASSWD
-              valueFrom:
-                secretKeyRef:
-                  name: forgejo-postgresql-auth
-                  key: password
         service:
           http:
             type: ClusterIP
