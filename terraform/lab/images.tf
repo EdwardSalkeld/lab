@@ -1,17 +1,3 @@
-# Debian 12 (Bookworm) - Oldstable
-resource "proxmox_virtual_environment_download_file" "debian_12_lxc" {
-  content_type = "vztmpl"
-  datastore_id = "local"
-  node_name    = "sol"
-
-  url = "http://download.proxmox.com/images/system/debian-12-standard_12.2-1_amd64.tar.zst"
-
-  # Allow Terraform to manage files that already exist
-  overwrite_unmanaged = true
-
-  upload_timeout = 600
-}
-
 # Debian 13 (Trixie) - Stable (became stable August 2024)
 resource "proxmox_virtual_environment_download_file" "debian_13_lxc" {
   content_type = "vztmpl"
