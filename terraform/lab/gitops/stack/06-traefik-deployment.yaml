@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: traefik
   namespace: traefik-talos
+  annotations:
+    ignore-check.kube-linter.io/run-as-non-root: "Traefik and ACME init run as root intentionally for acme.json permissions on PVC."
+    ignore-check.kube-linter.io/ssh-port: "Port 22 is intentionally exposed for SSH ingress/TCP routing."
 spec:
   strategy:
     type: Recreate
@@ -44,6 +47,13 @@ spec:
           volumeMounts:
             - name: acme-data
               mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
       containers:
         - name: traefik
           image: traefik:v2.11
