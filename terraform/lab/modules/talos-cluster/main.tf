@@ -6,6 +6,7 @@ locals {
   worker_ips = [
     module.talos_worker_1.ip,
     module.talos_worker_2.ip,
+    module.talos_worker_3.ip,
   ]
   all_ips = flatten([[module.talos_control_plane.ip], local.worker_ips])
 
@@ -54,6 +55,13 @@ resource "talos_machine_configuration_apply" "worker2_config_apply" {
   node                        = module.talos_worker_2.ip
 }
 
+resource "talos_machine_configuration_apply" "worker3_config_apply" {
+  depends_on                  = [module.talos_worker_3.vm]
+  client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
+  machine_configuration_input = data.talos_machine_configuration.machineconfig_worker.machine_configuration
+  node                        = module.talos_worker_3.ip
+}
+
 resource "talos_machine_bootstrap" "bootstrap" {
   # depends_on           = [talos_machine_configuration_apply.cp_config_apply]
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
@@ -61,7 +69,7 @@ resource "talos_machine_bootstrap" "bootstrap" {
 }
 
 data "talos_cluster_health" "health" {
-  depends_on           = [talos_machine_configuration_apply.cp_config_apply, talos_machine_configuration_apply.worker1_config_apply, talos_machine_configuration_apply.worker2_config_apply]
+  depends_on           = [talos_machine_configuration_apply.cp_config_apply, talos_machine_configuration_apply.worker1_config_apply, talos_machine_configuration_apply.worker2_config_apply, talos_machine_configuration_apply.worker3_config_apply]
   client_configuration = data.talos_client_configuration.talosconfig.client_configuration
   control_plane_nodes  = [local.endpoint_ip]
   worker_nodes         = local.worker_ips

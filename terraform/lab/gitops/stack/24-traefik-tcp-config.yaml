@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-tcp-dynamic
+  namespace: traefik-talos
+data:
+  forgejo-ssh.yaml: |-
+    tcp:
+      routers:
+        forgejo-ssh:
+          entryPoints:
+            - ssh
+          rule: HostSNI(`*`)
+          service: forgejo-ssh
+      services:
+        forgejo-ssh:
+          loadBalancer:
+            servers:
+              - address: forgejo-ssh.forgejo-talos.svc.cluster.local:22
