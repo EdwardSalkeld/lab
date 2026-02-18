@@ -46,8 +46,6 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
   - `17-local-path-storage.yaml` — Local Path Provisioner + default StorageClass.
   - `18-namespace-observability.yaml` — `observability-talos` namespace.
   - `19-app-kube-prometheus-stack.yaml` — Argo CD app for metrics + Grafana.
-  - `20-app-loki.yaml` — Argo CD app for Loki log storage.
-  - `21-app-promtail.yaml` — Argo CD app for Promtail log shipping.
   - `22-grafana-dashboard-cluster-overview.yaml` — Grafana dashboard ConfigMap.
   - `23-grafana-dashboard-workloads.yaml` — Grafana dashboard ConfigMap.
   - `24-traefik-tcp-config.yaml` — Traefik file-provider TCP route config (Forgejo SSH).
