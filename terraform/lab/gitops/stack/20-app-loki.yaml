@@ -31,10 +31,26 @@ spec:
             retention_period: 168h
         singleBinary:
           replicas: 1
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
           persistence:
             enabled: true
             storageClass: local-path
             size: 20Gi
+        sidecar:
+          rules:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
         backend:
           replicas: 0
         read:
