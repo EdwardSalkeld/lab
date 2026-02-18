@@ -141,7 +141,7 @@ pct list
 1. If only a few pods are crashlooping, recreate those pods first:
    ```sh
    KUBECONFIG=.kubeconfig kubectl -n argocd delete pod argocd-application-controller-0
-   KUBECONFIG=.kubeconfig kubectl -n observability-talos delete pod <crashlooping-promtail-pod>
+   KUBECONFIG=.kubeconfig kubectl -n observability-talos delete pod <crashlooping-observability-pod>
    ```
 
 2. If Argo control-plane pods remain unstable, restart Argo deploys then recreate controller pod:

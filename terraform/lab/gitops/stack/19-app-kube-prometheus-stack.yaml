@@ -67,12 +67,6 @@ spec:
             tls:
               - hosts:
                   - grafana.talos.alcachofa.faith
-          additionalDataSources:
-            - name: Loki
-              type: loki
-              access: proxy
-              url: http://observability-loki-gateway.observability-talos.svc.cluster.local
-              isDefault: false
         prometheus:
           prometheusSpec:
             securityContext:

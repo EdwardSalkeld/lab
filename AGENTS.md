@@ -26,7 +26,6 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + apps).
   - `https://argo.talos.alcachofa.faith`
 - Observability is GitOps-managed in namespace `observability-talos`:
   - `kube-prometheus-stack` (Prometheus, Alertmanager, Grafana)
-  - `loki` + `promtail`
   - Grafana URL: `https://grafana.talos.alcachofa.faith`
   - Preloaded dashboards:
     - `Talos Cluster Overview`
