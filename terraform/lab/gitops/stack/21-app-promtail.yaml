@@ -16,6 +16,13 @@ spec:
             - url: http://observability-loki-gateway.observability-talos.svc.cluster.local/loki/api/v1/push
         readinessProbe:
           timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 384Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: observability-talos

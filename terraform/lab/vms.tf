@@ -5,7 +5,7 @@ module "cluster1" {
   talos_cluster_name = "test-base"
   # Keep existing VM disk source pinned to avoid forced VM replacement.
   # Talos version upgrades for running nodes are done with talosctl rolling upgrades.
-  iso_file_id        = proxmox_virtual_environment_download_file.talos_nocloud_image2.id
+  iso_file_id = proxmox_virtual_environment_download_file.talos_nocloud_image2.id
 }
 
 output "talosconfig" {

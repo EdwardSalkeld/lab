@@ -27,7 +27,90 @@ locals {
     "PodDisruptionBudget",
     "Ingress",
   ])
-  argocd_other_manifests = [
+
+  # Keep critical Argo pods out of BestEffort QoS so startup churn does not OOM-kill them.
+  argocd_container_resources = {
+    "argocd-application-controller" = {
+      container_name = "argocd-application-controller"
+      resources = {
+        requests = {
+          cpu    = "200m"
+          memory = "512Mi"
+        }
+        limits = {
+          cpu    = "1"
+          memory = "1Gi"
+        }
+      }
+    }
+    "argocd-repo-server" = {
+      container_name = "argocd-repo-server"
+      resources = {
+        requests = {
+          cpu    = "100m"
+          memory = "256Mi"
+        }
+        limits = {
+          cpu    = "500m"
+          memory = "512Mi"
+        }
+      }
+    }
+    "argocd-server" = {
+      container_name = "argocd-server"
+      resources = {
+        requests = {
+          cpu    = "100m"
+          memory = "256Mi"
+        }
+        limits = {
+          cpu    = "500m"
+          memory = "512Mi"
+        }
+      }
+    }
+    "argocd-dex-server" = {
+      container_name = "dex"
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "128Mi"
+        }
+        limits = {
+          cpu    = "250m"
+          memory = "256Mi"
+        }
+      }
+    }
+    "argocd-notifications-controller" = {
+      container_name = "argocd-notifications-controller"
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "128Mi"
+        }
+        limits = {
+          cpu    = "250m"
+          memory = "256Mi"
+        }
+      }
+    }
+    "argocd-applicationset-controller" = {
+      container_name = "argocd-applicationset-controller"
+      resources = {
+        requests = {
+          cpu    = "50m"
+          memory = "128Mi"
+        }
+        limits = {
+          cpu    = "250m"
+          memory = "256Mi"
+        }
+      }
+    }
+  }
+
+  argocd_namespaced_manifests = [
     for manifest in local.argocd_docs_nonnull :
     jsondecode(jsonencode(
       merge(
@@ -43,6 +126,47 @@ locals {
       )
     ))
   ]
+
+  argocd_other_manifests = [
+    for manifest in local.argocd_namespaced_manifests :
+    jsondecode(
+      (
+        contains(["Deployment", "StatefulSet"], manifest.kind) &&
+        lookup(lookup(manifest, "metadata", {}), "namespace", "") == "argocd" &&
+        contains(keys(local.argocd_container_resources), lookup(lookup(manifest, "metadata", {}), "name", ""))
+        ) ? jsonencode(
+        merge(
+          manifest,
+          {
+            spec = merge(
+              try(manifest.spec, {}),
+              {
+                template = merge(
+                  try(manifest.spec.template, {}),
+                  {
+                    spec = merge(
+                      try(manifest.spec.template.spec, {}),
+                      {
+                        containers = [
+                          for container in try(manifest.spec.template.spec.containers, []) :
+                          jsondecode(
+                            container.name == local.argocd_container_resources[manifest.metadata.name].container_name
+                            ? jsonencode(merge(container, { resources = local.argocd_container_resources[manifest.metadata.name].resources }))
+                            : jsonencode(container)
+                          )
+                        ]
+                      }
+                    )
+                  }
+                )
+              }
+            )
+          }
+        )
+      ) : jsonencode(manifest)
+    )
+  ]
+
   argocd_webhook_kinds = toset([
     "MutatingWebhookConfiguration",
     "ValidatingWebhookConfiguration",
