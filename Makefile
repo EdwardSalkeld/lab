@@ -1,5 +1,5 @@
-TF_DIR := terraform/lab
-K8S_DIR := terraform/lab/gitops/stack
+TF_DIR := terraform
+K8S_DIR := gitops
 
 .PHONY: help
 help:

@@ -9,23 +9,23 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
 2. Talos config is generated and applied to bootstrap the cluster.
 3. A kubeconfig is derived from Talos.
 4. Kubernetes provider applies MetalLB and Argo CD.
-5. Argo CD manages the GitOps stack under `terraform/lab/gitops/stack`.
+5. Argo CD manages the GitOps stack under `gitops`.
 
 ## Terraform files
 
-- `terraform/lab/providers.tf` — provider config (Proxmox, Talos, Kubernetes, etc).
-- `terraform/lab/variables.tf` — input variables for endpoints, tokens, and cluster settings.
-- `terraform/lab/outputs.tf` — exported values (kubeconfig, talosconfig, IDs).
-- `terraform/lab/images.tf` — ISO/IMG downloads used by Proxmox.
-- `terraform/lab/vms.tf` — Talos VM definitions for control plane and workers.
-- `terraform/lab/containers.tf` — Debian LXC containers.
-- `terraform/lab/modules/` — reusable Terraform modules (Talos cluster pieces).
+- `terraform/providers.tf` — provider config (Proxmox, Talos, Kubernetes, etc).
+- `terraform/variables.tf` — input variables for endpoints, tokens, and cluster settings.
+- `terraform/outputs.tf` — exported values (kubeconfig, talosconfig, IDs).
+- `terraform/images.tf` — ISO/IMG downloads used by Proxmox.
+- `terraform/vms.tf` — Talos VM definitions for control plane and workers.
+- `terraform/containers.tf` — Debian LXC containers.
+- `terraform/modules/` — reusable Terraform modules (Talos cluster pieces).
 
 ## GitOps (Argo CD)
 
-- `terraform/lab/argocd.tf` — installs Argo CD from upstream manifests.
-- `terraform/lab/argocd/manifests/install.yaml` — Argo CD install manifest (upstream).
-- `terraform/lab/gitops/stack/` — GitOps-managed parallel stack:
+- `terraform/argocd.tf` — installs Argo CD from upstream manifests.
+- `terraform/argocd/manifests/install.yaml` — Argo CD install manifest (upstream).
+- `gitops/` — GitOps-managed parallel stack:
   - `00-namespace-traefik.yaml` — `traefik-talos` namespace.
   - `01-namespace-apps.yaml` — `apps-talos` namespace.
   - `02-traefik-serviceaccount.yaml` — Traefik service account.
@@ -63,13 +63,13 @@ cluster add-ons (MetalLB, Argo CD) using the Kubernetes provider.
 
 ## MetalLB (LoadBalancer IPs)
 
-- `terraform/lab/metallb.tf` — installs MetalLB and config from manifests.
-- `terraform/lab/metallb/manifests/` — upstream MetalLB YAML split by component:
+- `terraform/metallb.tf` — installs MetalLB and config from manifests.
+- `terraform/metallb/manifests/` — upstream MetalLB YAML split by component:
   - `namespace.yaml`, `crds.yaml`, `rbac.yaml`
   - `controller.yaml`, `speaker.yaml`
   - `service.yaml`, `webhook.yaml`, `secret.yaml`
   - `configmap.yaml`
-- `terraform/lab/metallb_config` resources — define the IP address pool
+- `terraform/metallb_config` resources — define the IP address pool
   (`10.4.1.88/29`) and L2 advertisement.
 
 ## Notes

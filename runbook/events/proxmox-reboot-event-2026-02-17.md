@@ -54,7 +54,7 @@
 
 - Status: Completed
 - Command(s):
-  - `terraform -chdir=terraform/lab output -raw talosconfig > .talosconfig`
+  - `terraform -chdir=terraform output -raw talosconfig > .talosconfig`
   - `wc -c .talosconfig`
 - Notes:
   - Output size: `1700` bytes.

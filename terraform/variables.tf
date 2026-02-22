@@ -31,7 +31,7 @@ variable "ARGOCD_REPO_REVISION" {
 variable "ARGOCD_REPO_PATH" {
   description = "Repo path Argo CD should sync"
   type        = string
-  default     = "terraform/lab/gitops/stack"
+  default     = "gitops"
 }
 
 variable "ARGOCD_REPO_SSH_PRIVATE_KEY" {
