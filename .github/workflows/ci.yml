@@ -15,13 +15,13 @@ jobs:
       - name: terraform fmt
         run: terraform fmt -check -recursive
       - name: terraform init (no backend)
-        run: terraform -chdir=terraform/lab init -backend=false
+        run: terraform -chdir=terraform init -backend=false
       - name: terraform validate
-        run: terraform -chdir=terraform/lab validate
+        run: terraform -chdir=terraform validate
       - name: tfsec
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          working_directory: terraform/lab
+          working_directory: terraform
 
   kubernetes:
     name: kubernetes
@@ -41,7 +41,7 @@ jobs:
           sudo mv /tmp/kube-linter /usr/local/bin/kube-linter
       - name: kubeconform (gitops stack)
         run: |
-          kubeconform -summary -ignore-missing-schemas terraform/lab/gitops/stack/*.yaml
+          kubeconform -summary -ignore-missing-schemas gitops/*.yaml
       - name: kube-linter (gitops stack)
         run: |
-          kube-linter lint terraform/lab/gitops/stack
+          kube-linter lint gitops

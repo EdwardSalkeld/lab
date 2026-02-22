@@ -5,11 +5,11 @@ then layers Kubernetes add-ons and a GitOps stack (Argo CD + Traefik + apps).
 
 ## High-level layout
 
-- `terraform/lab/` is the main Terraform root.
-- `terraform/lab/metallb/manifests/` contains the direct (non-GitOps)
+- `terraform/` is the main Terraform root.
+- `terraform/metallb/manifests/` contains the direct (non-GitOps)
   Kubernetes manifests applied by Terraform for MetalLB.
-- `terraform/lab/argocd/` contains the upstream Argo CD install manifest.
-- `terraform/lab/gitops/stack/` contains the GitOps-managed stack that Argo CD
+- `terraform/argocd/` contains the upstream Argo CD install manifest.
+- `gitops/` contains the GitOps-managed stack that Argo CD
   syncs (Traefik, whoami, Argo CD ingress, etc.).
 
 ## Current setup (as of today)
@@ -44,7 +44,7 @@ The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
 ## Storage (GitOps)
 
 - Storage is provided by Rancher Local Path Provisioner.
-- Manifest: `terraform/lab/gitops/stack/17-local-path-storage.yaml`
+- Manifest: `gitops/17-local-path-storage.yaml`
 - StorageClass: `local-path` (set as default).
 - PVCs are backed by a hostPath on the node:
   - path: `/opt/local-path-provisioner`
@@ -55,7 +55,7 @@ The GitOps stack is the source of truth for the Traefik that fronts Argo CD.
   - StorageClass `local-path`
 - Durable app storage for Forgejo and VaultWarden uses NFS dynamic provisioning:
   - namespace: `storage-talos`
-  - app manifest: `terraform/lab/gitops/stack/26-app-nfs-subdir-provisioner.yaml`
+  - app manifest: `gitops/26-app-nfs-subdir-provisioner.yaml`
   - StorageClass: `forgejo-nfs`
   - current configured NFS endpoint:
     - server: `10.4.1.32`
@@ -72,7 +72,7 @@ If you tear the cluster down and rebuild:
 
 1. Run Terraform to recreate Argo CD + the Application:
    ```sh
-   terraform -chdir=terraform/lab apply
+   terraform -chdir=terraform apply
    ```
 2. Ensure Proxmox NFS export (`10.4.1.32:/srv/k8s/forgejo-nfs`) exists.
 3. Re-seal all app credentials (SealedSecrets are cluster-specific):
@@ -113,11 +113,11 @@ For Forgejo SSH, clients connect to:
      KUBECONFIG=/tmp/kubeconfig kubeseal \
        --controller-namespace kube-system \
        --controller-name sealed-secrets-controller \
-       --format yaml > terraform/lab/gitops/stack/15-sealedsecret-cf-api-token.yaml
+       --format yaml > gitops/15-sealedsecret-cf-api-token.yaml
    ```
 3. Commit + push the updated SealedSecret:
    ```sh
-   git add terraform/lab/gitops/stack/15-sealedsecret-cf-api-token.yaml
+   git add gitops/15-sealedsecret-cf-api-token.yaml
    git commit -m "Update sealed Cloudflare DNS token"
    git push
    ```
@@ -147,7 +147,7 @@ For Forgejo SSH, clients connect to:
      KUBECONFIG=/tmp/kubeconfig kubeseal \
        --controller-namespace kube-system \
        --controller-name sealed-secrets-controller \
-     --format yaml > terraform/lab/gitops/stack/29-sealedsecret-forgejo-admin.yaml
+     --format yaml > gitops/29-sealedsecret-forgejo-admin.yaml
    ```
 
 ## Replace VaultWarden admin token (SealedSecrets)
@@ -165,7 +165,7 @@ For Forgejo SSH, clients connect to:
      KUBECONFIG=/tmp/kubeconfig kubeseal \
        --controller-namespace kube-system \
        --controller-name sealed-secrets-controller \
-       --format yaml > terraform/lab/gitops/stack/31-sealedsecret-vaultwarden-admin-token.yaml
+       --format yaml > gitops/31-sealedsecret-vaultwarden-admin-token.yaml
    ```
 
 ## VaultWarden mirror workflow (manual)
@@ -224,7 +224,7 @@ Current known-good behavior for this repo:
 ## How to export kubeconfig from Terraform
 
 Terraform exposes `kubeconfig` and `talosconfig` as **sensitive outputs** in
-`terraform/lab/vms.tf` (from the `cluster1` module).
+`terraform/vms.tf` (from the `cluster1` module).
 
 To write a kubeconfig file into the repo (gitignored):
 
@@ -241,7 +241,7 @@ KUBECONFIG=.kubeconfig kubectl get nodes
 If you also need the Talos config:
 
 ```sh
-terraform -chdir=terraform/lab output -raw talosconfig > /tmp/talosconfig
+terraform -chdir=terraform output -raw talosconfig > /tmp/talosconfig
 ```
 
 Notes:

@@ -27,7 +27,7 @@ pct list
 2. Confirm Proxmox console access.
 3. Ensure Talos config exists (repo-local):
    ```sh
-   terraform -chdir=terraform/lab output -raw talosconfig > .talosconfig
+   terraform -chdir=terraform output -raw talosconfig > .talosconfig
    ```
 4. Ensure kubeconfig works:
    ```sh

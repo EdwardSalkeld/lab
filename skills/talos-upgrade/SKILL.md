@@ -15,7 +15,7 @@ Use this runbook for this repo's Talos cluster (1 control plane + 3 workers).
    ```
 2. Export Talos config from Terraform state:
    ```sh
-   terraform -chdir=terraform/lab output -raw talosconfig > /tmp/talosconfig
+   terraform -chdir=terraform output -raw talosconfig > /tmp/talosconfig
    ```
 3. Verify node health before any upgrade:
    ```sh
@@ -111,11 +111,11 @@ Proceed only after node is `Ready` and on target Talos version.
 
 After all nodes are upgraded:
 
-1. Set upgrade version variables/resources in `terraform/lab/images.tf` to the target version.
-2. Repoint `terraform/lab/vms.tf` (`iso_file_id`) to the target image resource.
+1. Set upgrade version variables/resources in `terraform/images.tf` to the target version.
+2. Repoint `terraform/vms.tf` (`iso_file_id`) to the target image resource.
 3. Run:
    ```sh
-   terraform -chdir=terraform/lab validate
-   terraform -chdir=terraform/lab plan
+   terraform -chdir=terraform validate
+   terraform -chdir=terraform plan
    ```
 4. Apply if plan is as expected.
