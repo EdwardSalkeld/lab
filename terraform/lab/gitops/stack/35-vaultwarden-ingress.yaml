@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vaultwarden
+  namespace: vaultwarden-talos
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: cfalcachofa
+spec:
+  ingressClassName: traefik-talos
+  rules:
+    - host: vault.talos.alcachofa.faith
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vaultwarden-http
+                port:
+                  number: 80
