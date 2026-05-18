@@ -7,6 +7,7 @@ module "debian_13_container" {
 
   template_file_id = proxmox_virtual_environment_download_file.debian_13_lxc.id
   os_type          = "debian"
+  disk_size        = 16
 
   ssh_keys      = var.public_ssh_keys
   root_password = random_password.debian_13_password.result
