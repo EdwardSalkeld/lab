@@ -1,35 +1,48 @@
-## Lab Terraform notes
+## Lab Terraform Notes
 
-- MetalLB address pool reserved: 10.4.1.88/29 (10.4.1.88-10.4.1.95)
-- MetalLB upstream manifests live in `terraform/metallb/manifests` for easier reading.
-- GitOps manifests live in `gitops` (Traefik, Argo CD ingress, whoami, storage, observability apps, Forgejo).
-- See `terraform/OVERVIEW.md` for a full walkthrough and GitOps notes.
+This Terraform root currently manages the first NixOS learning VM on Proxmox.
 
-## Quick ops
+Active resources:
 
-- Apply infra and Argo app:
-  - `terraform -chdir=terraform apply`
-- Switch Argo tracked branch:
-  - `source terraform/.env && TF_VAR_ARGOCD_REPO_REVISION=main terraform -chdir=terraform apply -auto-approve`
-- Export kubeconfig:
-  - `./scripts/write-kubeconfig.sh`
-  - `KUBECONFIG=.kubeconfig kubectl get nodes`
+- `proxmox_virtual_environment_download_file.nixos_minimal_iso`
+- `proxmox_virtual_environment_vm.nixos_01`
 
-## Endpoints (GitOps stack)
+## Quick Ops
 
-- `https://argo.talos.alcachofa.faith`
-- `https://dashboard.talos.alcachofa.faith`
-- `https://whoami.talos.alcachofa.faith`
-- `https://grafana.talos.alcachofa.faith`
-- `https://git.talos.alcachofa.faith`
-- `https://vault.talos.alcachofa.faith`
+Load credentials:
 
-All hostnames above must have DNS records pointing to the Traefik LoadBalancer IP (`10.4.1.89`).
+```sh
+set -a
+source terraform/.env
+set +a
+```
 
-Forgejo Git SSH is exposed on `git.talos.alcachofa.faith:22` through the same Traefik LoadBalancer IP.
+Check the plan:
 
-Forgejo persistence uses `forgejo-nfs` StorageClass via `nfs-subdir-external-provisioner` (`10.4.1.32:/srv/k8s/forgejo-nfs`).
-Forgejo uses embedded SQLite persisted on its `forgejo-nfs` PVC.
-VaultWarden uses embedded SQLite persisted on `vaultwarden-data` (`5Gi`) on `forgejo-nfs`.
-VaultWarden is intended as a manual one-way mirror from Bitwarden cloud exports.
-VaultWarden is currently locked down (`SIGNUPS_ALLOWED=false`, `INVITATIONS_ALLOWED=false`) with no SMTP dependency.
+```sh
+terraform -chdir=terraform plan
+```
+
+Apply the current stage:
+
+```sh
+terraform -chdir=terraform apply
+```
+
+Show VM outputs:
+
+```sh
+terraform -chdir=terraform output
+```
+
+## Current VM
+
+- Name: `nixos-01`
+- VM ID: `59760`
+- Node: `sol`
+- ISO: `nixos-25.11-minimal-x86_64-linux.iso`
+- Disk: 32 GiB on `local-lvm`
+- Network bridge: `vmbr0`
+
+The VM is intended to boot into the NixOS installer. Use the Proxmox console to
+perform the first manual install.

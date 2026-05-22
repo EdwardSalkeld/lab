@@ -8,7 +8,7 @@ variable "PROXMOXENDPOINT" {
 }
 
 variable "public_ssh_keys" {
-  description = "Edward's SSH public key for container access"
+  description = "Edward's SSH public keys for NixOS access after manual install"
   type        = list(string)
   default = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD edward@m1",
@@ -16,40 +16,38 @@ variable "public_ssh_keys" {
   ]
 }
 
-variable "ARGOCD_REPO_URL" {
-  description = "Git repo URL Argo CD should sync from (SSH or HTTPS)"
+variable "proxmox_node_name" {
+  description = "Proxmox node that will run the first NixOS VM"
   type        = string
-  default     = "https://github.com/EdwardSalkeld/lab.git"
+  default     = "sol"
 }
 
-variable "ARGOCD_REPO_REVISION" {
-  description = "Git revision Argo CD should track"
+variable "proxmox_iso_datastore_id" {
+  description = "Proxmox datastore for ISO images"
   type        = string
-  default     = "main"
+  default     = "local"
 }
 
-variable "ARGOCD_REPO_PATH" {
-  description = "Repo path Argo CD should sync"
+variable "proxmox_vm_datastore_id" {
+  description = "Proxmox datastore for VM disks"
   type        = string
-  default     = "gitops"
+  default     = "local-lvm"
 }
 
-variable "ARGOCD_REPO_SSH_PRIVATE_KEY" {
-  description = "SSH private key for Argo CD repo access (leave empty to skip)"
+variable "proxmox_network_bridge" {
+  description = "Proxmox bridge for VM networking"
   type        = string
-  default     = ""
-  sensitive   = true
+  default     = "vmbr0"
 }
 
-variable "ARGOCD_REPO_USERNAME" {
-  description = "Username for HTTPS repo access (leave empty to skip)"
+variable "nixos_vm_name" {
+  description = "Name of the first NixOS VM"
   type        = string
-  default     = ""
+  default     = "nixos-01"
 }
 
-variable "ARGOCD_REPO_PASSWORD" {
-  description = "Password/token for HTTPS repo access (leave empty to skip)"
-  type        = string
-  default     = ""
-  sensitive   = true
+variable "nixos_vm_disk_size" {
+  description = "Root disk size for the first NixOS VM in GiB"
+  type        = number
+  default     = 32
 }
