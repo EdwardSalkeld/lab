@@ -17,7 +17,7 @@ resource "proxmox_virtual_environment_vm" "nixos_01" {
   tags        = ["nixos", "learning"]
 
   bios       = "ovmf"
-  boot_order = ["ide2", "scsi0"]
+  boot_order = ["scsi0", "ide2"]
   on_boot    = true
   started    = true
 
