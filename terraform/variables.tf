@@ -46,8 +46,14 @@ variable "nixos_vm_name" {
   default     = "nixos-01"
 }
 
+variable "partridge_vm_name" {
+  description = "Name of the first repo-managed NixOS VM"
+  type        = string
+  default     = "partridge"
+}
+
 variable "nixos_vm_disk_size" {
-  description = "Root disk size for the first NixOS VM in GiB"
+  description = "Root disk size for NixOS VMs in GiB"
   type        = number
   default     = 32
 }
