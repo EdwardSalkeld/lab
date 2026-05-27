@@ -37,6 +37,7 @@
     curl
     git
     htop
+    lazygit
     ripgrep
     vim
     wget
