@@ -53,7 +53,19 @@ variable "partridge_vm_name" {
 }
 
 variable "nixos_vm_disk_size" {
-  description = "Root disk size for NixOS VMs in GiB"
+  description = "Root disk size for the first NixOS learning VM in GiB"
   type        = number
   default     = 32
+}
+
+variable "partridge_root_disk_size" {
+  description = "Root disk size for partridge in GiB"
+  type        = number
+  default     = 12
+}
+
+variable "partridge_code_disk_size" {
+  description = "Code disk size for partridge in GiB"
+  type        = number
+  default     = 5
 }

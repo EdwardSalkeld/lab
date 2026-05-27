@@ -67,12 +67,12 @@ resource "proxmox_virtual_environment_vm" "partridge" {
   tags        = ["bird", "nixos", "prod"]
 
   bios       = "ovmf"
-  boot_order = ["ide2", "scsi0"]
+  boot_order = ["scsi0", "ide2"]
   on_boot    = true
   started    = true
 
   agent {
-    enabled = false
+    enabled = true
   }
 
   cpu {
@@ -95,9 +95,19 @@ resource "proxmox_virtual_environment_vm" "partridge" {
   disk {
     datastore_id = var.proxmox_vm_datastore_id
     interface    = "scsi0"
-    size         = var.nixos_vm_disk_size
+    size         = var.partridge_root_disk_size
     discard      = "on"
     iothread     = true
+    serial       = "partridge-root"
+  }
+
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi1"
+    size         = var.partridge_code_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "partridge-code"
   }
 
   cdrom {
