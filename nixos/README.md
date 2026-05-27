@@ -6,9 +6,6 @@ Current targets:
 
 - `partridge`: the first repo-managed NixOS VM.
 
-Draft configs may exist for future hosts/images, but only `partridge` is wired
-into `flake.nix` right now.
-
 ## Installing Packages
 
 On the current manually installed VM, the immediate path is to edit
@@ -29,11 +26,11 @@ environment.systemPackages = with pkgs; [
 ];
 ```
 
-After `nixos-01` is adopted into this repo, add shared packages to
-`nixos/modules/proxmox-vm-base.nix`, then rebuild the host:
+After a host is adopted into this repo, add shared packages to
+`nixos/modules/proxmox-vm-base.nix`, then rebuild the host. For `partridge`:
 
 ```sh
-sudo nixos-rebuild switch --flake .#nixos-01
+sudo nixos-rebuild switch --flake .#partridge
 ```
 
 For a temporary shell with a package:
@@ -50,18 +47,6 @@ nix profile install nixpkgs#htop
 
 Prefer `environment.systemPackages` for lab infrastructure so the machine can
 be recreated from the repo.
-
-## Adopting `nixos-01`
-
-Before using `.#nixos-01` against the live VM, copy the generated hardware
-configuration into this repo:
-
-```sh
-scp edward@nixos-01:/etc/nixos/hardware-configuration.nix \
-  nixos/hosts/nixos-01/hardware-configuration.nix
-```
-
-Then uncomment the import in `nixos/hosts/nixos-01/configuration.nix`.
 
 ## Deploying `partridge`
 
@@ -82,14 +67,13 @@ nixos-rebuild switch --flake .#partridge --target-host edward@partridge --use-re
 NixOS can build images from normal system configurations with:
 
 ```sh
-nixos-rebuild build-image --image-variant proxmox --flake .#proxmox-image
+nixos-rebuild build-image --image-variant proxmox --flake .#image-name
 ```
 
 This repo also exposes direct build outputs:
 
 ```sh
-nix build .#proxmox-vma
-nix build .#proxmox-qcow-efi
+nix build .#image-name
 ```
 
 `proxmox-vma` should be the native Proxmox backup/archive image format.

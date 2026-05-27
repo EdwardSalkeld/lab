@@ -1,5 +1,0 @@
-{ ... }:
-
-{
-  networking.hostName = "nixos-template";
-}
