@@ -1,11 +1,12 @@
 ## Lab Terraform Notes
 
-This Terraform root currently manages the first NixOS learning VM on Proxmox.
+This Terraform root manages NixOS VMs on Proxmox.
 
 Active resources:
 
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_vm.nixos_01`
+- `proxmox_virtual_environment_vm.partridge`
 
 ## Quick Ops
 
@@ -46,3 +47,13 @@ terraform -chdir=terraform output
 
 The VM is intended to boot into the NixOS installer. Use the Proxmox console to
 perform the first manual install.
+
+## Repo-Managed VM
+
+- Name: `partridge`
+- Node: `sol`
+- Root disk: 12 GiB on `local-lvm`
+- Code disk: 5 GiB on `local-lvm`
+- Network bridge: `vmbr0`
+
+`partridge` is managed by the root Nix flake as `.#partridge`.
