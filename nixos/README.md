@@ -53,7 +53,17 @@ be recreated from the repo.
 From a checkout on `partridge`:
 
 ```sh
-sudo nixos-rebuild switch --flake .#partridge
+./scripts/nixos-switch.sh
+```
+
+The script uses `hostname -s` to select the matching flake target. It also
+accepts other `nixos-rebuild` actions:
+
+```sh
+./scripts/nixos-switch.sh dry-build
+./scripts/nixos-switch.sh build
+./scripts/nixos-switch.sh test
+./scripts/nixos-switch.sh boot
 ```
 
 From another machine with SSH access:
