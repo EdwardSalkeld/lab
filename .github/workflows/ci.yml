@@ -36,3 +36,12 @@ jobs:
             experimental-features = nix-command flakes
       - name: flake check
         run: nix flake check --no-update-lock-file
+      - name: build partridge
+        run: nix build .#nixosConfigurations.partridge.config.system.build.toplevel -o /tmp/pr-system
+      - name: build main partridge
+        run: |
+          git fetch origin main
+          git worktree add /tmp/main-worktree origin/main
+          nix build /tmp/main-worktree#nixosConfigurations.partridge.config.system.build.toplevel -o /tmp/main-system
+      - name: partridge closure diff
+        run: nix store diff-closures /tmp/main-system /tmp/pr-system
