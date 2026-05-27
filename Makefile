@@ -1,5 +1,4 @@
 TF_DIR := terraform
-K8S_DIR := gitops
 
 .PHONY: help
 help:
@@ -7,9 +6,8 @@ help:
 	@echo "  fmt             - terraform fmt -check -recursive"
 	@echo "  tf-validate     - terraform init (no backend) + validate"
 	@echo "  tfsec           - tfsec scan (requires tfsec)"
-	@echo "  kubeconform     - kubeconform validation (requires kubeconform)"
-	@echo "  kube-linter     - kube-linter lint (requires kube-linter)"
-	@echo "  check           - run fmt, tf-validate, tfsec, kubeconform, kube-linter"
+	@echo "  nix-check       - nix flake check"
+	@echo "  check           - run fmt, tf-validate, tfsec, nix-check"
 
 .PHONY: fmt
 fmt:
@@ -24,13 +22,9 @@ tf-validate:
 tfsec:
 	tfsec $(TF_DIR)
 
-.PHONY: kubeconform
-kubeconform:
-	kubeconform -summary -ignore-missing-schemas $(K8S_DIR)/*.yaml
-
-.PHONY: kube-linter
-kube-linter:
-	kube-linter lint $(K8S_DIR)
+.PHONY: nix-check
+nix-check:
+	nix flake check --no-update-lock-file
 
 .PHONY: check
-check: fmt tf-validate tfsec kubeconform kube-linter
+check: fmt tf-validate tfsec nix-check

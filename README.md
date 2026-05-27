@@ -1,7 +1,6 @@
 ## Home v2: Lab
 
-Home infrastructure learning lab, currently being rebuilt from a previous
-Proxmox + Talos Kubernetes setup into a Proxmox + NixOS setup.
+Home infrastructure learning lab for Proxmox + NixOS.
 
 Current first milestone:
 
@@ -13,3 +12,4 @@ Start here:
 
 - `AGENTS.md` for current operational notes.
 - `terraform/README.md` for Terraform commands.
+- `nixos/README.md` for NixOS host configuration and deploy commands.
