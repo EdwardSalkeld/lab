@@ -72,6 +72,33 @@ From another machine with SSH access:
 nixos-rebuild switch --flake .#partridge --target-host edward@partridge --use-remote-sudo
 ```
 
+## Prometheus Exporters
+
+All Proxmox VM hosts include node exporter on port `9100` from
+`nixos/modules/proxmox-vm-base.nix`.
+
+`partridge` also exposes PostgreSQL metrics on port `9187`. The exporter runs
+locally as the `postgres` Unix user, so it does not need a database password.
+
+Example Prometheus scrape config:
+
+```yaml
+- job_name: partridge-node
+  static_configs:
+    - targets: ["partridge:9100"]
+
+- job_name: partridge-postgres
+  static_configs:
+    - targets: ["partridge:9187"]
+```
+
+After switching the host, verify both endpoints:
+
+```sh
+curl http://partridge:9100/metrics
+curl http://partridge:9187/metrics
+```
+
 ## Building An Image Later
 
 NixOS can build images from normal system configurations with:

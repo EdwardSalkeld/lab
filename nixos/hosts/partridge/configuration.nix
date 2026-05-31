@@ -20,6 +20,12 @@
 
   services.postgresql.enable = true;
 
+  services.prometheus.exporters.postgres = {
+    enable = true;
+    openFirewall = true;
+    runAsLocalSuperUser = true;
+  };
+
   users.users.edward.packages = with pkgs; [
     tree
   ];
