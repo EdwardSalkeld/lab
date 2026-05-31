@@ -146,6 +146,36 @@ DNS also needs to point `partridge.int.alcachofa.faith` and
 `partridge.ts.alcachofa.faith` at addresses reachable by the clients that will
 use them.
 
+## Forgejo on `partridge`
+
+Forgejo is served at:
+
+```text
+https://code.alcachofa.faith
+```
+
+It stores app state and repositories under `/srv/code/forgejo` on the dedicated
+`partridge-code` disk. Its database is Postgres, using the local PostgreSQL
+service backed by `/var/lib/postgresql`. SSH clone support is disabled for now;
+use HTTPS remotes.
+
+Registration is disabled. After the first switch, create an admin user from the
+host:
+
+```sh
+sudo -u forgejo forgejo admin user create \
+  --config /srv/code/forgejo/custom/conf/app.ini \
+  --work-path /srv/code/forgejo \
+  --username edward \
+  --email admin@alcachofa.faith \
+  --password 'replace-me' \
+  --admin \
+  --must-change-password=false
+```
+
+DNS needs `code.alcachofa.faith` to resolve to the host, currently by CNAME to
+`partridge.ts.alcachofa.faith`.
+
 ## Building An Image Later
 
 NixOS can build images from normal system configurations with:

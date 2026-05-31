@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./forgejo.nix
     ./hardware-configuration.nix
     ./web.nix
   ];
