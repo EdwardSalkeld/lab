@@ -99,6 +99,21 @@ curl http://partridge:9100/metrics
 curl http://partridge:9187/metrics
 ```
 
+## Tailscale
+
+`partridge` runs Tailscale for remote access over the tailnet. After the first
+switch that enables it, authenticate the machine once:
+
+```sh
+sudo tailscale up
+```
+
+Once authenticated, connect over the tailnet with normal SSH:
+
+```sh
+ssh edward@partridge
+```
+
 ## Building An Image Later
 
 NixOS can build images from normal system configurations with:

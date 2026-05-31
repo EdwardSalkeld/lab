@@ -7,6 +7,12 @@
 
   networking.hostName = "partridge";
   networking.networkmanager.enable = true;
+  networking.firewall.trustedInterfaces = [ "tailscale0" ];
+
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+  };
 
   fileSystems."/srv/code" = {
     device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1";
