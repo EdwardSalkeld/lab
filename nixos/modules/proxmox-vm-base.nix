@@ -16,6 +16,12 @@
   services.qemuGuest.enable = true;
   services.fstrim.enable = true;
 
+  services.prometheus.exporters.node = {
+    enable = true;
+    enabledCollectors = [ "systemd" ];
+    openFirewall = true;
+  };
+
   nix.gc = {
     automatic = true;
     dates = "weekly";
@@ -38,6 +44,7 @@
     git
     htop
     lazygit
+    nettools
     ripgrep
     vim
     wget
