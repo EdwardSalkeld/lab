@@ -3,6 +3,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./web.nix
   ];
 
   networking.hostName = "partridge";
