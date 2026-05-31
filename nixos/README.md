@@ -176,6 +176,28 @@ sudo -u forgejo forgejo admin user create \
 DNS needs `code.alcachofa.faith` to resolve to the host, currently by CNAME to
 `partridge.ts.alcachofa.faith`.
 
+## Vaultwarden on `partridge`
+
+Vaultwarden is served at:
+
+```text
+https://vault.alcachofa.faith
+```
+
+It stores data under `/var/lib/vaultwarden` on the dedicated
+`partridge-vaultwarden` disk. This first-pass configuration allows signups so
+you can create the initial account. After that account exists, flip
+`SIGNUPS_ALLOWED` to `false` in `nixos/hosts/partridge/vaultwarden.nix`.
+
+After Terraform adds the disk, format it once before switching the NixOS config:
+
+```sh
+sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi3
+```
+
+DNS needs `vault.alcachofa.faith` to resolve to the host, currently by CNAME to
+`partridge.ts.alcachofa.faith`.
+
 ## Building An Image Later
 
 NixOS can build images from normal system configurations with:

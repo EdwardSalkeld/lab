@@ -69,6 +69,15 @@ resource "proxmox_virtual_environment_vm" "partridge" {
     serial       = "partridge-postgres"
   }
 
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi3"
+    size         = var.partridge_vaultwarden_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "partridge-vaultwarden"
+  }
+
   cdrom {
     file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
     interface = "ide2"

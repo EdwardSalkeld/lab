@@ -63,3 +63,9 @@ variable "partridge_postgres_disk_size" {
   type        = number
   default     = 5
 }
+
+variable "partridge_vaultwarden_disk_size" {
+  description = "Vaultwarden disk size for partridge in GiB"
+  type        = number
+  default     = 2
+}

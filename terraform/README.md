@@ -42,6 +42,7 @@ terraform -chdir=terraform output
 - Root disk: 12 GiB on `local-lvm`
 - Code disk: 5 GiB on `local-lvm`
 - Postgres disk: 5 GiB on `local-lvm`
+- Vaultwarden disk: 2 GiB on `local-lvm`
 - Network bridge: `vmbr0`
 
 `partridge` is managed by the root Nix flake as `.#partridge`.
