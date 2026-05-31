@@ -114,6 +114,38 @@ Once authenticated, connect over the tailnet with normal SSH:
 ssh edward@partridge
 ```
 
+## HTTPS on `partridge`
+
+`partridge` serves a small Nginx landing page at:
+
+```text
+https://partridge.int.alcachofa.faith
+https://partridge.ts.alcachofa.faith
+```
+
+TLS certificates are issued by Let's Encrypt through the NixOS ACME module
+using Cloudflare DNS-01 validation.
+
+Before switching this config for the first time, create the Cloudflare token
+environment file on `partridge`:
+
+```sh
+sudo install -d -m 0700 /var/lib/secrets
+sudo install -m 0600 /dev/null /var/lib/secrets/acme-cloudflare.env
+sudoedit /var/lib/secrets/acme-cloudflare.env
+```
+
+The file should contain:
+
+```sh
+CF_DNS_API_TOKEN=your_cloudflare_token_here
+```
+
+The token needs Cloudflare `Zone:Read` and `DNS:Edit` permissions for the zone.
+DNS also needs to point `partridge.int.alcachofa.faith` and
+`partridge.ts.alcachofa.faith` at addresses reachable by the clients that will
+use them.
+
 ## Building An Image Later
 
 NixOS can build images from normal system configurations with:
