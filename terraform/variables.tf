@@ -40,22 +40,10 @@ variable "proxmox_network_bridge" {
   default     = "vmbr0"
 }
 
-variable "nixos_vm_name" {
-  description = "Name of the first NixOS VM"
-  type        = string
-  default     = "nixos-01"
-}
-
 variable "partridge_vm_name" {
   description = "Name of the first repo-managed NixOS VM"
   type        = string
   default     = "partridge"
-}
-
-variable "nixos_vm_disk_size" {
-  description = "Root disk size for the first NixOS learning VM in GiB"
-  type        = number
-  default     = 32
 }
 
 variable "partridge_root_disk_size" {
@@ -66,6 +54,12 @@ variable "partridge_root_disk_size" {
 
 variable "partridge_code_disk_size" {
   description = "Code disk size for partridge in GiB"
+  type        = number
+  default     = 5
+}
+
+variable "partridge_postgres_disk_size" {
+  description = "Postgres disk size for partridge in GiB"
   type        = number
   default     = 5
 }

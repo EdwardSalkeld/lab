@@ -10,7 +10,6 @@ on Proxmox-managed NixOS VMs.
 - Terraform Cloud workspace: `alcachofa/house`
 - Active Terraform root: `terraform/`
 - Proxmox node: `sol`
-- Playground VM: `nixos-01`
 - Repo-managed VM: `partridge`
 - Installer ISO: `nixos-25.11-minimal-x86_64-linux.iso`
 
