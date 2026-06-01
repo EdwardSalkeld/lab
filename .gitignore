@@ -5,3 +5,4 @@ CFTOK
 .kubeconfig
 CFTOK
 /.talosconfig
+.bitwarden-mirror-state/
