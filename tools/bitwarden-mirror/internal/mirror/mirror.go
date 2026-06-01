@@ -165,11 +165,11 @@ func (m Mirror) Run(ctx context.Context) error {
 	}
 
 	destEnv := bwEnv(cfg.destinationAppdataDir(), m.Env.Destination, destSession)
-	items, err := m.listObjects(ctx, "items", destEnv)
+	items, err := m.listObjects(ctx, "items", destEnv, false)
 	if err != nil {
 		return err
 	}
-	folders, err := m.listObjects(ctx, "folders", destEnv)
+	folders, err := m.listObjects(ctx, "folders", destEnv, true)
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ type bwObject struct {
 	ID string `json:"id"`
 }
 
-func (m Mirror) listObjects(ctx context.Context, kind string, env map[string]string) ([]bwObject, error) {
+func (m Mirror) listObjects(ctx context.Context, kind string, env map[string]string, skipEmptyIDs bool) ([]bwObject, error) {
 	out, err := m.Runner.Run(ctx, Command{
 		Args: []string{"list", kind},
 		Env:  env,
@@ -280,12 +280,17 @@ func (m Mirror) listObjects(ctx context.Context, kind string, env map[string]str
 	if err := json.Unmarshal(out, &objects); err != nil {
 		return nil, fmt.Errorf("parse destination %s JSON before deletion: %w", kind, err)
 	}
+	filtered := objects[:0]
 	for i, object := range objects {
 		if object.ID == "" {
+			if skipEmptyIDs {
+				continue
+			}
 			return nil, fmt.Errorf("parse destination %s JSON before deletion: object %d has empty id", kind, i)
 		}
+		filtered = append(filtered, object)
 	}
-	return objects, nil
+	return filtered, nil
 }
 
 func (m Mirror) run(ctx context.Context, phase string, cmd Command) error {

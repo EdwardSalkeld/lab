@@ -180,6 +180,26 @@ func TestMalformedListJSONFailsBeforeDeletion(t *testing.T) {
 	}
 }
 
+func TestFolderListSkipsEmptyIDs(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[]`),
+		"list folders":                           []byte(`[{"id":null},{"id":"folder-1"}]`),
+	}
+
+	err := testMirror(runner, nil, false).Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if contains(runner.commandLines(), "delete folder  --permanent") {
+		t.Fatalf("issued delete for empty folder id: %v", runner.commandLines())
+	}
+	if !contains(runner.commandLines(), "delete folder folder-1 --permanent") {
+		t.Fatalf("did not delete valid folder id: %v", runner.commandLines())
+	}
+}
+
 func TestListIgnoresRunnerStderrOnSuccess(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
