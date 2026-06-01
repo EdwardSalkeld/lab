@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-secret_file="${1:-nixos/hosts/partridge/secrets/bitwarden-mirror.yaml}"
+repo_root="$(git rev-parse --show-toplevel)"
+secret_file="${1:-$repo_root/nixos/hosts/partridge/secrets/bitwarden-mirror.yaml}"
 work_dir="$(mktemp -d)"
 state_dir="$(mktemp -d)"
 
@@ -25,7 +26,8 @@ DEST_BW_CLIENTSECRET="$(jq -r '.dest_bw_clientsecret' <<<"$json")"
 export DEST_BW_MASTER_PASSWORD
 DEST_BW_MASTER_PASSWORD="$(jq -r '.dest_bw_master_password' <<<"$json")"
 
-go run ./tools/bitwarden-mirror/cmd/bitwarden-mirror \
+cd "$repo_root/tools/bitwarden-mirror"
+go run ./cmd/bitwarden-mirror \
   --dry-run \
   --work-dir "$work_dir" \
   --state-dir "$state_dir"
