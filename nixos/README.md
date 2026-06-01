@@ -184,9 +184,9 @@ Vaultwarden is served at:
 https://vault.alcachofa.faith
 ```
 
-It stores data under `/var/lib/vaultwarden` on the dedicated
-`partridge-vaultwarden` disk. This first-pass configuration allows signups so
-you can create the initial account. After that account exists, flip
+It stores data under `/var/lib/vaultwarden` on the dedicated `vaultwarden`
+disk. This first-pass configuration allows signups so you can create the
+initial account. After that account exists, flip
 `SIGNUPS_ALLOWED` to `false` in `nixos/hosts/partridge/vaultwarden.nix`.
 
 After Terraform adds the disk, format it once before switching the NixOS config:

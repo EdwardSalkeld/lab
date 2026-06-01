@@ -75,7 +75,7 @@ resource "proxmox_virtual_environment_vm" "partridge" {
     size         = var.partridge_vaultwarden_disk_size
     discard      = "on"
     iothread     = true
-    serial       = "partridge-vaultwarden"
+    serial       = "vaultwarden"
   }
 
   cdrom {
