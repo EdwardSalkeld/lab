@@ -1,0 +1,10 @@
+keys:
+  - &edward_mac "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzhdCoWE/CiY3laW9R/I5UEhQs7krz8ur8OOg7su5MJ"
+  - &partridge "age1replace-with-partridge-age-recipient"
+
+creation_rules:
+  - path_regex: nixos/hosts/partridge/secrets/.*\.yaml$
+    key_groups:
+      - age:
+          - *edward_mac
+          - *partridge
