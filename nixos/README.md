@@ -198,6 +198,22 @@ sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi3
 DNS needs `vault.alcachofa.faith` to resolve to the host, currently by CNAME to
 `partridge.ts.alcachofa.faith`.
 
+## Bitwarden Mirror
+
+`partridge` has a nightly `bitwarden-vaultwarden-mirror.timer` that refreshes
+the Vaultwarden personal vault from Bitwarden EU using the repo-packaged
+`bitwarden-mirror` Go tool and the upstream `bw` CLI.
+
+The refresh is intentionally destructive: it lists destination personal-vault
+items and folders, permanently deletes items first and folders second, then
+imports a fresh Bitwarden JSON export. The temporary plaintext export lives in
+`/run/bitwarden-mirror` and is removed on success and failure.
+
+Secrets are expected in `nixos/hosts/partridge/secrets/bitwarden-mirror.yaml`
+as a sops-encrypted document with the keys shown in the adjacent `.example`
+file. Replace the placeholder Partridge recipient in `.sops.yaml` with the
+host age recipient before encrypting real credentials.
+
 ## Building An Image Later
 
 NixOS can build images from normal system configurations with:

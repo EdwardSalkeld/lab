@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./bitwarden-mirror.nix
     ./forgejo.nix
     ./hardware-configuration.nix
     ./vaultwarden.nix
