@@ -230,6 +230,14 @@ func (m Mirror) loginUnlockSyncExport(ctx context.Context, label, server, appdat
 
 func (m Mirror) loginUnlock(ctx context.Context, label, server, appdataDir string, creds Credentials) (string, error) {
 	env := bwEnv(appdataDir, creds, "")
+	if _, err := m.Runner.Run(ctx, Command{
+		Args: []string{"logout"},
+		Env:  env,
+	}); err != nil {
+		if m.Logger != nil {
+			m.Logger.Printf("%s logout before login skipped: %v", label, err)
+		}
+	}
 	if err := m.run(ctx, label+" configure server", Command{
 		Args: []string{"config", "server", server},
 		Env:  env,

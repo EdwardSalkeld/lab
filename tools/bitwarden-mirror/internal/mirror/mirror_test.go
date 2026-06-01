@@ -25,11 +25,13 @@ func TestRunCommandOrderDeletesItemsBeforeFoldersAndImports(t *testing.T) {
 	}
 
 	want := []string{
+		"logout",
 		"config server https://vault.bitwarden.eu",
 		"login --apikey",
 		"unlock --raw --passwordenv BW_PASSWORD",
 		"sync",
 		"export --format json --output /work/bitwarden-export.json",
+		"logout",
 		"config server https://vault.alcachofa.faith",
 		"login --apikey",
 		"unlock --raw --passwordenv BW_PASSWORD",
@@ -153,7 +155,7 @@ func TestSeparateSourceAndDestinationAppdataDirs(t *testing.T) {
 	if got := runner.calls[0].Env["BITWARDENCLI_APPDATA_DIR"]; got != "/state/source" {
 		t.Fatalf("source appdata = %q", got)
 	}
-	destinationConfig := runner.calls[5]
+	destinationConfig := runner.calls[6]
 	if got := destinationConfig.Env["BITWARDENCLI_APPDATA_DIR"]; got != "/state/destination" {
 		t.Fatalf("destination appdata = %q", got)
 	}
