@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultSourceServer      = "https://vault.bitwarden.com"
+	defaultSourceServer      = "https://vault.bitwarden.eu"
 	defaultDestinationServer = "https://vault.alcachofa.faith"
 	defaultWorkDir           = "/run/bitwarden-mirror"
 	defaultStateDir          = "/var/lib/bitwarden-mirror"

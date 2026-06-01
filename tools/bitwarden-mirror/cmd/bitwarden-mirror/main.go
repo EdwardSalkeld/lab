@@ -11,7 +11,7 @@ import (
 
 func main() {
 	var cfg mirror.Config
-	flag.StringVar(&cfg.SourceServer, "source-server", "https://vault.bitwarden.com", "source Bitwarden server URL")
+	flag.StringVar(&cfg.SourceServer, "source-server", "https://vault.bitwarden.eu", "source Bitwarden server URL")
 	flag.StringVar(&cfg.DestinationServer, "destination-server", "https://vault.alcachofa.faith", "destination Vaultwarden server URL")
 	flag.StringVar(&cfg.WorkDir, "work-dir", "/run/bitwarden-mirror", "directory for temporary plaintext export")
 	flag.StringVar(&cfg.StateDir, "state-dir", "/var/lib/bitwarden-mirror", "directory for isolated bw CLI appdata")

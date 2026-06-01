@@ -201,7 +201,7 @@ DNS needs `vault.alcachofa.faith` to resolve to the host, currently by CNAME to
 ## Bitwarden Mirror
 
 `partridge` has a nightly `bitwarden-vaultwarden-mirror.timer` that refreshes
-the Vaultwarden personal vault from Bitwarden cloud using the repo-packaged
+the Vaultwarden personal vault from Bitwarden EU using the repo-packaged
 `bitwarden-mirror` Go tool and the upstream `bw` CLI.
 
 The refresh is intentionally destructive: it lists destination personal-vault

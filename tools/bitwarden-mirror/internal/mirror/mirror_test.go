@@ -25,7 +25,7 @@ func TestRunCommandOrderDeletesItemsBeforeFoldersAndImports(t *testing.T) {
 	}
 
 	want := []string{
-		"config server https://vault.bitwarden.com",
+		"config server https://vault.bitwarden.eu",
 		"login --apikey",
 		"unlock --raw --passwordenv BW_PASSWORD",
 		"sync",
