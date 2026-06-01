@@ -178,6 +178,20 @@ func TestMalformedListJSONFailsBeforeDeletion(t *testing.T) {
 	}
 }
 
+func TestListIgnoresRunnerStderrOnSuccess(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[{"id":"item-1"}]`),
+		"list folders":                           []byte(`[]`),
+	}
+
+	err := testMirror(runner, nil, true).Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+}
+
 func testMirror(runner *fakeRunner, files *FileOps, dryRun bool) Mirror {
 	m := Mirror{
 		Config: Config{

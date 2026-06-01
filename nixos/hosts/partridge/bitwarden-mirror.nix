@@ -79,7 +79,7 @@ in
       User = user;
       Group = group;
       EnvironmentFile = config.sops.templates."bitwarden-mirror.env".path;
-      ExecStart = "${bitwardenMirrorPackage}/bin/bitwarden-mirror";
+      ExecStart = "${bitwardenMirrorPackage}/bin/bitwarden-mirror --dry-run";
       RuntimeDirectory = "bitwarden-mirror";
       RuntimeDirectoryMode = "0700";
       StateDirectory = "bitwarden-mirror";
