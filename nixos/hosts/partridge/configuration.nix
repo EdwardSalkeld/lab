@@ -4,6 +4,7 @@
   imports = [
     ./forgejo.nix
     ./hardware-configuration.nix
+    ./vaultwarden.nix
     ./web.nix
   ];
 
