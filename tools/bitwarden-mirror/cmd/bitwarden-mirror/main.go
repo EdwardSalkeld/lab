@@ -16,6 +16,7 @@ func main() {
 	flag.StringVar(&cfg.WorkDir, "work-dir", "/run/bitwarden-mirror", "directory for temporary plaintext export")
 	flag.StringVar(&cfg.StateDir, "state-dir", "/var/lib/bitwarden-mirror", "directory for isolated bw CLI appdata")
 	flag.BoolVar(&cfg.DryRun, "dry-run", false, "log planned destructive changes without deleting or importing")
+	flag.IntVar(&cfg.DeleteConcurrency, "delete-concurrency", 8, "number of concurrent destination delete commands")
 	flag.Parse()
 
 	env, err := mirror.EnvironmentFromEnv()

@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 )
 
 const (
@@ -24,6 +26,7 @@ type Config struct {
 	WorkDir           string
 	StateDir          string
 	DryRun            bool
+	DeleteConcurrency int
 }
 
 func (c Config) withDefaults() Config {
@@ -38,6 +41,9 @@ func (c Config) withDefaults() Config {
 	}
 	if c.StateDir == "" {
 		c.StateDir = defaultStateDir
+	}
+	if c.DeleteConcurrency <= 0 {
+		c.DeleteConcurrency = 8
 	}
 	return c
 }
@@ -165,11 +171,11 @@ func (m Mirror) Run(ctx context.Context) error {
 	}
 
 	destEnv := bwEnv(cfg.destinationAppdataDir(), m.Env.Destination, destSession)
-	items, err := m.listObjects(ctx, "items", destEnv)
+	items, err := m.listObjects(ctx, "items", destEnv, false)
 	if err != nil {
 		return err
 	}
-	folders, err := m.listObjects(ctx, "folders", destEnv)
+	folders, err := m.listObjects(ctx, "folders", destEnv, true)
 	if err != nil {
 		return err
 	}
@@ -180,34 +186,94 @@ func (m Mirror) Run(ctx context.Context) error {
 		return nil
 	}
 
-	for _, item := range items {
-		if err := m.run(ctx, "delete destination item", Command{
-			Args: []string{"delete", "item", item.ID, "--permanent"},
-			Env:  destEnv,
-		}); err != nil {
-			return err
-		}
+	logger.Printf("permanently deleting %d destination items", len(items))
+	if err := m.deleteObjects(ctx, "item", items, destEnv, logger, cfg.DeleteConcurrency, 25); err != nil {
+		return err
 	}
-	for _, folder := range folders {
-		if err := m.run(ctx, "delete destination folder", Command{
-			Args: []string{"delete", "folder", folder.ID, "--permanent"},
-			Env:  destEnv,
-		}); err != nil {
-			return err
-		}
+	logger.Printf("permanently deleting %d destination folders", len(folders))
+	if err := m.deleteObjects(ctx, "folder", folders, destEnv, logger, cfg.DeleteConcurrency, 10); err != nil {
+		return err
 	}
 
+	logger.Printf("importing %s into destination", exportPath)
 	if err := m.run(ctx, "import destination vault", Command{
 		Args: []string{"import", "bitwardenjson", exportPath},
 		Env:  destEnv,
 	}); err != nil {
 		return err
 	}
+	logger.Printf("import complete")
 
 	if err := cleanup(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObject, env map[string]string, logger *log.Logger, concurrency int, logEvery int64) error {
+	if len(objects) == 0 {
+		return nil
+	}
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	if concurrency > len(objects) {
+		concurrency = len(objects)
+	}
+	if logEvery < 1 {
+		logEvery = 1
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	jobs := make(chan bwObject)
+	errs := make(chan error, 1)
+	var done int64
+	var wg sync.WaitGroup
+
+	for range concurrency {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for object := range jobs {
+				if err := m.run(ctx, "delete destination "+kind, Command{
+					Args: []string{"delete", kind, object.ID, "--permanent"},
+					Env:  env,
+				}); err != nil {
+					select {
+					case errs <- err:
+						cancel()
+					default:
+					}
+					return
+				}
+
+				current := atomic.AddInt64(&done, 1)
+				if current == 1 || current%logEvery == 0 || current == int64(len(objects)) {
+					logger.Printf("deleted destination %ss %d/%d", kind, current, len(objects))
+				}
+			}
+		}()
+	}
+
+send:
+	for _, object := range objects {
+		select {
+		case <-ctx.Done():
+			break send
+		case jobs <- object:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+
+	select {
+	case err := <-errs:
+		return err
+	default:
+		return nil
+	}
 }
 
 func (m Mirror) loginUnlockSyncExport(ctx context.Context, label, server, appdataDir string, creds Credentials, exportPath string) (string, error) {
@@ -230,18 +296,25 @@ func (m Mirror) loginUnlockSyncExport(ctx context.Context, label, server, appdat
 
 func (m Mirror) loginUnlock(ctx context.Context, label, server, appdataDir string, creds Credentials) (string, error) {
 	env := bwEnv(appdataDir, creds, "")
-	if err := m.run(ctx, label+" configure server", Command{
-		Args: []string{"config", "server", server},
-		Env:  env,
-	}); err != nil {
-		return "", err
+
+	status, err := m.status(ctx, label, env)
+	if err != nil || status.Status == "" || status.Status == "unauthenticated" {
+		if err := m.run(ctx, label+" configure server", Command{
+			Args: []string{"config", "server", server},
+			Env:  env,
+		}); err != nil {
+			return "", err
+		}
+		if err := m.run(ctx, label+" login", Command{
+			Args: []string{"login", "--apikey"},
+			Env:  env,
+		}); err != nil {
+			return "", err
+		}
+	} else if status.ServerURL != "" && status.ServerURL != server {
+		return "", fmt.Errorf("%s appdata is logged into %s, expected %s; remove %s or logout manually", label, status.ServerURL, server, appdataDir)
 	}
-	if err := m.run(ctx, label+" login", Command{
-		Args: []string{"login", "--apikey"},
-		Env:  env,
-	}); err != nil {
-		return "", err
-	}
+
 	out, err := m.Runner.Run(ctx, Command{
 		Args: []string{"unlock", "--raw", "--passwordenv", "BW_PASSWORD"},
 		Env:  env,
@@ -256,11 +329,32 @@ func (m Mirror) loginUnlock(ctx context.Context, label, server, appdataDir strin
 	return session, nil
 }
 
+type bwStatus struct {
+	Status    string `json:"status"`
+	ServerURL string `json:"serverUrl"`
+}
+
+func (m Mirror) status(ctx context.Context, label string, env map[string]string) (bwStatus, error) {
+	out, err := m.Runner.Run(ctx, Command{
+		Args: []string{"status", "--raw"},
+		Env:  env,
+	})
+	if err != nil {
+		return bwStatus{}, fmt.Errorf("%s status: bw %v: %w", label, []string{"status", "--raw"}, err)
+	}
+
+	var status bwStatus
+	if err := json.Unmarshal(out, &status); err != nil {
+		return bwStatus{}, fmt.Errorf("%s status: parse bw status JSON: %w", label, err)
+	}
+	return status, nil
+}
+
 type bwObject struct {
 	ID string `json:"id"`
 }
 
-func (m Mirror) listObjects(ctx context.Context, kind string, env map[string]string) ([]bwObject, error) {
+func (m Mirror) listObjects(ctx context.Context, kind string, env map[string]string, skipEmptyIDs bool) ([]bwObject, error) {
 	out, err := m.Runner.Run(ctx, Command{
 		Args: []string{"list", kind},
 		Env:  env,
@@ -272,12 +366,17 @@ func (m Mirror) listObjects(ctx context.Context, kind string, env map[string]str
 	if err := json.Unmarshal(out, &objects); err != nil {
 		return nil, fmt.Errorf("parse destination %s JSON before deletion: %w", kind, err)
 	}
+	filtered := objects[:0]
 	for i, object := range objects {
 		if object.ID == "" {
+			if skipEmptyIDs {
+				continue
+			}
 			return nil, fmt.Errorf("parse destination %s JSON before deletion: object %d has empty id", kind, i)
 		}
+		filtered = append(filtered, object)
 	}
-	return objects, nil
+	return filtered, nil
 }
 
 func (m Mirror) run(ctx context.Context, phase string, cmd Command) error {

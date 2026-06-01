@@ -14,6 +14,7 @@ import (
 func TestRunCommandOrderDeletesItemsBeforeFoldersAndImports(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 		"list items":                             []byte(`[{"id":"item-1"},{"id":"item-2"}]`),
 		"list folders":                           []byte(`[{"id":"folder-1"}]`),
@@ -25,11 +26,13 @@ func TestRunCommandOrderDeletesItemsBeforeFoldersAndImports(t *testing.T) {
 	}
 
 	want := []string{
+		"status --raw",
 		"config server https://vault.bitwarden.eu",
 		"login --apikey",
 		"unlock --raw --passwordenv BW_PASSWORD",
 		"sync",
 		"export --format json --output /work/bitwarden-export.json",
+		"status --raw",
 		"config server https://vault.alcachofa.faith",
 		"login --apikey",
 		"unlock --raw --passwordenv BW_PASSWORD",
@@ -48,6 +51,7 @@ func TestRunCommandOrderDeletesItemsBeforeFoldersAndImports(t *testing.T) {
 func TestDryRunDoesNotDeleteOrImport(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 		"list items":                             []byte(`[{"id":"item-1"}]`),
 		"list folders":                           []byte(`[{"id":"folder-1"}]`),
@@ -68,6 +72,7 @@ func TestDryRunDoesNotDeleteOrImport(t *testing.T) {
 func TestEmptyDestinationStillImports(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 		"list items":                             []byte(`[]`),
 		"list folders":                           []byte(`[]`),
@@ -86,6 +91,7 @@ func TestEmptyDestinationStillImports(t *testing.T) {
 func TestCommandFailureStopsRunWithContext(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 	}
 	runner.failures = map[string]error{
@@ -120,6 +126,7 @@ func TestCleanupAttemptedOnSuccessAndFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := newFakeRunner()
 			runner.outputs = map[string][]byte{
+				"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 				"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 				"list items":                             []byte(`[{"id":"item-1"}]`),
 				"list folders":                           []byte(`[]`),
@@ -140,6 +147,7 @@ func TestCleanupAttemptedOnSuccessAndFailure(t *testing.T) {
 func TestSeparateSourceAndDestinationAppdataDirs(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 		"list items":                             []byte(`[]`),
 		"list folders":                           []byte(`[]`),
@@ -153,7 +161,7 @@ func TestSeparateSourceAndDestinationAppdataDirs(t *testing.T) {
 	if got := runner.calls[0].Env["BITWARDENCLI_APPDATA_DIR"]; got != "/state/source" {
 		t.Fatalf("source appdata = %q", got)
 	}
-	destinationConfig := runner.calls[5]
+	destinationConfig := runner.calls[7]
 	if got := destinationConfig.Env["BITWARDENCLI_APPDATA_DIR"]; got != "/state/destination" {
 		t.Fatalf("destination appdata = %q", got)
 	}
@@ -162,6 +170,7 @@ func TestSeparateSourceAndDestinationAppdataDirs(t *testing.T) {
 func TestMalformedListJSONFailsBeforeDeletion(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 		"list items":                             []byte(`not-json`),
 	}
@@ -178,9 +187,31 @@ func TestMalformedListJSONFailsBeforeDeletion(t *testing.T) {
 	}
 }
 
+func TestFolderListSkipsEmptyIDs(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[]`),
+		"list folders":                           []byte(`[{"id":null},{"id":"folder-1"}]`),
+	}
+
+	err := testMirror(runner, nil, false).Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if contains(runner.commandLines(), "delete folder  --permanent") {
+		t.Fatalf("issued delete for empty folder id: %v", runner.commandLines())
+	}
+	if !contains(runner.commandLines(), "delete folder folder-1 --permanent") {
+		t.Fatalf("did not delete valid folder id: %v", runner.commandLines())
+	}
+}
+
 func TestListIgnoresRunnerStderrOnSuccess(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
 		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
 		"list items":                             []byte(`[{"id":"item-1"}]`),
 		"list folders":                           []byte(`[]`),
@@ -192,12 +223,33 @@ func TestListIgnoresRunnerStderrOnSuccess(t *testing.T) {
 	}
 }
 
+func TestExistingLoginSkipsConfigureAndLogin(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"locked"}`),
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[]`),
+		"list folders":                           []byte(`[]`),
+	}
+
+	err := testMirror(runner, nil, true).Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	lines := runner.commandLines()
+	if containsPrefix(lines, "config server ") || contains(lines, "login --apikey") {
+		t.Fatalf("expected existing login to skip config/login, got %v", lines)
+	}
+}
+
 func testMirror(runner *fakeRunner, files *FileOps, dryRun bool) Mirror {
 	m := Mirror{
 		Config: Config{
-			WorkDir:  "/work",
-			StateDir: "/state",
-			DryRun:   dryRun,
+			WorkDir:           "/work",
+			StateDir:          "/state",
+			DryRun:            dryRun,
+			DeleteConcurrency: 1,
 		},
 		Env: Environment{
 			Source: Credentials{
