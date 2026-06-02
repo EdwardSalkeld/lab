@@ -1,7 +1,7 @@
 { ... }:
 
 let
-  prometheusDomain = "prometheus.alcachofa.faith";
+  prometheusDomain = "prometheus.int.alcachofa.faith";
   acmeHost = "partridge.int.alcachofa.faith";
   prometheusPort = 9090;
 in
