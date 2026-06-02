@@ -1,16 +1,22 @@
 { ... }:
 
+let
+  prometheusDomain = "prometheus.int.alcachofa.faith";
+  acmeHost = "partridge.int.alcachofa.faith";
+  prometheusPort = 9090;
+in
 {
   fileSystems."/var/lib/prometheus" = {
     device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi4";
     fsType = "ext4";
   };
 
-  networking.firewall.allowedTCPPorts = [ 9090 ];
+  security.acme.certs.${acmeHost}.extraDomainNames = [ prometheusDomain ];
 
   services.prometheus = {
     enable = true;
-    port = 9090;
+    listenAddress = "127.0.0.1";
+    port = prometheusPort;
     stateDir = "prometheus";
 
     globalConfig = {
@@ -84,5 +90,11 @@
         ];
       }
     ];
+  };
+
+  services.nginx.virtualHosts.${prometheusDomain} = {
+    forceSSL = true;
+    useACMEHost = acmeHost;
+    locations."/".proxyPass = "http://127.0.0.1:${toString prometheusPort}";
   };
 }
