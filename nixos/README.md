@@ -115,6 +115,24 @@ curl http://partridge:9187/metrics
 curl http://partridge:9090/-/ready
 ```
 
+## Grafana on `partridge`
+
+Grafana is served at:
+
+```text
+https://grafana.a.f
+```
+
+Grafana uses the local PostgreSQL service for storage. Its Prometheus
+datasource is provisioned with the same UID as Blink's old Grafana datasource,
+so Prometheus-backed dashboards can be imported without rewriting datasource
+references. Dashboards themselves are managed through Grafana's UI rather than
+Nix provisioning.
+
+The helper script `scripts/export-grafana-dashboards.sh` exports dashboard,
+folder, and datasource metadata from the old Grafana into the ignored
+`grafana-dashboard-exports/` directory.
+
 ## Tailscale
 
 `partridge` runs Tailscale for remote access over the tailnet. After the first
