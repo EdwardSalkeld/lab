@@ -80,6 +80,21 @@ All Proxmox VM hosts include node exporter on port `9100` from
 `partridge` also exposes PostgreSQL metrics on port `9187`. The exporter runs
 locally as the `postgres` Unix user, so it does not need a database password.
 
+`partridge` runs Prometheus on port `9090`, backed by a dedicated
+`prometheus` disk mounted at `/var/lib/prometheus`. The first Prometheus copy
+was sized from Blink's existing Docker volume, which used about 5.1 GiB, so the
+Partridge disk starts at 10 GiB.
+
+After Terraform adds the disk, format it once before switching the NixOS config:
+
+```sh
+sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi4
+```
+
+The scrape config mirrors Blink's Prometheus targets where those targets are
+addressable from Partridge. Blink's Docker-local `cadvisor:8080` target is not
+included because it is only resolvable inside Blink's Docker network.
+
 Example Prometheus scrape config:
 
 ```yaml
@@ -97,6 +112,7 @@ After switching the host, verify both endpoints:
 ```sh
 curl http://partridge:9100/metrics
 curl http://partridge:9187/metrics
+curl http://partridge:9090/-/ready
 ```
 
 ## Tailscale
@@ -232,6 +248,6 @@ nix build .#image-name
 `proxmox-qcow-efi` is useful if importing a disk into an existing Terraform VM
 is easier than restoring a VMA.
 
-Run these from a machine with Nix installed. The Mac-side workspace currently
-does not have the `nix` command available, so image builds need to happen from
-the NixOS VM or another Nix builder.
+Run these from a machine with Nix installed. The Mac-side workspace has Nix
+available, but Linux image builds still need to happen from the NixOS VM or
+another Linux Nix builder.

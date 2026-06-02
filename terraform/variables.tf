@@ -69,3 +69,9 @@ variable "partridge_vaultwarden_disk_size" {
   type        = number
   default     = 2
 }
+
+variable "partridge_prometheus_disk_size" {
+  description = "Prometheus disk size for partridge in GiB"
+  type        = number
+  default     = 10
+}

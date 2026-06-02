@@ -5,6 +5,7 @@
     ./bitwarden-mirror.nix
     ./forgejo.nix
     ./hardware-configuration.nix
+    ./prometheus.nix
     ./vaultwarden.nix
     ./web.nix
   ];

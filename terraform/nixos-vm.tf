@@ -78,6 +78,15 @@ resource "proxmox_virtual_environment_vm" "partridge" {
     serial       = "vaultwarden"
   }
 
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi4"
+    size         = var.partridge_prometheus_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "prometheus"
+  }
+
   cdrom {
     file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
     interface = "ide2"
