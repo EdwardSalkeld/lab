@@ -52,6 +52,14 @@ in
           isDefault = true;
           editable = true;
         }
+        {
+          name = "loki";
+          uid = "ce6j6e2q9rapsa";
+          type = "loki";
+          access = "proxy";
+          url = "http://blink.int.alcachofa.faith:3100";
+          editable = true;
+        }
       ];
     };
   };
