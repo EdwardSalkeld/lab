@@ -123,11 +123,12 @@ Grafana is served at:
 https://grafana.alcachofa.faith
 ```
 
-Grafana uses the local PostgreSQL service for storage. Its Prometheus
-datasource is provisioned with the same UID as Blink's old Grafana datasource,
-so Prometheus-backed dashboards can be imported without rewriting datasource
-references. Dashboards themselves are managed through Grafana's UI rather than
-Nix provisioning.
+Grafana uses the local PostgreSQL service for storage. Its Prometheus and Loki
+datasources are provisioned with the same UIDs as Blink's old Grafana
+datasources, so imported dashboards can keep their datasource references.
+Prometheus points at the local Partridge Prometheus; Loki points at Blink's
+existing Loki on `blink.int.alcachofa.faith:3100`. Dashboards themselves are
+managed through Grafana's UI rather than Nix provisioning.
 
 The helper script `scripts/export-grafana-dashboards.sh` exports dashboard,
 folder, and datasource metadata from the old Grafana into the ignored
