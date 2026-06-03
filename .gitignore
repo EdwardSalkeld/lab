@@ -6,3 +6,4 @@ CFTOK
 CFTOK
 /.talosconfig
 .bitwarden-mirror-state/
+grafana-dashboard-exports/

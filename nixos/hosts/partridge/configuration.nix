@@ -4,6 +4,7 @@
   imports = [
     ./bitwarden-mirror.nix
     ./forgejo.nix
+    ./grafana.nix
     ./hardware-configuration.nix
     ./prometheus.nix
     ./vaultwarden.nix
