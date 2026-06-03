@@ -5,6 +5,7 @@ This directory is the start of the repo-owned NixOS configuration.
 Current targets:
 
 - `partridge`: the first repo-managed NixOS VM.
+- `magpie`: disposable NixOS development VM.
 
 ## Installing Packages
 
@@ -71,6 +72,28 @@ From another machine with SSH access:
 ```sh
 nixos-rebuild switch --flake .#partridge --target-host edward@partridge --use-remote-sudo
 ```
+
+## Deploying `magpie`
+
+`magpie` is intended as a disposable development VM. Terraform creates a blank
+VM with the NixOS ISO attached, matching the manual install flow used for
+`partridge`.
+
+The checked-in hardware config assumes the root filesystem is labelled `nixos`
+and the EFI filesystem is labelled `BOOT`. Either use those labels during the
+manual install or replace `nixos/hosts/magpie/hardware-configuration.nix` with
+the generated file before switching to the flake config.
+
+The dev package set comes from a read of `~/personal/dotfiles` on 2026-06-03.
+It includes shell/editor/tmux basics, Docker, language runtimes, Terraform,
+Kubernetes tools, cloud CLIs, and the lint tools referenced by the Neovim
+config. Assumptions to revisit after first use:
+
+- dotfiles are still installed separately with stow or a future home-manager setup
+- GUI/macOS-only tools such as Ghostty and skhd are intentionally excluded
+- Node is provided by Nix `nodejs`, not NVM
+- Neovim is provided by Nix, not built from source
+- the VM has no extra persistent data disks until a workflow proves it needs one
 
 ## Prometheus Exporters
 

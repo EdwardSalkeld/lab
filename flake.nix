@@ -58,6 +58,15 @@
             ./nixos/hosts/partridge/configuration.nix
           ];
         };
+
+        magpie = nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            ./nixos/modules/proxmox-vm-base.nix
+            ./nixos/modules/disposable-dev-machine.nix
+            ./nixos/hosts/magpie/configuration.nix
+          ];
+        };
       };
     };
 }
