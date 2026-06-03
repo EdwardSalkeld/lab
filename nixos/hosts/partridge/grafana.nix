@@ -6,6 +6,8 @@ let
   grafanaPort = 3001;
 in
 {
+  security.acme.certs.${acmeHost}.extraDomainNames = [ grafanaDomain ];
+
   services.postgresql = {
     ensureDatabases = [ "grafana" ];
     ensureUsers = [
