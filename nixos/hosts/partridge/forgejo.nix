@@ -2,11 +2,10 @@
 
 let
   forgejoDomain = "code.alcachofa.faith";
-  acmeHost = "partridge.int.alcachofa.faith";
   forgejoPort = 3000;
 in
 {
-  security.acme.certs.${acmeHost}.extraDomainNames = [ forgejoDomain ];
+  alcachofa.partridge.reverseProxy.routes.${forgejoDomain}.port = forgejoPort;
 
   services.forgejo = {
     enable = true;
@@ -29,11 +28,5 @@ in
         REQUIRE_SIGNIN_VIEW = true;
       };
     };
-  };
-
-  services.nginx.virtualHosts.${forgejoDomain} = {
-    forceSSL = true;
-    useACMEHost = acmeHost;
-    locations."/".proxyPass = "http://127.0.0.1:${toString forgejoPort}";
   };
 }

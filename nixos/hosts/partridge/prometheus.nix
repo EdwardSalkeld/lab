@@ -2,7 +2,6 @@
 
 let
   prometheusDomain = "prometheus.int.alcachofa.faith";
-  acmeHost = "partridge.int.alcachofa.faith";
   prometheusPort = 9090;
 in
 {
@@ -11,7 +10,7 @@ in
     fsType = "ext4";
   };
 
-  security.acme.certs.${acmeHost}.extraDomainNames = [ prometheusDomain ];
+  alcachofa.partridge.reverseProxy.routes.${prometheusDomain}.port = prometheusPort;
 
   services.prometheus = {
     enable = true;
@@ -92,9 +91,4 @@ in
     ];
   };
 
-  services.nginx.virtualHosts.${prometheusDomain} = {
-    forceSSL = true;
-    useACMEHost = acmeHost;
-    locations."/".proxyPass = "http://127.0.0.1:${toString prometheusPort}";
-  };
 }

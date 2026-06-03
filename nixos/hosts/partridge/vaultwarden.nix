@@ -2,7 +2,6 @@
 
 let
   vaultwardenDomain = "vault.alcachofa.faith";
-  acmeHost = "partridge.int.alcachofa.faith";
   vaultwardenPort = 8222;
 in
 {
@@ -11,7 +10,7 @@ in
     fsType = "ext4";
   };
 
-  security.acme.certs.${acmeHost}.extraDomainNames = [ vaultwardenDomain ];
+  alcachofa.partridge.reverseProxy.routes.${vaultwardenDomain}.port = vaultwardenPort;
 
   services.vaultwarden = {
     enable = true;
@@ -24,9 +23,4 @@ in
     };
   };
 
-  services.nginx.virtualHosts.${vaultwardenDomain} = {
-    forceSSL = true;
-    useACMEHost = acmeHost;
-    locations."/".proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
-  };
 }
