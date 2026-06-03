@@ -120,7 +120,7 @@ curl http://partridge:9090/-/ready
 Grafana is served at:
 
 ```text
-https://grafana.a.f
+https://grafana.alcachofa.faith
 ```
 
 Grafana uses the local PostgreSQL service for storage. Its Prometheus

@@ -1,7 +1,7 @@
 { ... }:
 
 let
-  grafanaDomain = "grafana.a.f";
+  grafanaDomain = "grafana.alcachofa.faith";
   acmeHost = "partridge.int.alcachofa.faith";
   grafanaPort = 3001;
 in
