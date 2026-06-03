@@ -103,9 +103,10 @@ resource "proxmox_virtual_environment_vm" "magpie" {
   node_name   = var.proxmox_node_name
   tags        = ["bird", "nixos", "dev"]
 
-  bios       = "ovmf"
-  boot_order = ["ide2", "scsi0"]
-  on_boot    = true
+  bios          = "ovmf"
+  boot_order    = ["ide2", "scsi0"]
+  on_boot       = true
+  scsi_hardware = "virtio-scsi-single"
   # Installer-stage VMs cannot service Proxmox guest-agent reboot requests.
   reboot_after_update = false
   started             = true
