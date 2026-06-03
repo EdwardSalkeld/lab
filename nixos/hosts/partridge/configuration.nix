@@ -7,6 +7,7 @@
     ./grafana.nix
     ./hardware-configuration.nix
     ./prometheus.nix
+    ./reverse-proxy.nix
     ./vaultwarden.nix
     ./web.nix
   ];

@@ -2,11 +2,10 @@
 
 let
   grafanaDomain = "grafana.alcachofa.faith";
-  acmeHost = "partridge.int.alcachofa.faith";
   grafanaPort = 3001;
 in
 {
-  security.acme.certs.${acmeHost}.extraDomainNames = [ grafanaDomain ];
+  alcachofa.partridge.reverseProxy.routes.${grafanaDomain}.port = grafanaPort;
 
   services.postgresql = {
     ensureDatabases = [ "grafana" ];
@@ -66,9 +65,4 @@ in
     };
   };
 
-  services.nginx.virtualHosts.${grafanaDomain} = {
-    forceSSL = true;
-    useACMEHost = acmeHost;
-    locations."/".proxyPass = "http://127.0.0.1:${toString grafanaPort}";
-  };
 }
