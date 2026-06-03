@@ -63,6 +63,18 @@ in
         }
       ];
     };
+
+    provision.dashboards.settings = {
+      apiVersion = 1;
+      providers = [
+        {
+          name = "ops";
+          folder = "Ops";
+          allowUiUpdates = false;
+          options.path = ./grafana/dashboards/ops;
+        }
+      ];
+    };
   };
 
 }
