@@ -3,6 +3,7 @@
 {
   imports = [
     ./bitwarden-mirror.nix
+    ./deploy-trigger.nix
     ./forgejo.nix
     ./grafana.nix
     ./hardware-configuration.nix
