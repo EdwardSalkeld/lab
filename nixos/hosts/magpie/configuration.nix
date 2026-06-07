@@ -7,6 +7,7 @@
 
   networking.hostName = "magpie";
   networking.networkmanager.enable = true;
+  virtualisation.diskSize = 12 * 1024;
 
   services.tailscale = {
     enable = true;

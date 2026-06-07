@@ -24,6 +24,7 @@
     {
       packages.${system} = {
         bitwarden-mirror = bitwardenMirror;
+        magpie-image = self.nixosConfigurations.magpie.config.system.build.images.qemu-efi;
         default = bitwardenMirror;
       };
 
@@ -44,6 +45,7 @@
           '';
 
         partridge = self.nixosConfigurations.partridge.config.system.build.toplevel;
+        magpie = self.nixosConfigurations.magpie.config.system.build.toplevel;
       };
 
       nixosConfigurations = {

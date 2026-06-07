@@ -56,11 +56,16 @@ terraform -chdir=terraform output
 - Network bridge: `vmbr0`
 
 `magpie` is managed by the root Nix flake as `.#magpie`. It starts from the
-same Proxmox VM shape as `partridge` but only has a root disk. The NixOS config
-imports the shared Proxmox base module plus a disposable development-machine
-module sized from Edward's dotfiles setup.
+same Proxmox VM shape as `partridge` but only has a root disk. Terraform imports
+a Nix-built qcow2 image into the root disk instead of booting the NixOS
+installer ISO.
 
-The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
-installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
-on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
-has a real NixOS install with `qemu-guest-agent` running.
+Build the image and apply Terraform with:
+
+```sh
+./scripts/magpie-terraform-apply.sh -auto-approve
+```
+
+That command must run somewhere that can build `x86_64-linux` NixOS images and
+reach Proxmox, such as `partridge`. The generated image path is passed to
+Terraform as `TF_VAR_magpie_image_path`.

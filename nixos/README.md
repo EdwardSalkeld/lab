@@ -75,14 +75,23 @@ nixos-rebuild switch --flake .#partridge --target-host edward@partridge --use-re
 
 ## Deploying `magpie`
 
-`magpie` is intended as a disposable development VM. Terraform creates a blank
-VM with the NixOS ISO attached, matching the manual install flow used for
-`partridge`.
+`magpie` is intended as a disposable development VM. Unlike `partridge`, it does
+not use a manual installer flow. The flake builds a complete EFI qcow2 image
+from `.#magpie`, and Terraform uploads that image to Proxmox before creating the
+VM.
 
-The checked-in hardware config assumes the root filesystem is labelled `nixos`
-and the EFI filesystem is labelled `BOOT`. Either use those labels during the
-manual install or replace `nixos/hosts/magpie/hardware-configuration.nix` with
-the generated file before switching to the flake config.
+Run the image build and Terraform apply from a Linux machine with Nix and
+Terraform available, such as `partridge`:
+
+```sh
+./scripts/magpie-terraform-apply.sh -auto-approve
+```
+
+The helper builds `.#packages.x86_64-linux.magpie-image`, copies the generated
+qcow2 to `.terraform-images/magpie.qcow2`, exports that path as
+`TF_VAR_magpie_image_path`, and applies the Terraform root. Destroying and
+recreating the Terraform VM should recreate a bootable NixOS host without any
+manual OS install.
 
 The dev package set comes from a read of `~/personal/dotfiles` on 2026-06-03.
 It includes shell/editor/tmux basics, Docker, language runtimes, Terraform,

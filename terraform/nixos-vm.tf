@@ -99,17 +99,19 @@ resource "proxmox_virtual_environment_vm" "partridge" {
 
 resource "proxmox_virtual_environment_vm" "magpie" {
   name        = var.magpie_vm_name
-  description = "Repo-managed disposable NixOS development VM."
+  description = "Repo-managed disposable NixOS development VM, booted from a generated NixOS image."
   node_name   = var.proxmox_node_name
   tags        = ["bird", "nixos", "dev"]
 
   bios          = "ovmf"
-  boot_order    = ["ide2", "scsi0"]
+  boot_order    = ["scsi0"]
   on_boot       = true
   scsi_hardware = "virtio-scsi-single"
-  # Installer-stage VMs cannot service Proxmox guest-agent reboot requests.
-  reboot_after_update = false
-  started             = true
+  started       = true
+
+  agent {
+    enabled = true
+  }
 
   cpu {
     cores = 2
@@ -131,18 +133,26 @@ resource "proxmox_virtual_environment_vm" "magpie" {
   disk {
     datastore_id = var.proxmox_vm_datastore_id
     interface    = "scsi0"
+    import_from  = proxmox_virtual_environment_file.magpie_image.id
     size         = var.magpie_root_disk_size
     discard      = "on"
     iothread     = true
     serial       = "magpie-root"
   }
 
-  cdrom {
-    file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
-    interface = "ide2"
-  }
-
   operating_system {
     type = "l26"
+  }
+}
+
+resource "proxmox_virtual_environment_file" "magpie_image" {
+  content_type = "import"
+  datastore_id = var.proxmox_iso_datastore_id
+  node_name    = var.proxmox_node_name
+  overwrite    = true
+
+  source_file {
+    path      = var.magpie_image_path
+    file_name = "magpie-nixos.qcow2"
   }
 }
