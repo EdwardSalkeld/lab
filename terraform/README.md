@@ -52,13 +52,13 @@ terraform -chdir=terraform output
 
 - Name: `magpie`
 - Node: `sol`
-- Root disk: 12 GiB on `local-lvm`
+- Root disk: 24 GiB on `local-lvm`
 - Network bridge: `vmbr0`
 
-`magpie` is managed by the root Nix flake as `.#magpie`. It starts from the
-same Proxmox VM shape as `partridge` but only has a root disk. Terraform imports
-a Nix-built qcow2 image into the root disk instead of booting the NixOS
-installer ISO.
+`magpie` is managed by the root Nix flake as `.#magpie`. It uses the same CPU
+and memory shape as `partridge`, but only has a larger root disk for development
+tooling. Terraform imports a Nix-built qcow2 image into the root disk instead of
+booting the NixOS installer ISO.
 
 Build the image and apply Terraform with:
 

@@ -94,9 +94,10 @@ recreating the Terraform VM should recreate a bootable NixOS host without any
 manual OS install.
 
 The dev package set comes from a read of `~/personal/dotfiles` on 2026-06-03.
-It includes shell/editor/tmux basics, Docker, language runtimes, Terraform,
+It includes shell/editor/tmux basics, Docker, language runtimes, OpenTofu,
 Kubernetes tools, cloud CLIs, and the lint tools referenced by the Neovim
-config. Assumptions to revisit after first use:
+config. The generated root image is 24 GiB so the dev package closure fits
+without a manual install step. Assumptions to revisit after first use:
 
 - dotfiles are still installed separately with stow or a future home-manager setup
 - GUI/macOS-only tools such as Ghostty and skhd are intentionally excluded
