@@ -17,4 +17,4 @@ set -a
 source "$repo_root/terraform/.env"
 set +a
 
-terraform -chdir="$repo_root/terraform" apply "$@"
+nix shell nixpkgs#terraform -c terraform -chdir="$repo_root/terraform" apply "$@"
