@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  documentation.enable = false;
+
   programs.zsh.enable = true;
 
   users.users.edward = {
