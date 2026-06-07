@@ -1,11 +1,6 @@
 { pkgs, ... }:
 
 {
-  nixpkgs.config.allowUnfreePredicate = pkg:
-    builtins.elem (pkgs.lib.getName pkg) [
-      "terraform"
-    ];
-
   programs.zsh.enable = true;
 
   users.users.edward = {
@@ -60,6 +55,7 @@
     nmap
     nodejs
     openssl
+    opentofu
     pipx
     pkg-config
     postgresql
@@ -69,7 +65,6 @@
     ripgrep
     stow
     inetutils
-    terraform
     tflint
     tig
     tmux
