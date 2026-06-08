@@ -79,6 +79,10 @@ nixos-rebuild switch --flake .#partridge --target-host edward@partridge --use-re
 VM with the NixOS ISO attached, matching the manual install flow used for
 `partridge`.
 
+Use [install-vm-runbook.md](./install-vm-runbook.md) for the install flow. The
+short version is: use the Proxmox console only to set a temporary root password
+and start `sshd`, then finish partitioning and installing over SSH.
+
 The checked-in hardware config assumes the root filesystem is labelled `nixos`
 and the EFI filesystem is labelled `BOOT`. Either use those labels during the
 manual install or replace `nixos/hosts/magpie/hardware-configuration.nix` with
