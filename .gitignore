@@ -7,4 +7,3 @@ CFTOK
 /.talosconfig
 .bitwarden-mirror-state/
 grafana-dashboard-exports/
-.terraform-images/

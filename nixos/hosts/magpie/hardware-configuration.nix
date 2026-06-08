@@ -1,3 +1,6 @@
+# This host starts as a manually installed Proxmox VM. During install, either
+# label the root filesystem `nixos` and EFI filesystem `BOOT`, or replace this
+# file with the generated hardware configuration before switching.
 { lib, modulesPath, ... }:
 
 {
@@ -18,13 +21,13 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" = {
-    device = lib.mkDefault "/dev/disk/by-label/nixos";
-    fsType = lib.mkDefault "ext4";
+    device = "/dev/disk/by-label/nixos";
+    fsType = "ext4";
   };
 
   fileSystems."/boot" = {
-    device = lib.mkDefault "/dev/disk/by-label/ESP";
-    fsType = lib.mkDefault "vfat";
+    device = "/dev/disk/by-label/BOOT";
+    fsType = "vfat";
     options = [
       "fmask=0022"
       "dmask=0022"

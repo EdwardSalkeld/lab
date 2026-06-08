@@ -8,7 +8,7 @@ variable "PROXMOXENDPOINT" {
 }
 
 variable "public_ssh_keys" {
-  description = "Edward's SSH public keys for NixOS access"
+  description = "Edward's SSH public keys for NixOS access after manual install"
   type        = list(string)
   default = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD edward@m1",
@@ -85,10 +85,5 @@ variable "magpie_vm_name" {
 variable "magpie_root_disk_size" {
   description = "Root disk size for magpie in GiB"
   type        = number
-  default     = 24
-}
-
-variable "magpie_image_path" {
-  description = "Absolute path to the generated Magpie NixOS qcow2 image"
-  type        = string
+  default     = 12
 }
