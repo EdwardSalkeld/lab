@@ -75,3 +75,15 @@ variable "partridge_prometheus_disk_size" {
   type        = number
   default     = 10
 }
+
+variable "magpie_vm_name" {
+  description = "Name of the disposable NixOS development VM"
+  type        = string
+  default     = "magpie"
+}
+
+variable "magpie_root_disk_size" {
+  description = "Root disk size for magpie in GiB"
+  type        = number
+  default     = 12
+}
