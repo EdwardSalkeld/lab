@@ -137,6 +137,11 @@ resource "proxmox_virtual_environment_vm" "magpie" {
     serial       = "magpie-root"
   }
 
+  cdrom {
+    file_id   = "none"
+    interface = "ide3"
+  }
+
   operating_system {
     type = "l26"
   }
