@@ -104,7 +104,7 @@ resource "proxmox_virtual_environment_vm" "magpie" {
   tags        = ["bird", "nixos", "dev"]
 
   bios          = "ovmf"
-  boot_order    = ["ide2", "scsi0"]
+  boot_order    = ["scsi0"]
   on_boot       = true
   scsi_hardware = "virtio-scsi-single"
   # Installer-stage VMs cannot service Proxmox guest-agent reboot requests.
@@ -135,11 +135,6 @@ resource "proxmox_virtual_environment_vm" "magpie" {
     discard      = "on"
     iothread     = true
     serial       = "magpie-root"
-  }
-
-  cdrom {
-    file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
-    interface = "ide2"
   }
 
   operating_system {
