@@ -99,6 +99,23 @@ config. Assumptions to revisit after first use:
 - Neovim is provided by Nix, not built from source
 - the VM has no extra persistent data disks until a workflow proves it needs one
 
+## GitHub Deploy Smoke Trigger
+
+The `deploy smoke` workflow is the first end-to-end GitHub-to-Partridge deploy
+trigger. On pushes to `main`, GitHub Actions joins Tailscale as `tag:ci`, SSHes
+to `deploy@partridge.ts.alcachofa.faith`, and hits a forced command. For now
+that command only appends a line to `/var/lib/lab-deploy/invocations.log`.
+
+Required GitHub Actions secrets:
+
+- `TS_OAUTH_CLIENT_ID`: Tailscale OAuth client ID with `auth_keys` scope
+- `TS_OAUTH_SECRET`: Tailscale OAuth client secret
+- `PARTRIDGE_DEPLOY_SSH_KEY`: private key matching the repo-declared deploy key
+
+The Tailscale ACL should allow `tag:ci` to reach only Partridge's Tailscale SSH
+endpoint. The first deployment of this wiring must still be applied manually so
+the `deploy` user and forced command exist before the workflow can connect.
+
 ## Prometheus Exporters
 
 All Proxmox VM hosts include node exporter on port `9100` from

@@ -37,6 +37,13 @@ in
         ];
       }
       {
+        job_name = "billy";
+        scrape_interval = "5s";
+        static_configs = [
+          { targets = [ "blink.int.alcachofa.faith:9464" ]; }
+        ];
+      }
+      {
         job_name = "cadvisor";
         scrape_interval = "5s";
         static_configs = [

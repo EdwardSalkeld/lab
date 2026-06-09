@@ -126,6 +126,10 @@ Minimal shape:
 
   services.openssh.enable = true;
 
+  environment.systemPackages = with pkgs; [
+    git
+  ];
+
   users.users.edward = {
     isNormalUser = true;
     extraGroups = [ "wheel" "networkmanager" ];
@@ -145,6 +149,15 @@ Install:
 
 ```sh
 nixos-install
+```
+
+Before rebooting, switch the VM boot order in Proxmox so the installed disk
+boots before the ISO. Removing or detaching the ISO is also fine. If this is
+missed, the VM will boot back into the installer.
+
+Then reboot:
+
+```sh
 reboot
 ```
 
@@ -159,11 +172,10 @@ ssh edward@<vm-ip>
 Clone this repo or copy the existing checkout, then switch to the flake config:
 
 ```sh
-sudo nixos-rebuild switch --flake .#magpie
+./scripts/nixos-switch.sh
 ```
 
-Once the repo config is active, remove the ISO from the VM or change boot order
-so the disk boots first.
+The script uses `hostname -s` to select the matching flake target.
 
 ## 8. Post-Install Checks
 
