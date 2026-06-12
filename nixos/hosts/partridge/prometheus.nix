@@ -65,6 +65,7 @@ in
               "blink.int.alcachofa.faith:9100"
               "sol.int.alcachofa.faith:9100"
               "falcon.ts.alcachofa.faith:9100"
+              "magpie.int.alcachofa.faith:9100"
               "partridge.int.alcachofa.faith:9100"
             ];
           }
