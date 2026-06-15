@@ -136,8 +136,8 @@ sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi4
 ```
 
 The scrape config mirrors Blink's Prometheus targets where those targets are
-addressable from Partridge. Blink's Docker-local `cadvisor:8080` target is not
-included because it is only resolvable inside Blink's Docker network.
+addressable from Partridge. Blink's cAdvisor target is scraped through
+`blink.int.alcachofa.faith:8083`, which is exposed by the house Docker stack.
 
 Example Prometheus scrape config:
 
@@ -157,6 +157,30 @@ After switching the host, verify both endpoints:
 curl http://partridge:9100/metrics
 curl http://partridge:9187/metrics
 curl http://partridge:9090/-/ready
+```
+
+## Loki on `partridge`
+
+Loki runs in single-node filesystem mode on port `3100`, backed by a dedicated
+`loki` disk mounted at `/var/lib/loki`. Grafana's provisioned Loki datasource
+uses the same UID as the old Blink datasource, but now points at local Loki on
+`127.0.0.1:3100`.
+
+The service is intentionally not reverse-proxied yet. Remote log shipping
+should use Grafana Alloy rather than Promtail, but the push endpoint and access
+pattern should be decided before exposing Loki's write API to the LAN or
+tailnet.
+
+After Terraform adds the disk, format it once before switching the NixOS config:
+
+```sh
+sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi5
+```
+
+After switching the host, verify Loki locally:
+
+```sh
+curl http://partridge:3100/ready
 ```
 
 ## Grafana on `partridge`

@@ -7,6 +7,7 @@
     ./forgejo.nix
     ./grafana.nix
     ./hardware-configuration.nix
+    ./loki.nix
     ./prometheus.nix
     ./reverse-proxy.nix
     ./scheduler-db.nix
