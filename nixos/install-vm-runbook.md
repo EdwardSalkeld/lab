@@ -88,68 +88,35 @@ mkfs.fat -F 32 -n BOOT "$BOOT"
 mkfs.ext4 -F -L nixos "$ROOT"
 ```
 
-## 5. Mount and Generate Config
+## 5. Mount the Target Filesystems
 
 ```sh
 mount "$ROOT" /mnt
 mkdir -p /mnt/boot
 mount "$BOOT" /mnt/boot
-nixos-generate-config --root /mnt
 ```
 
-If this is a new host, copy `/mnt/etc/nixos/hardware-configuration.nix` back
-into the repo later. For `magpie`, the repo already contains a hardware config
-that expects the labels above.
+For `magpie`, the repo already contains a hardware config that expects the
+labels above, so there is no need to run `nixos-generate-config` during a normal
+reinstall.
 
-## 6. Install NixOS
+## 6. Install NixOS From the Repo Flake
 
-For the first install, use a minimal temporary config so the machine boots and
-has SSH:
+Install directly from the GitHub flake:
 
 ```sh
-nano /mnt/etc/nixos/configuration.nix
+export NIX_CONFIG="experimental-features = nix-command flakes"
+nixos-install --flake github:EdwardSalkeld/lab#magpie --no-root-passwd
 ```
 
-Minimal shape:
-
-```nix
-{ config, pkgs, ... }:
-
-{
-  imports = [ ./hardware-configuration.nix ];
-
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
-  networking.hostName = "magpie";
-  networking.networkmanager.enable = true;
-
-  services.openssh.enable = true;
-
-  environment.systemPackages = with pkgs; [
-    git
-  ];
-
-  users.users.edward = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" ];
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD edward@m1"
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzhdCoWE/CiY3laW9R/I5UEhQs7krz8ur8OOg7su5MJ edward@m2"
-    ];
-  };
-
-  security.sudo.wheelNeedsPassword = false;
-
-  system.stateVersion = "25.11";
-}
-```
-
-Install:
+If installing from an unmerged branch, include the branch name in the flake URL:
 
 ```sh
-nixos-install
+nixos-install --flake github:EdwardSalkeld/lab/add-magpie-dev-vm#magpie --no-root-passwd
 ```
+
+The repo config creates the `edward` user, installs the configured SSH keys,
+enables SSH, and enables the QEMU guest agent.
 
 Before rebooting, switch the VM boot order in Proxmox so the installed disk
 boots before the ISO. Removing or detaching the ISO is also fine. If this is
@@ -161,7 +128,7 @@ Then reboot:
 reboot
 ```
 
-## 7. Switch to Repo Config
+## 7. Confirm the Installed Host
 
 After reboot, SSH into the installed VM as `edward`:
 
@@ -169,13 +136,19 @@ After reboot, SSH into the installed VM as `edward`:
 ssh edward@<vm-ip>
 ```
 
-Clone this repo or copy the existing checkout, then switch to the flake config:
+The system is already installed from the repo flake. From a checkout on the VM,
+future updates can use:
 
 ```sh
 ./scripts/nixos-switch.sh
 ```
 
-The script uses `hostname -s` to select the matching flake target.
+The script uses `hostname -s` to select the matching flake target. Without a
+checkout, rebuild directly from GitHub:
+
+```sh
+sudo nixos-rebuild switch --flake github:EdwardSalkeld/lab#magpie
+```
 
 ## 8. Post-Install Checks
 
