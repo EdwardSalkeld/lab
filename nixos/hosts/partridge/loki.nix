@@ -2,7 +2,7 @@
 
 {
   fileSystems."/var/lib/loki" = {
-    device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_loki";
+    device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi5";
     fsType = "ext4";
   };
 

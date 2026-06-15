@@ -174,7 +174,7 @@ tailnet.
 After Terraform adds the disk, format it once before switching the NixOS config:
 
 ```sh
-sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_loki
+sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi5
 ```
 
 After switching the host, verify Loki locally:
