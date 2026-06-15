@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   dbName = "scheduler";
@@ -16,7 +16,7 @@ in
     ];
 
     settings = {
-      listen_addresses = "*";
+      listen_addresses = lib.mkForce "*";
       password_encryption = "scram-sha-256";
     };
 
