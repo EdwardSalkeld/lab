@@ -61,6 +61,19 @@ in
           url = "http://blink.int.alcachofa.faith:3100";
           editable = true;
         }
+        {
+          name = "scheduler-postgres";
+          uid = "scheduler-postgres";
+          type = "postgres";
+          access = "proxy";
+          url = "/run/postgresql";
+          user = "grafana";
+          jsonData = {
+            database = "scheduler";
+            sslmode = "disable";
+          };
+          editable = true;
+        }
       ];
     };
 
