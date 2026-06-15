@@ -37,13 +37,30 @@ in
     chmod 0400 ${writerPasswordFile}
   '';
 
-  systemd.services.postgresql.postStart = ''
-    writer_password="$(tr -d '\n' < ${writerPasswordFile})"
+  systemd.services.scheduler-db-setup = {
+    description = "Configure scheduler PostgreSQL role credentials and database access";
+    after = [
+      "postgresql.service"
+      "postgresql-setup.service"
+    ];
+    requires = [
+      "postgresql.service"
+      "postgresql-setup.service"
+    ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "postgres";
+      Group = "postgres";
+    };
+    script = ''
+      writer_password="$(tr -d '\n' < ${writerPasswordFile})"
 
-    ${psql} -v ON_ERROR_STOP=1 --set=writer_password="$writer_password" --dbname=postgres <<'SQL'
-    ALTER ROLE ${writerRole} WITH LOGIN PASSWORD :'writer_password';
-    GRANT CONNECT ON DATABASE ${dbName} TO ${writerRole};
-    GRANT CONNECT ON DATABASE ${dbName} TO grafana;
+      ${psql} -v ON_ERROR_STOP=1 --set=writer_password="$writer_password" --dbname=postgres <<'SQL'
+      ALTER ROLE ${writerRole} WITH LOGIN PASSWORD :'writer_password';
+      GRANT CONNECT ON DATABASE ${dbName} TO ${writerRole};
+      GRANT CONNECT ON DATABASE ${dbName} TO grafana;
 SQL
-  '';
+    '';
+  };
 }
