@@ -9,6 +9,7 @@
     ./hardware-configuration.nix
     ./prometheus.nix
     ./reverse-proxy.nix
+    ./scheduler-db.nix
     ./vaultwarden.nix
     ./web.nix
   ];

@@ -174,6 +174,24 @@ Prometheus points at the local Partridge Prometheus; Loki points at Blink's
 existing Loki on `blink.int.alcachofa.faith:3100`. Dashboards themselves are
 managed through Grafana's UI rather than Nix provisioning.
 
+Grafana also has a provisioned `scheduler-postgres` datasource for Octopus
+usage data in Partridge's local `scheduler` database. Apply the schema after
+switching the host:
+
+```sh
+sudo -u postgres psql -d scheduler -f nixos/hosts/partridge/sql/scheduler-usages.sql
+```
+
+The scheduler writer password is generated on Partridge in the PostgreSQL state
+directory:
+
+```sh
+sudo cat /var/lib/postgresql/scheduler-db-writer-password
+```
+
+Use that value as Blink scheduler's `DB_PASSWORD` when cutting scheduler over to
+Partridge Postgres.
+
 The helper script `scripts/export-grafana-dashboards.sh` exports dashboard,
 folder, and datasource metadata from the old Grafana into the ignored
 `grafana-dashboard-exports/` directory.
