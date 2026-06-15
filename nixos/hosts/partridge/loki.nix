@@ -6,6 +6,10 @@
     fsType = "ext4";
   };
 
+  systemd.tmpfiles.rules = [
+    "d /var/lib/loki 0750 loki loki -"
+  ];
+
   services.loki = {
     enable = true;
     dataDir = "/var/lib/loki";
