@@ -76,6 +76,12 @@ variable "partridge_prometheus_disk_size" {
   default     = 10
 }
 
+variable "partridge_loki_disk_size" {
+  description = "Loki disk size for partridge in GiB"
+  type        = number
+  default     = 10
+}
+
 variable "magpie_vm_name" {
   description = "Name of the disposable NixOS development VM"
   type        = string

@@ -87,6 +87,15 @@ resource "proxmox_virtual_environment_vm" "partridge" {
     serial       = "prometheus"
   }
 
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi5"
+    size         = var.partridge_loki_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "loki"
+  }
+
   cdrom {
     file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
     interface = "ide2"
