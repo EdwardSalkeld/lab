@@ -166,10 +166,16 @@ Loki runs in single-node filesystem mode on port `3100`, backed by a dedicated
 uses the same UID as the old Blink datasource, but now points at local Loki on
 `127.0.0.1:3100`.
 
-The service is intentionally not reverse-proxied yet. Remote log shipping
-should use Grafana Alloy rather than Promtail, but the push endpoint and access
-pattern should be decided before exposing Loki's write API to the LAN or
-tailnet.
+Loki is also reverse-proxied through nginx for log shippers at:
+
+```text
+https://loki.int.alcachofa.faith
+```
+
+Remote log shipping should use Grafana Alloy rather than Promtail. Partridge
+runs Alloy locally to ship its systemd journal into Loki; Blink and other hosts
+can follow the same pattern and push to
+`https://loki.int.alcachofa.faith/loki/api/v1/push`.
 
 After Terraform adds the disk, format it once before switching the NixOS config:
 

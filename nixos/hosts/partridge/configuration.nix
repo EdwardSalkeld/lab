@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./alloy.nix
     ./bitwarden-mirror.nix
     ./deploy-trigger.nix
     ./forgejo.nix

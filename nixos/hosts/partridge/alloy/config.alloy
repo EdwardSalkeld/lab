@@ -1,0 +1,35 @@
+loki.write "partridge_loki" {
+	endpoint {
+		url = "http://127.0.0.1:3100/loki/api/v1/push"
+	}
+
+	external_labels = {
+		host = "partridge",
+	}
+}
+
+loki.relabel "journal" {
+	forward_to = []
+
+	rule {
+		source_labels = ["__journal__systemd_unit"]
+		target_label  = "systemd_unit"
+	}
+
+	rule {
+		source_labels = ["__journal__hostname"]
+		target_label  = "systemd_hostname"
+	}
+
+	rule {
+		source_labels = ["__journal__transport"]
+		target_label  = "systemd_transport"
+	}
+}
+
+loki.source.journal "system" {
+	forward_to    = [loki.write.partridge_loki.receiver]
+	labels        = {source = "journal"}
+	max_age       = "12h"
+	relabel_rules = loki.relabel.journal.rules
+}

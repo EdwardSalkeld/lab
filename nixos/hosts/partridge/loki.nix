@@ -1,10 +1,16 @@
 { ... }:
 
+let
+  lokiDomain = "loki.int.alcachofa.faith";
+  lokiPort = 3100;
+in
 {
   fileSystems."/var/lib/loki" = {
     device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi5";
     fsType = "ext4";
   };
+
+  alcachofa.partridge.reverseProxy.routes.${lokiDomain}.port = lokiPort;
 
   systemd.tmpfiles.rules = [
     "d /var/lib/loki 0750 loki loki -"
@@ -19,7 +25,7 @@
 
       server = {
         http_listen_address = "127.0.0.1";
-        http_listen_port = 3100;
+        http_listen_port = lokiPort;
         grpc_listen_port = 9096;
       };
 
