@@ -150,6 +150,12 @@ checkout, rebuild directly from GitHub:
 sudo nixos-rebuild switch --flake github:EdwardSalkeld/lab#magpie
 ```
 
+If a switch needs to be undone later, the same helper also supports:
+
+```sh
+./scripts/nixos-switch.sh rollback
+```
+
 ## 8. Post-Install Checks
 
 ```sh

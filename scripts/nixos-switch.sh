@@ -6,9 +6,9 @@ HOSTNAME_SHORT="$(hostname -s)"
 ACTION="${1:-switch}"
 
 case "${ACTION}" in
-  switch | boot | test | build | dry-build) ;;
+  switch | boot | test | build | dry-build | rollback) ;;
   *)
-    echo "usage: $0 [switch|boot|test|build|dry-build]" >&2
+    echo "usage: $0 [switch|boot|test|build|dry-build|rollback]" >&2
     exit 2
     ;;
 esac

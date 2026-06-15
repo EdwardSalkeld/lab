@@ -65,6 +65,7 @@ accepts other `nixos-rebuild` actions:
 ./scripts/nixos-switch.sh build
 ./scripts/nixos-switch.sh test
 ./scripts/nixos-switch.sh boot
+./scripts/nixos-switch.sh rollback
 ```
 
 From another machine with SSH access:
