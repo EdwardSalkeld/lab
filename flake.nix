@@ -67,6 +67,13 @@
             ./nixos/hosts/magpie/configuration.nix
           ];
         };
+
+        blink = nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            ./nixos/hosts/blink/configuration.nix
+          ];
+        };
       };
     };
 }

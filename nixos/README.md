@@ -6,6 +6,7 @@ Current targets:
 
 - `partridge`: the first repo-managed NixOS VM.
 - `magpie`: disposable NixOS development VM.
+- `blink`: physical media/app host, currently drafted for future adoption.
 
 ## Installing Packages
 
@@ -48,6 +49,59 @@ nix profile install nixpkgs#htop
 
 Prefer `environment.systemPackages` for lab infrastructure so the machine can
 be recreated from the repo.
+
+## Drafting `blink`
+
+`blink` is a physical host, not a Proxmox VM. Its current draft lives at:
+
+```text
+nixos/hosts/blink/
+```
+
+The first version is intentionally close to the current setup on Blink. It
+enables Docker, Tailscale, SSH, native observability agents, native
+Jellyfin/Navidrome, native Nginx, and systemd-managed Compose stacks for the
+services that have not yet been moved out of Docker. The home app stack is
+generated from Nix, while the `chatting` stack is still run from the local
+`~/develop/chatting` checkout.
+
+Prometheus, Grafana, and Loki are intentionally omitted from Blink because
+Partridge is the target observability host. cAdvisor has also been dropped.
+Promtail runs as a native NixOS service and currently pushes system journal logs
+to `http://partridge.int.alcachofa.faith:3100/loki/api/v1/push`.
+
+Traefik is also omitted. The draft uses NixOS Nginx as a placeholder reverse
+proxy, following the direction used on Partridge. DNS names and TLS are expected
+to be rebuilt deliberately later.
+
+Jellyfin and Navidrome are native NixOS services. The config adds bind mounts at
+`/media`, `/media3`, `/media4`, and `/music` so they can keep using the paths
+that existed inside the old containers. Their application state still needs a
+separate migration decision before a real cutover.
+
+The remaining Blink-managed Compose services are currently:
+
+- `pigallery2`
+- `scheduler`
+
+`chatting` is still started as its own Compose stack from its existing checkout.
+
+The Compose definitions still reference local checkouts and secret/config files
+under:
+
+```text
+/home/edward/develop/house
+/home/edward/develop/chatting
+```
+
+That keeps the first migration reversible. A later pass can move the remaining
+app definitions, build inputs, and secrets into repo-owned Nix modules or SOPS
+templates.
+
+Before using this as an install target, regenerate or review
+`nixos/hosts/blink/hardware-configuration.nix`. It was drafted from the current
+Debian block device layout and may need changes after a NixOS install or disk
+reshuffle.
 
 ## Deploying `partridge`
 
