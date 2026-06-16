@@ -1,4 +1,4 @@
-{ ... }:
+{ config, ... }:
 
 let
   grafanaDomain = "grafana.alcachofa.faith";
@@ -110,6 +110,14 @@ in
 {
   alcachofa.partridge.reverseProxy.routes.${grafanaDomain}.port = grafanaPort;
 
+  sops.secrets."grafana/smtp_password" = {
+    sopsFile = ./secrets/grafana-smtp.yaml;
+    key = "smtp_password";
+    owner = "grafana";
+    group = "grafana";
+    mode = "0400";
+  };
+
   services.postgresql = {
     ensureDatabases = [ "grafana" ];
     ensureUsers = [
@@ -141,6 +149,16 @@ in
       users = {
         allow_sign_up = false;
         allow_org_create = false;
+      };
+
+      smtp = {
+        enabled = true;
+        host = "smtp.fastmail.com:587";
+        user = "edsalkeld@fastmail.com";
+        password = "$__file{${config.sops.secrets."grafana/smtp_password".path}}";
+        from_address = "edsalkeld@fastmail.com";
+        from_name = "Grafana";
+        startTLS_policy = "MandatoryStartTLS";
       };
     };
 
@@ -213,6 +231,42 @@ in
               usageType = "gas";
               panelId = 2;
             })
+          ];
+        }
+      ];
+    };
+
+    provision.alerting.contactPoints.settings = {
+      apiVersion = 1;
+      contactPoints = [
+        {
+          orgId = 1;
+          name = "Email Alcachofa";
+          receivers = [
+            {
+              uid = "benye0c2pvif4a";
+              name = "Email Alcachofa";
+              type = "email";
+              disableResolveMessage = false;
+              settings = {
+                addresses = "edsalkeld@fastmail.com";
+                singleEmail = false;
+              };
+            }
+          ];
+        }
+      ];
+    };
+
+    provision.alerting.policies.settings = {
+      apiVersion = 1;
+      policies = [
+        {
+          orgId = 1;
+          receiver = "Email Alcachofa";
+          group_by = [
+            "grafana_folder"
+            "alertname"
           ];
         }
       ];
