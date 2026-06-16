@@ -16,6 +16,29 @@
         "type": "github"
       }
     },
+    "octopus-dl": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781618567,
+        "narHash": "sha256-k8ztZZhQ2aYz0SbCY/Q92ghqhWVQYyE6SGXEBqMJ4Ig=",
+        "owner": "EdwardSalkeld",
+        "repo": "octopus-dl",
+        "rev": "4926432b7f564dc950fd00a98a42c7fcb9995291",
+        "type": "github"
+      },
+      "original": {
+        "owner": "EdwardSalkeld",
+        "repo": "octopus-dl",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "octopus-dl": "octopus-dl",
+        "sops-nix": "sops-nix"
+      }
+    },
     "sops-nix": {
       "inputs": {
         "nixpkgs": [
@@ -34,12 +57,6 @@
         "owner": "Mic92",
         "repo": "sops-nix",
         "type": "github"
-      }
-    },
-    "root": {
-      "inputs": {
-        "nixpkgs": "nixpkgs",
-        "sops-nix": "sops-nix"
       }
     }
   },
