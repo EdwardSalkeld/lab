@@ -37,9 +37,13 @@ in
 
   systemd.services.octopus-dl-db-setup = {
     description = "Grant octopus-dl access to the scheduler usages table";
+    # Ordered after scheduler-db-setup so the two oneshots do not run GRANT
+    # CONNECT on the scheduler database concurrently, which races on the
+    # pg_database catalog row ("tuple concurrently updated").
     after = [
       "postgresql.service"
       "postgresql-setup.service"
+      "scheduler-db-setup.service"
     ];
     requires = [
       "postgresql.service"
