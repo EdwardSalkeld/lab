@@ -43,6 +43,24 @@
             touch "$out"
           '';
 
+        sops-recipient-check = pkgs.runCommand "sops-recipient-check"
+          {
+            nativeBuildInputs = [
+              pkgs.bash
+              pkgs.gawk
+              pkgs.gnugrep
+              pkgs.findutils
+            ];
+            src = ./.;
+          }
+          ''
+            cp -R "$src" source
+            chmod -R u+w source
+            cd source
+            ${pkgs.bash}/bin/bash ./scripts/sops-check.sh
+            touch "$out"
+          '';
+
         partridge = self.nixosConfigurations.partridge.config.system.build.toplevel;
       };
 
