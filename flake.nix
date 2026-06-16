@@ -57,7 +57,7 @@
             cp -R "$src" source
             chmod -R u+w source
             cd source
-            ./scripts/sops-check.sh
+            ${pkgs.bash}/bin/bash ./scripts/sops-check.sh
             touch "$out"
           '';
 
