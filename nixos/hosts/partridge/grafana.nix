@@ -1,11 +1,122 @@
-{ ... }:
+{ config, ... }:
 
 let
   grafanaDomain = "grafana.alcachofa.faith";
   grafanaPort = 3001;
+  octopusStaleDataThresholdDays = 4;
+  mkOctopusFreshnessAlert =
+    { uid, title, usageType, panelId }:
+    {
+      inherit uid title;
+      condition = "C";
+      data = [
+        {
+          refId = "A";
+          datasourceUid = "scheduler-postgres";
+          queryType = "";
+          relativeTimeRange = {
+            from = 600;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "postgres";
+              uid = "scheduler-postgres";
+            };
+            editorMode = "code";
+            format = "table";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            rawQuery = true;
+            rawSql = ''
+              SELECT EXTRACT(EPOCH FROM (now() - max(interval_start))) / 86400 AS age_days
+              FROM usages
+              WHERE usage_type = '${usageType}'
+            '';
+            refId = "A";
+          };
+        }
+        {
+          refId = "B";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "A";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            reducer = "last";
+            refId = "B";
+            type = "reduce";
+          };
+        }
+        {
+          refId = "C";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            conditions = [
+              {
+                evaluator = {
+                  params = [ octopusStaleDataThresholdDays ];
+                  type = "gt";
+                };
+                operator.type = "and";
+                query.params = [ "C" ];
+                reducer.type = "last";
+                type = "query";
+              }
+            ];
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "B";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            refId = "C";
+            type = "threshold";
+          };
+        }
+      ];
+      noDataState = "Alerting";
+      execErrState = "Error";
+      for = "30m";
+      annotations = {
+        __dashboardUid__ = "ops-octopus-energy";
+        __panelId__ = toString panelId;
+        description = "Latest ${usageType} Octopus data is older than ${toString octopusStaleDataThresholdDays} days.";
+        summary = "Octopus ${usageType} data is stale";
+      };
+      labels = {
+        service = "octopus";
+        usage_type = usageType;
+      };
+      notification_settings.receiver = "Email Alcachofa";
+      isPaused = false;
+    };
 in
 {
   alcachofa.partridge.reverseProxy.routes.${grafanaDomain}.port = grafanaPort;
+
+  sops.secrets."grafana/smtp_password" = {
+    sopsFile = ./secrets/grafana-smtp.yaml;
+    key = "smtp_password";
+    owner = "grafana";
+    group = "grafana";
+    mode = "0400";
+  };
 
   services.postgresql = {
     ensureDatabases = [ "grafana" ];
@@ -38,6 +149,16 @@ in
       users = {
         allow_sign_up = false;
         allow_org_create = false;
+      };
+
+      smtp = {
+        enabled = true;
+        host = "smtp.fastmail.com:587";
+        user = "edsalkeld@fastmail.com";
+        password = "$__file{${config.sops.secrets."grafana/smtp_password".path}}";
+        from_address = "edsalkeld@fastmail.com";
+        from_name = "Grafana";
+        startTLS_policy = "MandatoryStartTLS";
       };
     };
 
@@ -85,6 +206,68 @@ in
           folder = "Ops";
           allowUiUpdates = false;
           options.path = ./grafana/dashboards/ops;
+        }
+      ];
+    };
+
+    provision.alerting.rules.settings = {
+      apiVersion = 1;
+      groups = [
+        {
+          orgId = 1;
+          name = "Octopus Data Freshness";
+          folder = "Ops";
+          interval = "1h";
+          rules = [
+            (mkOctopusFreshnessAlert {
+              uid = "octopus-electricity-data-stale";
+              title = "Octopus electricity data stale";
+              usageType = "electricity";
+              panelId = 1;
+            })
+            (mkOctopusFreshnessAlert {
+              uid = "octopus-gas-data-stale";
+              title = "Octopus gas data stale";
+              usageType = "gas";
+              panelId = 2;
+            })
+          ];
+        }
+      ];
+    };
+
+    provision.alerting.contactPoints.settings = {
+      apiVersion = 1;
+      contactPoints = [
+        {
+          orgId = 1;
+          name = "Email Alcachofa";
+          receivers = [
+            {
+              uid = "benye0c2pvif4a";
+              name = "Email Alcachofa";
+              type = "email";
+              disableResolveMessage = false;
+              settings = {
+                addresses = "edsalkeld@fastmail.com";
+                singleEmail = false;
+              };
+            }
+          ];
+        }
+      ];
+    };
+
+    provision.alerting.policies.settings = {
+      apiVersion = 1;
+      policies = [
+        {
+          orgId = 1;
+          receiver = "Email Alcachofa";
+          group_by = [
+            "grafana_folder"
+            "alertname"
+          ];
         }
       ];
     };
