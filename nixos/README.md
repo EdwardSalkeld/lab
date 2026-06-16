@@ -58,7 +58,8 @@ From a checkout on `partridge`:
 ```
 
 The script uses `hostname -s` to select the matching flake target. It also
-accepts other `nixos-rebuild` actions:
+accepts other `nixos-rebuild` actions plus a `rollback` shortcut for
+`nixos-rebuild switch --rollback`:
 
 ```sh
 ./scripts/nixos-switch.sh dry-build

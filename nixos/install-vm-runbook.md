@@ -156,6 +156,9 @@ If a switch needs to be undone later, the same helper also supports:
 ./scripts/nixos-switch.sh rollback
 ```
 
+That shortcut runs an immediate rollback via `nixos-rebuild switch --rollback`
+without needing to repeat the flake target manually.
+
 ## 8. Post-Install Checks
 
 ```sh
