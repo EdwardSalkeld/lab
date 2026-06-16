@@ -3,6 +3,109 @@
 let
   grafanaDomain = "grafana.alcachofa.faith";
   grafanaPort = 3001;
+  octopusStaleDataThresholdDays = 4;
+  mkOctopusFreshnessAlert =
+    { uid, title, usageType, panelId }:
+    {
+      inherit uid title;
+      condition = "C";
+      data = [
+        {
+          refId = "A";
+          datasourceUid = "scheduler-postgres";
+          queryType = "";
+          relativeTimeRange = {
+            from = 600;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "postgres";
+              uid = "scheduler-postgres";
+            };
+            editorMode = "code";
+            format = "table";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            rawQuery = true;
+            rawSql = ''
+              SELECT EXTRACT(EPOCH FROM (now() - max(interval_start))) / 86400 AS age_days
+              FROM usages
+              WHERE usage_type = '${usageType}'
+            '';
+            refId = "A";
+          };
+        }
+        {
+          refId = "B";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "A";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            reducer = "last";
+            refId = "B";
+            type = "reduce";
+          };
+        }
+        {
+          refId = "C";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            conditions = [
+              {
+                evaluator = {
+                  params = [ octopusStaleDataThresholdDays ];
+                  type = "gt";
+                };
+                operator.type = "and";
+                query.params = [ "C" ];
+                reducer.type = "last";
+                type = "query";
+              }
+            ];
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "B";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            refId = "C";
+            type = "threshold";
+          };
+        }
+      ];
+      noDataState = "Alerting";
+      execErrState = "Error";
+      for = "30m";
+      annotations = {
+        __dashboardUid__ = "ops-octopus-energy";
+        __panelId__ = toString panelId;
+        description = "Latest ${usageType} Octopus data is older than ${toString octopusStaleDataThresholdDays} days.";
+        summary = "Octopus ${usageType} data is stale";
+      };
+      labels = {
+        service = "octopus";
+        usage_type = usageType;
+      };
+      notification_settings.receiver = "Email Alcachofa";
+      isPaused = false;
+    };
 in
 {
   alcachofa.partridge.reverseProxy.routes.${grafanaDomain}.port = grafanaPort;
@@ -85,6 +188,32 @@ in
           folder = "Ops";
           allowUiUpdates = false;
           options.path = ./grafana/dashboards/ops;
+        }
+      ];
+    };
+
+    provision.alerting.rules.settings = {
+      apiVersion = 1;
+      groups = [
+        {
+          orgId = 1;
+          name = "Octopus Data Freshness";
+          folder = "Ops";
+          interval = "1h";
+          rules = [
+            (mkOctopusFreshnessAlert {
+              uid = "octopus-electricity-data-stale";
+              title = "Octopus electricity data stale";
+              usageType = "electricity";
+              panelId = 1;
+            })
+            (mkOctopusFreshnessAlert {
+              uid = "octopus-gas-data-stale";
+              title = "Octopus gas data stale";
+              usageType = "gas";
+              panelId = 2;
+            })
+          ];
         }
       ];
     };
