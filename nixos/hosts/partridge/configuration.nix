@@ -8,6 +8,7 @@
     ./grafana.nix
     ./hardware-configuration.nix
     ./loki.nix
+    ./octopus-dl.nix
     ./prometheus.nix
     ./reverse-proxy.nix
     ./scheduler-db.nix

@@ -7,9 +7,13 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    octopus-dl = {
+      url = "github:EdwardSalkeld/octopus-dl";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, sops-nix, ... }:
+  outputs = { self, nixpkgs, sops-nix, octopus-dl, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -20,10 +24,18 @@
         vendorHash = null;
         subPackages = [ "cmd/bitwarden-mirror" ];
       };
+      octopusDl = pkgs.buildGoModule {
+        pname = "octopus-dl";
+        version = "0.1.0";
+        src = octopus-dl;
+        vendorHash = null;
+        subPackages = [ "." ];
+      };
     in
     {
       packages.${system} = {
         bitwarden-mirror = bitwardenMirror;
+        octopus-dl = octopusDl;
         default = bitwardenMirror;
       };
 
@@ -51,6 +63,7 @@
           inherit system;
           specialArgs = {
             bitwardenMirrorPackage = bitwardenMirror;
+            octopusDlPackage = octopusDl;
           };
           modules = [
             sops-nix.nixosModules.sops
