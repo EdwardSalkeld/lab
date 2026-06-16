@@ -332,8 +332,28 @@ imports a fresh Bitwarden JSON export. The temporary plaintext export lives in
 
 Secrets are expected in `nixos/hosts/partridge/secrets/bitwarden-mirror.yaml`
 as a sops-encrypted document with the keys shown in the adjacent `.example`
-file. Replace the placeholder Partridge recipient in `.sops.yaml` with the
-host age recipient before encrypting real credentials.
+file. Partridge secrets are encrypted to Edward's Mac SSH key and Partridge's
+host age recipient, both declared in `.sops.yaml`.
+
+Create or edit a secret file with:
+
+```sh
+sops nixos/hosts/partridge/secrets/example.yaml
+```
+
+After adding a new secret file or rotating recipients, update keys and run the
+static recipient check before pushing:
+
+```sh
+sops updatekeys nixos/hosts/partridge/secrets/*.yaml
+./scripts/sops-check.sh
+nix flake check --no-update-lock-file
+```
+
+`scripts/sops-check.sh` does not decrypt secrets. It verifies that every
+repo-managed host secret has sops metadata and includes the recipients declared
+in `.sops.yaml`, which catches files encrypted to the wrong key set without
+requiring SSH access or private keys.
 
 ## Building An Image Later
 
