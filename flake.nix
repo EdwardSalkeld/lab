@@ -45,11 +45,9 @@
         pname = "workout-service";
         version = "0.1.0";
         src = workoutServiceSrc;
-        vendorHash = null;
+        vendorHash = pkgs.lib.fakeHash;
+        deleteVendor = true;
         subPackages = [ "cmd/workout-service" ];
-        preBuild = ''
-          rm -rf vendor
-        '';
         postInstall = ''
           mkdir -p $out/share/workout-service
           cp -R sql $out/share/workout-service/
