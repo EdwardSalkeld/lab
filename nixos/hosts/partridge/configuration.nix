@@ -14,7 +14,7 @@
     ./scheduler-db.nix
     ./vaultwarden.nix
     ./web.nix
-    ./workout-service.nix
+    ./exercise-tracker.nix
   ];
 
   networking.hostName = "partridge";

@@ -124,7 +124,7 @@ the `deploy` user and forced command exist before the workflow can connect.
 PostgreSQL instance. It is reverse-proxied for internal access at:
 
 ```text
-https://workout.int.alcachofa.faith
+https://exercise-tracker.int.alcachofa.faith
 ```
 
 Keep the lab repo focused on deployment and hosting. The tracker's API contract

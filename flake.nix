@@ -17,7 +17,7 @@
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      workoutServiceSrc = pkgs.runCommand "workout-service-src" { } ''
+      exerciseTrackerSrc = pkgs.runCommand "exercise-tracker-src" { } ''
         cp -R ${builtins.fetchGit {
           url = "https://github.com/EdwardSalkeld/exercise-tracker.git";
           ref = "refs/heads/main";
@@ -25,6 +25,10 @@
         }} "$out"
         chmod -R u+w "$out"
         substituteInPlace "$out/go.mod" --replace-fail 'go 1.26.0' 'go 1.25.0'
+        cmdDir="$(find "$out/cmd" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+        if [ "$(basename "$cmdDir")" != "exercise-tracker" ]; then
+          mv "$cmdDir" "$out/cmd/exercise-tracker"
+        fi
         rm -rf "$out/vendor"
       '';
       bitwardenMirror = pkgs.buildGoModule {
@@ -41,15 +45,15 @@
         vendorHash = null;
         subPackages = [ "." ];
       };
-      workoutService = pkgs.buildGoModule {
-        pname = "workout-service";
+      exerciseTracker = pkgs.buildGoModule {
+        pname = "exercise-tracker";
         version = "0.1.0";
-        src = workoutServiceSrc;
+        src = exerciseTrackerSrc;
         vendorHash = "sha256-4k3CIJyI20N9YoF82BdD4nA29HL40KPYzsP7CqGa28A=";
-        subPackages = [ "cmd/workout-service" ];
+        subPackages = [ "cmd/exercise-tracker" ];
         postInstall = ''
-          mkdir -p $out/share/workout-service
-          cp -R sql $out/share/workout-service/
+          mkdir -p $out/share/exercise-tracker
+          cp -R sql $out/share/exercise-tracker/
         '';
       };
     in
@@ -57,7 +61,7 @@
       packages.${system} = {
         bitwarden-mirror = bitwardenMirror;
         octopus-dl = octopusDl;
-        workout-service = workoutService;
+        exercise-tracker = exerciseTracker;
         default = bitwardenMirror;
       };
 
@@ -86,7 +90,7 @@
           specialArgs = {
             bitwardenMirrorPackage = bitwardenMirror;
             octopusDlPackage = octopusDl;
-            workoutServicePackage = workoutService;
+            exerciseTrackerPackage = exerciseTracker;
           };
           modules = [
             sops-nix.nixosModules.sops

@@ -1,10 +1,10 @@
-{ config, workoutServicePackage, ... }:
+{ config, exerciseTrackerPackage, ... }:
 
 let
-  user = "workout_service";
+  user = "exercise_tracker";
   group = user;
-  dbName = "workout_service";
-  domain = "workout.int.alcachofa.faith";
+  dbName = "exercise_tracker";
+  domain = "exercise-tracker.int.alcachofa.faith";
   port = 8081;
   psql = "${config.services.postgresql.package}/bin/psql";
 in
@@ -22,8 +22,8 @@ in
     { name = user; }
   ];
 
-  systemd.services.workout-service-db-setup = {
-    description = "Configure PostgreSQL access and schema for workout-service";
+  systemd.services.exercise-tracker-db-setup = {
+    description = "Configure PostgreSQL access and schema for exercise-tracker";
     after = [
       "postgresql.service"
       "postgresql-setup.service"
@@ -44,7 +44,7 @@ in
       GRANT CONNECT ON DATABASE ${dbName} TO ${user};
 SQL
 
-      for migration in ${workoutServicePackage}/share/workout-service/sql/migrations/*.sql; do
+      for migration in ${exerciseTrackerPackage}/share/exercise-tracker/sql/migrations/*.sql; do
         ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} -f "$migration"
       done
 
@@ -60,24 +60,24 @@ SQL
     '';
   };
 
-  systemd.services.workout-service = {
+  systemd.services.exercise-tracker = {
     description = "Exercise tracker HTTP service";
     wantedBy = [ "multi-user.target" ];
     wants = [ "network-online.target" ];
     after = [
       "network-online.target"
       "postgresql.service"
-      "workout-service-db-setup.service"
+      "exercise-tracker-db-setup.service"
     ];
-    requires = [ "workout-service-db-setup.service" ];
+    requires = [ "exercise-tracker-db-setup.service" ];
     environment = {
-      WORKOUT_SERVICE_DATABASE_URL = "postgresql:///${dbName}?host=/run/postgresql&user=${user}&sslmode=disable";
-      WORKOUT_SERVICE_LISTEN_ADDR = "127.0.0.1:${toString port}";
+      EXERCISE_TRACKER_DATABASE_URL = "postgresql:///${dbName}?host=/run/postgresql&user=${user}&sslmode=disable";
+      EXERCISE_TRACKER_LISTEN_ADDR = "127.0.0.1:${toString port}";
     };
     serviceConfig = {
       User = user;
       Group = group;
-      ExecStart = "${workoutServicePackage}/bin/workout-service";
+      ExecStart = "${exerciseTrackerPackage}/bin/exercise-tracker";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectHome = true;
