@@ -129,7 +129,7 @@ https://workout.int.alcachofa.faith
 
 Keep the lab repo focused on deployment and hosting. The tracker's API contract
 and endpoint details belong in the service's own repository:
-https://github.com/EdwardSalkeld/workout-service
+https://github.com/EdwardSalkeld/exercise-tracker
 
 ## Prometheus Exporters
 

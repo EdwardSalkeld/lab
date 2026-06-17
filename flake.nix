@@ -18,7 +18,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       workoutServiceSrc = builtins.fetchGit {
-        url = "https://github.com/EdwardSalkeld/workout-service.git";
+        url = "https://github.com/EdwardSalkeld/exercise-tracker.git";
         ref = "refs/heads/main";
         rev = "f31b9f4e63176a73daa70dd3c75a9e1ef072cf60";
       };
