@@ -21,7 +21,7 @@
         cp -R ${builtins.fetchGit {
           url = "https://github.com/EdwardSalkeld/exercise-tracker.git";
           ref = "refs/heads/main";
-          rev = "f31b9f4e63176a73daa70dd3c75a9e1ef072cf60";
+          rev = "ab9b7adf1a3d3ae5d989933dd44ce7a535c897d0";
         }} "$out"
         chmod -R u+w "$out"
         substituteInPlace "$out/go.mod" --replace-fail 'go 1.26.0' 'go 1.25.0'
