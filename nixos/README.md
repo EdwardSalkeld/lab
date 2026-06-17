@@ -118,6 +118,19 @@ The Tailscale ACL should allow `tag:ci` to reach only Partridge's Tailscale SSH
 endpoint. The first deployment of this wiring must still be applied manually so
 the `deploy` user and forced command exist before the workflow can connect.
 
+## Exercise Tracker on `partridge`
+
+`partridge` also runs the exercise tracker service backed by the local
+PostgreSQL instance. It is reverse-proxied for internal access at:
+
+```text
+https://workout.int.alcachofa.faith
+```
+
+Keep the lab repo focused on deployment and hosting. The tracker's API contract
+and endpoint details belong in the service's own repository:
+https://github.com/EdwardSalkeld/workout-service
+
 ## Prometheus Exporters
 
 All Proxmox VM hosts include node exporter on port `9100` from

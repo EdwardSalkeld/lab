@@ -17,7 +17,11 @@
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      workoutServiceSrc = ./tools/workout-service;
+      workoutServiceSrc = builtins.fetchGit {
+        url = "https://github.com/EdwardSalkeld/workout-service.git";
+        ref = "refs/heads/main";
+        rev = "f31b9f4e63176a73daa70dd3c75a9e1ef072cf60";
+      };
       bitwardenMirror = pkgs.buildGoModule {
         pname = "bitwarden-mirror";
         version = "0.1.0";
@@ -38,9 +42,12 @@
         src = workoutServiceSrc;
         vendorHash = null;
         subPackages = [ "cmd/workout-service" ];
+        postPatch = ''
+          substituteInPlace go.mod --replace-fail 'go 1.26.0' 'go 1.25.0'
+        '';
         postInstall = ''
           mkdir -p $out/share/workout-service
-          cp -R ${workoutServiceSrc}/sql $out/share/workout-service/
+          cp -R sql $out/share/workout-service/
         '';
       };
     in

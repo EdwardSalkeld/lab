@@ -61,7 +61,7 @@ SQL
   };
 
   systemd.services.workout-service = {
-    description = "Workout data HTTP service";
+    description = "Exercise tracker HTTP service";
     wantedBy = [ "multi-user.target" ];
     wants = [ "network-online.target" ];
     after = [
