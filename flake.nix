@@ -11,9 +11,13 @@
       url = "github:EdwardSalkeld/octopus-dl";
       flake = false;
     };
+    workout-service = {
+      url = "github:EdwardSalkeld/workout-service";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, sops-nix, octopus-dl, ... }:
+  outputs = { self, nixpkgs, sops-nix, octopus-dl, workout-service, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -31,11 +35,23 @@
         vendorHash = null;
         subPackages = [ "." ];
       };
+      workoutService = pkgs.buildGoModule {
+        pname = "workout-service";
+        version = "0.1.0";
+        src = workout-service;
+        vendorHash = null;
+        subPackages = [ "cmd/workout-service" ];
+        postInstall = ''
+          mkdir -p $out/share/workout-service
+          cp -R sql $out/share/workout-service/
+        '';
+      };
     in
     {
       packages.${system} = {
         bitwarden-mirror = bitwardenMirror;
         octopus-dl = octopusDl;
+        workout-service = workoutService;
         default = bitwardenMirror;
       };
 
@@ -64,6 +80,7 @@
           specialArgs = {
             bitwardenMirrorPackage = bitwardenMirror;
             octopusDlPackage = octopusDl;
+            workoutServicePackage = workoutService;
           };
           modules = [
             sops-nix.nixosModules.sops
