@@ -11,16 +11,13 @@
       url = "github:EdwardSalkeld/octopus-dl";
       flake = false;
     };
-    workout-service = {
-      url = "github:EdwardSalkeld/workout-service";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, sops-nix, octopus-dl, workout-service, ... }:
+  outputs = { self, nixpkgs, sops-nix, octopus-dl, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
+      workoutServiceSrc = ./tools/workout-service;
       bitwardenMirror = pkgs.buildGoModule {
         pname = "bitwarden-mirror";
         version = "0.1.0";
@@ -38,12 +35,12 @@
       workoutService = pkgs.buildGoModule {
         pname = "workout-service";
         version = "0.1.0";
-        src = workout-service;
+        src = workoutServiceSrc;
         vendorHash = null;
         subPackages = [ "cmd/workout-service" ];
         postInstall = ''
           mkdir -p $out/share/workout-service
-          cp -R sql $out/share/workout-service/
+          cp -R ${workoutServiceSrc}/sql $out/share/workout-service/
         '';
       };
     in
