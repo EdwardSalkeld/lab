@@ -45,7 +45,7 @@
         pname = "workout-service";
         version = "0.1.0";
         src = workoutServiceSrc;
-        vendorHash = pkgs.lib.fakeHash;
+        vendorHash = "sha256-4k3CIJyI20N9YoF82BdD4nA29HL40KPYzsP7CqGa28A=";
         subPackages = [ "cmd/workout-service" ];
         postInstall = ''
           mkdir -p $out/share/workout-service
