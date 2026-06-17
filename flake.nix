@@ -46,7 +46,6 @@
         version = "0.1.0";
         src = workoutServiceSrc;
         vendorHash = pkgs.lib.fakeHash;
-        deleteVendor = true;
         subPackages = [ "cmd/workout-service" ];
         postInstall = ''
           mkdir -p $out/share/workout-service
