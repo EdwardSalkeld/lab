@@ -11,26 +11,16 @@
       url = "github:EdwardSalkeld/octopus-dl";
       flake = false;
     };
+    exercise-tracker = {
+      url = "github:EdwardSalkeld/exercise-tracker";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, sops-nix, octopus-dl, ... }:
+  outputs = { self, nixpkgs, sops-nix, octopus-dl, exercise-tracker, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      exerciseTrackerSrc = pkgs.runCommand "exercise-tracker-src" { } ''
-        cp -R ${builtins.fetchGit {
-          url = "https://github.com/EdwardSalkeld/exercise-tracker.git";
-          ref = "refs/heads/main";
-          rev = "ab9b7ad74906f4be7ce2cfaea2f6fafd71f2d245";
-        }} "$out"
-        chmod -R u+w "$out"
-        substituteInPlace "$out/go.mod" --replace-fail 'go 1.26.0' 'go 1.25.0'
-        cmdDir="$(find "$out/cmd" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
-        if [ "$(basename "$cmdDir")" != "exercise-tracker" ]; then
-          mv "$cmdDir" "$out/cmd/exercise-tracker"
-        fi
-        rm -rf "$out/vendor"
-      '';
       bitwardenMirror = pkgs.buildGoModule {
         pname = "bitwarden-mirror";
         version = "0.1.0";
@@ -48,13 +38,9 @@
       exerciseTracker = pkgs.buildGoModule {
         pname = "exercise-tracker";
         version = "0.1.0";
-        src = exerciseTrackerSrc;
-        vendorHash = "sha256-4k3CIJyI20N9YoF82BdD4nA29HL40KPYzsP7CqGa28A=";
-        subPackages = [ "cmd/exercise-tracker" ];
-        postInstall = ''
-          mkdir -p $out/share/exercise-tracker
-          cp -R sql $out/share/exercise-tracker/
-        '';
+        src = exercise-tracker;
+        vendorHash = null;
+        subPackages = [ "." ];
       };
     in
     {
