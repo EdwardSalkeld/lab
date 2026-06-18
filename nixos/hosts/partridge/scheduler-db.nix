@@ -58,8 +58,6 @@ in
 
       ${psql} -v ON_ERROR_STOP=1 --set=writer_password="$writer_password" --dbname=postgres <<'SQL'
       ALTER ROLE ${writerRole} WITH LOGIN PASSWORD :'writer_password';
-      GRANT CONNECT ON DATABASE ${dbName} TO ${writerRole};
-      GRANT CONNECT ON DATABASE ${dbName} TO grafana;
 SQL
     '';
   };
