@@ -17,6 +17,11 @@ The first stage is intentionally manual: Terraform creates a blank VM and
 attaches the NixOS minimal ISO. NixOS should be installed from the Proxmox
 console so the installation flow is visible and learnable.
 
+## Repo Rules
+
+- Do not push to `main` unless the user explicitly asks for a direct push to
+  `main`. Use a branch and PR for follow-up changes by default.
+
 ## Terraform
 
 Load Proxmox credentials from `terraform/.env` before running Terraform:

@@ -118,6 +118,40 @@ The Tailscale ACL should allow `tag:ci` to reach only Partridge's Tailscale SSH
 endpoint. The first deployment of this wiring must still be applied manually so
 the `deploy` user and forced command exist before the workflow can connect.
 
+## Exercise Tracker on `partridge`
+
+`partridge` also runs the exercise tracker service backed by the local
+PostgreSQL instance. It is reverse-proxied for internal access at:
+
+```text
+https://exercise-tracker.int.alcachofa.faith
+```
+
+Keep the lab repo focused on deployment and hosting. The tracker's API contract
+and endpoint details belong in the service's own repository:
+https://github.com/EdwardSalkeld/exercise-tracker
+
+### Updating Go service inputs
+
+The Go service sources are flake inputs. When Dependabot or another change lands
+in `exercise-tracker`, update the input from this repo:
+
+```sh
+nix flake lock --update-input exercise-tracker
+```
+
+If `go.mod` or `go.sum` changed, the `buildGoModule.vendorHash` in `flake.nix`
+may also need updating. This does not mean committing a Go `vendor/` directory;
+it is Nix's hash for the fetched Go module dependency tree.
+
+To refresh it, temporarily set the package's `vendorHash` to
+`pkgs.lib.fakeHash`, run the build or CI check, and copy the `got:
+sha256-...` hash from the Nix error back into `flake.nix`.
+
+`vendorHash = null` is only appropriate when the Go package has no external
+module dependencies or already has a committed `vendor/` tree, as `octopus-dl`
+currently does.
+
 ## Prometheus Exporters
 
 All Proxmox VM hosts include node exporter on port `9100` from

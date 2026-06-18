@@ -11,9 +11,13 @@
       url = "github:EdwardSalkeld/octopus-dl";
       flake = false;
     };
+    exercise-tracker = {
+      url = "github:EdwardSalkeld/exercise-tracker";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, sops-nix, octopus-dl, ... }:
+  outputs = { self, nixpkgs, sops-nix, octopus-dl, exercise-tracker, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -31,11 +35,19 @@
         vendorHash = null;
         subPackages = [ "." ];
       };
+      exerciseTracker = pkgs.buildGoModule {
+        pname = "exercise-tracker";
+        version = "0.1.0";
+        src = exercise-tracker;
+        vendorHash = "sha256-4k3CIJyI20N9YoF82BdD4nA29HL40KPYzsP7CqGa28A=";
+        subPackages = [ "." ];
+      };
     in
     {
       packages.${system} = {
         bitwarden-mirror = bitwardenMirror;
         octopus-dl = octopusDl;
+        exercise-tracker = exerciseTracker;
         default = bitwardenMirror;
       };
 
@@ -64,6 +76,7 @@
           specialArgs = {
             bitwardenMirrorPackage = bitwardenMirror;
             octopusDlPackage = octopusDl;
+            exerciseTrackerPackage = exerciseTracker;
           };
           modules = [
             sops-nix.nixosModules.sops
