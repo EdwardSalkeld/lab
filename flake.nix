@@ -11,17 +11,13 @@
       url = "github:EdwardSalkeld/octopus-dl";
       flake = false;
     };
-    exercise-tracker = {
-      url = "github:EdwardSalkeld/exercise-tracker";
-      flake = false;
-    };
     linear-export = {
       url = "github:EdwardSalkeld/linear-export";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, sops-nix, octopus-dl, exercise-tracker, linear-export, ... }:
+  outputs = { self, nixpkgs, sops-nix, octopus-dl, linear-export, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -39,13 +35,6 @@
         vendorHash = null;
         subPackages = [ "." ];
       };
-      exerciseTracker = pkgs.buildGoModule {
-        pname = "exercise-tracker";
-        version = "0.1.0";
-        src = exercise-tracker;
-        vendorHash = "sha256-4k3CIJyI20N9YoF82BdD4nA29HL40KPYzsP7CqGa28A=";
-        subPackages = [ "." ];
-      };
       linearExport = pkgs.buildGoModule {
         pname = "linear-export";
         version = "0.1.0";
@@ -58,7 +47,6 @@
       packages.${system} = {
         bitwarden-mirror = bitwardenMirror;
         octopus-dl = octopusDl;
-        exercise-tracker = exerciseTracker;
         linear-export = linearExport;
         default = bitwardenMirror;
       };
@@ -88,7 +76,6 @@
           specialArgs = {
             bitwardenMirrorPackage = bitwardenMirror;
             octopusDlPackage = octopusDl;
-            exerciseTrackerPackage = exerciseTracker;
             linearExportPackage = linearExport;
           };
           modules = [
