@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "exercise-tracker": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1781769030,
-        "narHash": "sha256-3vJb7RifQve0QQiuoz8uCZ7SlOoPAYeaHzcFyAWIAGY=",
-        "owner": "EdwardSalkeld",
-        "repo": "exercise-tracker",
-        "rev": "c439d500b68f91cec9e9d2861959acf29a5f49ca",
-        "type": "github"
-      },
-      "original": {
-        "owner": "EdwardSalkeld",
-        "repo": "exercise-tracker",
-        "type": "github"
-      }
-    },
     "linear-export": {
       "flake": false,
       "locked": {
@@ -66,7 +50,6 @@
     },
     "root": {
       "inputs": {
-        "exercise-tracker": "exercise-tracker",
         "linear-export": "linear-export",
         "nixpkgs": "nixpkgs",
         "octopus-dl": "octopus-dl",
