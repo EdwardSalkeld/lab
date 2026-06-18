@@ -9,6 +9,7 @@
     ./hardware-configuration.nix
     ./loki.nix
     ./octopus-dl.nix
+    ./postgres-backup.nix
     ./prometheus.nix
     ./reverse-proxy.nix
     ./scheduler-db.nix
