@@ -16,6 +16,22 @@
         "type": "github"
       }
     },
+    "linear-export": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781789316,
+        "narHash": "sha256-naRv2Fc0nfsC1G7pfooj2tCK6W81ZtC6hLInnVmxSTY=",
+        "owner": "EdwardSalkeld",
+        "repo": "linear-export",
+        "rev": "9e47b9c76bae1e3c5ab1b07bb6333db9ec28889c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "EdwardSalkeld",
+        "repo": "linear-export",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1781509190,
@@ -51,6 +67,7 @@
     "root": {
       "inputs": {
         "exercise-tracker": "exercise-tracker",
+        "linear-export": "linear-export",
         "nixpkgs": "nixpkgs",
         "octopus-dl": "octopus-dl",
         "sops-nix": "sops-nix"
