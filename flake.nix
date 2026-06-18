@@ -39,7 +39,7 @@
         pname = "exercise-tracker";
         version = "0.1.0";
         src = exercise-tracker;
-        vendorHash = null;
+        vendorHash = "sha256-4k3CIJyI20N9YoF82BdD4nA29HL40KPYzsP7CqGa28A=";
         subPackages = [ "." ];
       };
     in
