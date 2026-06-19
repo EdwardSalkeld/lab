@@ -34,6 +34,11 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+            # cache.nixos.org intermittently corrupts zstd NARs over HTTP/2
+            # ("Stream error in the HTTP/2 framing layer"); force HTTP/1.1 and
+            # fall back to building from source if a substitute still fails.
+            http2 = false
+            fallback = true
       - name: flake check
         run: nix flake check --no-update-lock-file
       - name: build partridge

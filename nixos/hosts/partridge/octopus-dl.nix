@@ -36,14 +36,10 @@ in
   ];
 
   systemd.services.octopus-dl-db-setup = {
-    description = "Grant octopus-dl access to the scheduler usages table";
-    # Ordered after scheduler-db-setup so the two oneshots do not run GRANT
-    # CONNECT on the scheduler database concurrently, which races on the
-    # pg_database catalog row ("tuple concurrently updated").
+    description = "Create the usages table and grant octopus-dl access";
     after = [
       "postgresql.service"
       "postgresql-setup.service"
-      "scheduler-db-setup.service"
     ];
     requires = [
       "postgresql.service"
@@ -55,11 +51,13 @@ in
       User = "postgres";
       Group = "postgres";
     };
+    # Only table-level privileges are granted: CONNECT on the database and
+    # USAGE on the public schema are already held by PUBLIC by default, and
+    # granting them per role rewrites shared catalog rows (pg_database, the
+    # public pg_namespace) that other db-setup units also touch — the source of
+    # the "tuple concurrently updated" race. A per-table grant touches only this
+    # table's row, so no ordering against the other units is needed.
     script = ''
-      ${psql} -v ON_ERROR_STOP=1 --dbname=postgres <<'SQL'
-      GRANT CONNECT ON DATABASE ${dbName} TO ${user};
-SQL
-
       ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} <<'SQL'
       CREATE TABLE IF NOT EXISTS usages (
         consumption double precision NOT NULL,
@@ -68,7 +66,6 @@ SQL
         usage_type text NOT NULL,
         PRIMARY KEY (interval_start, usage_type)
       );
-      GRANT USAGE ON SCHEMA public TO ${user};
       GRANT SELECT, INSERT, UPDATE ON TABLE usages TO ${user};
 SQL
     '';
