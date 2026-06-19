@@ -49,7 +49,7 @@ variable "partridge_vm_name" {
 variable "partridge_root_disk_size" {
   description = "Root disk size for partridge in GiB"
   type        = number
-  default     = 12
+  default     = 24
 }
 
 variable "partridge_code_disk_size" {
