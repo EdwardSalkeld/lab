@@ -664,32 +664,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "SUM(consumption)"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 11,
@@ -721,7 +696,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  DATE_TRUNC('day', interval_start) AS time,\n  SUM(consumption) AS consumption\nFROM usages\nWHERE $__timeFilter(interval_start)\n  AND usage_type = 'electricity'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('day', interval_start) AS time,\n  SUM(consumption) AS consumption\nFROM usages\nWHERE $__timeFilter(interval_start)\n  AND usage_type = 'electricity'\nGROUP BY 1\nORDER BY 1\n",
           "refId": "A",
           "sql": {
             "columns": [
