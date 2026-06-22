@@ -15,9 +15,13 @@
       url = "github:EdwardSalkeld/linear-export";
       flake = false;
     };
+    exercise-tracker = {
+      url = "github:EdwardSalkeld/exercise-tracker";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, sops-nix, octopus-dl, linear-export, ... }:
+  outputs = { self, nixpkgs, sops-nix, octopus-dl, linear-export, exercise-tracker, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -50,12 +54,27 @@
         # that the binary itself never uses.
         doCheck = false;
       };
+      exerciseTracker = pkgs.buildGoModule {
+        pname = "exercise-tracker";
+        version = "0.1.0";
+        src = exercise-tracker;
+        vendorHash = null;
+        subPackages = [ "cmd/exercise-tracker" ];
+        # Tests run in CI; the nix build only needs the binary.
+        doCheck = false;
+        # The db-setup unit applies these migrations at activation, so they must
+        # ship in the package output, not just the source tree.
+        postInstall = ''
+          install -Dm644 sql/migrations/*.sql -t $out/share/exercise-tracker/sql/migrations/
+        '';
+      };
     in
     {
       packages.${system} = {
         bitwarden-mirror = bitwardenMirror;
         octopus-dl = octopusDl;
         linear-export = linearExport;
+        exercise-tracker = exerciseTracker;
         default = bitwardenMirror;
       };
 
@@ -85,6 +104,7 @@
             bitwardenMirrorPackage = bitwardenMirror;
             octopusDlPackage = octopusDl;
             linearExportPackage = linearExport;
+            exerciseTrackerPackage = exerciseTracker;
           };
           modules = [
             sops-nix.nixosModules.sops

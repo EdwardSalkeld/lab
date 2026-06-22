@@ -7,6 +7,7 @@
     ./forgejo.nix
     ./grafana.nix
     ./hardware-configuration.nix
+    ./exercise-tracker.nix
     ./loki.nix
     ./linear-export.nix
     ./octopus-dl.nix
