@@ -541,25 +541,25 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 11,
-        "w": 24,
+        "h": 8,
+        "w": 8,
         "x": 0,
         "y": 21
       },
       "id": 7,
+      "repeat": "exercise",
+      "repeatDirection": "h",
       "options": {
         "legend": {
-          "calcs": [
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
         },
         "tooltip": {
           "maxHeight": 600,
-          "mode": "multi",
-          "sort": "desc"
+          "mode": "single",
+          "sort": "none"
         }
       },
       "targets": [
@@ -575,7 +575,7 @@
           "refId": "A"
         }
       ],
-      "title": "Volume per Exercise",
+      "title": "$exercise",
       "type": "timeseries"
     }
   ],
