@@ -3,6 +3,7 @@
 let
   user = "exercise_tracker";
   group = user;
+  grafanaRole = "grafana";
   dbName = "exercise_tracker";
   domain = "exercise-tracker.int.alcachofa.faith";
   port = 8081;
@@ -41,7 +42,8 @@ in
     # exercise-tracker owns its database, so CONNECT on it and USAGE on its
     # public schema already come from PUBLIC by default; only table and sequence
     # privileges need granting. The migrations are idempotent, so re-running the
-    # loop on every activation is safe.
+    # loop on every activation is safe. Grafana reads this database for the
+    # Fitness dashboard, so the grafana role gets read-only access too.
     script = ''
       for migration in ${exerciseTrackerPackage}/share/exercise-tracker/sql/migrations/*.sql; do
         ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} -f "$migration"
@@ -54,6 +56,10 @@ in
         GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${user};
       ALTER DEFAULT PRIVILEGES IN SCHEMA public
         GRANT USAGE, SELECT ON SEQUENCES TO ${user};
+
+      GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${grafanaRole};
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT SELECT ON TABLES TO ${grafanaRole};
 SQL
     '';
   };

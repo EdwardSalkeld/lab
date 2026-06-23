@@ -195,6 +195,19 @@ in
           };
           editable = true;
         }
+        {
+          name = "exercise-tracker-postgres";
+          uid = "exercise-tracker-postgres";
+          type = "postgres";
+          access = "proxy";
+          url = "/run/postgresql";
+          user = "grafana";
+          jsonData = {
+            database = "exercise_tracker";
+            sslmode = "disable";
+          };
+          editable = true;
+        }
       ];
     };
 
@@ -206,6 +219,12 @@ in
           folder = "Ops";
           allowUiUpdates = false;
           options.path = ./grafana/dashboards/ops;
+        }
+        {
+          name = "fitness";
+          folder = "Fitness";
+          allowUiUpdates = false;
+          options.path = ./grafana/dashboards/fitness;
         }
       ];
     };
