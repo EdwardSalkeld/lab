@@ -1,9 +1,7 @@
-terraform/.terraform/providers/registry.terraform.io
+**/.terraform/
 terraform/.env
-terraform/.terraform
 CFTOK
 .kubeconfig
-CFTOK
 /.talosconfig
 .bitwarden-mirror-state/
 grafana-dashboard-exports/
