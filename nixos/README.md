@@ -161,6 +161,30 @@ curl http://partridge:9187/metrics
 curl http://partridge:9090/-/ready
 ```
 
+## PostgreSQL Backups
+
+`partridge` dumps all local PostgreSQL databases to `/var/backup/postgresql`
+daily at 02:00 and backs that directory up to a dedicated Backblaze B2 restic
+repository at 03:00. Retention keeps 3 daily and 4 weekly snapshots. A restic
+check with `--read-data-subset=10%` runs weekly on Wednesday at 05:15.
+
+The Backblaze/restic credentials live in:
+
+```text
+nixos/hosts/partridge/secrets/postgres-backup.yaml
+```
+
+Edit them with `sops` before deploying real backups. The required values are
+shown in `postgres-backup.yaml.example`.
+
+Useful commands on `partridge`:
+
+```sh
+sudo systemctl start postgresqlBackup.service
+sudo systemctl start restic-backups-partridge-postgres.service
+sudo restic-partridge-postgres snapshots
+```
+
 ## Loki on `partridge`
 
 Loki runs in single-node filesystem mode on port `3100`, backed by a dedicated
