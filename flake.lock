@@ -3,11 +3,11 @@
     "exercise-tracker": {
       "flake": false,
       "locked": {
-        "lastModified": 1782164918,
-        "narHash": "sha256-lAf9bqom+amn3tbQypXC73TZN4RBiycnVHTIcipy2qQ=",
+        "lastModified": 1782221349,
+        "narHash": "sha256-01EUnPPXbxnrB4bdTjH9wWc6dnYS3v5ZVIqc1XpPerM=",
         "owner": "EdwardSalkeld",
         "repo": "exercise-tracker",
-        "rev": "c63d405610fc6b903b070709bfacfe3108f983df",
+        "rev": "dd29ec110ff046079415b98e0df672ea316ae17a",
         "type": "github"
       },
       "original": {

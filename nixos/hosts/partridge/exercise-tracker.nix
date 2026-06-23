@@ -10,6 +10,22 @@ let
   psql = "${config.services.postgresql.package}/bin/psql";
 in
 {
+  sops.secrets."exercise-tracker/hevy_api_key" = {
+    sopsFile = ./secrets/exercise-tracker-hevy-sync.yaml;
+    key = "hevy_api_key";
+    owner = user;
+    inherit group;
+  };
+
+  sops.templates."exercise-tracker-hevy-sync.env" = {
+    owner = user;
+    inherit group;
+    mode = "0400";
+    content = ''
+      EXERCISE_TRACKER_HEVY_API_KEY=${config.sops.placeholder."exercise-tracker/hevy_api_key"}
+    '';
+  };
+
   alcachofa.partridge.reverseProxy.routes.${domain}.port = port;
 
   users.groups.${group} = { };
@@ -88,6 +104,42 @@ SQL
       ProtectSystem = "strict";
       Restart = "on-failure";
       RestartSec = "5s";
+    };
+  };
+
+  systemd.services.exercise-tracker-hevy-sync = {
+    description = "Sync Hevy workouts into exercise-tracker";
+    wants = [ "network-online.target" ];
+    after = [
+      "network-online.target"
+      "postgresql.service"
+      "exercise-tracker-db-setup.service"
+    ];
+    requires = [ "exercise-tracker-db-setup.service" ];
+    environment = {
+      EXERCISE_TRACKER_DATABASE_URL = "postgresql:///${dbName}?host=/run/postgresql&user=${user}&sslmode=disable";
+    };
+    serviceConfig = {
+      Type = "oneshot";
+      User = user;
+      Group = group;
+      EnvironmentFile = config.sops.templates."exercise-tracker-hevy-sync.env".path;
+      ExecStart = "${exerciseTrackerPackage}/bin/exercise-tracker sync-hevy";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectHome = true;
+      ProtectSystem = "strict";
+    };
+  };
+
+  systemd.timers.exercise-tracker-hevy-sync = {
+    description = "Daily Hevy workout sync";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* 07:15:00";
+      Persistent = true;
+      RandomizedDelaySec = "20m";
+      Unit = "exercise-tracker-hevy-sync.service";
     };
   };
 }
