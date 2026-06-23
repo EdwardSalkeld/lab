@@ -84,18 +84,6 @@ in
           { targets = [ "sol.int.alcachofa.faith:9221" ]; }
         ];
       }
-      {
-        job_name = "alcachofa-prom";
-        scrape_interval = "5s";
-        scheme = "https";
-        basic_auth = {
-          username = "edward";
-          password = "not-a-real-password";
-        };
-        static_configs = [
-          { targets = [ "prom.alcachofa.faith:8443" ]; }
-        ];
-      }
     ];
   };
 
