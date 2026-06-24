@@ -4,6 +4,55 @@ let
   grafanaDomain = "grafana.alcachofa.faith";
   grafanaPort = 3001;
   octopusStaleDataThresholdDays = 4;
+  grafanaEmailTemplateGroup = ''
+    {{ define "alcachofa.email.subject" -}}
+      [{{ .Status | toUpper }}] {{ or .CommonLabels.grafana_folder "Grafana" }}: {{ or .CommonLabels.alertname "Alert" }}{{ with .CommonLabels.instance }} on {{ . }}{{ end }}{{ if gt (len .Alerts) 1 }} ({{ len .Alerts }} alerts){{ end }}
+    {{- end }}
+
+    {{ define "alcachofa.email.message" -}}
+      {{- if eq .Status "firing" -}}FIRING{{- else -}}RESOLVED{{- end }}
+      {{- with .CommonLabels.grafana_folder }} | Folder: {{ . }}{{ end }}
+      {{- with .CommonLabels.alertname }} | Alert: {{ . }}{{ end }}
+      {{- with .CommonLabels.instance }} | Instance: {{ . }}{{ end }}
+
+      {{- with .CommonAnnotations.summary }}
+
+      Summary
+      {{ . }}
+      {{- end }}
+      {{- with .CommonAnnotations.description }}
+
+      Description
+      {{ . }}
+      {{- end }}
+
+      {{- if .Alerts.Firing }}
+
+      Firing
+      {{- range .Alerts.Firing }}
+      - {{ or .Labels.instance .Labels.alertname "alert" }}{{ with .Annotations.summary }}: {{ . }}{{ end }}
+      {{- end }}
+      {{- end }}
+      {{- if .Alerts.Resolved }}
+
+      Resolved
+      {{- range .Alerts.Resolved }}
+      - {{ or .Labels.instance .Labels.alertname "alert" }}{{ with .Annotations.summary }}: {{ . }}{{ end }}
+      {{- end }}
+      {{- end }}
+
+      {{- if gt (len .Alerts) 0 }}
+
+      Labels
+      {{- range (index .Alerts 0).Labels.SortedPairs }}
+      - {{ .Name }}: {{ .Value }}
+      {{- end }}
+      {{- end }}
+
+      Source
+      {{ .ExternalURL }}
+    {{- end }}
+  '';
   mkOctopusFreshnessAlert =
     { uid, title, usageType, panelId }:
     {
@@ -353,7 +402,7 @@ in
         user = "edsalkeld@fastmail.com";
         password = "$__file{${config.sops.secrets."grafana/smtp_password".path}}";
         from_address = "edsalkeld@fastmail.com";
-        from_name = "Grafana";
+        from_name = "Alcachofa Grafana";
         startTLS_policy = "MandatoryStartTLS";
       };
     };
@@ -506,9 +555,22 @@ in
               settings = {
                 addresses = "edsalkeld@fastmail.com";
                 singleEmail = false;
+                subject = ''{{ template "alcachofa.email.subject" . }}'';
+                message = ''{{ template "alcachofa.email.message" . }}'';
               };
             }
           ];
+        }
+      ];
+    };
+
+    provision.alerting.templates.settings = {
+      apiVersion = 1;
+      templates = [
+        {
+          orgId = 1;
+          name = "alcachofa-email";
+          template = grafanaEmailTemplateGroup;
         }
       ];
     };
