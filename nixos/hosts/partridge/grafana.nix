@@ -204,6 +204,104 @@ let
     notification_settings.receiver = "Email Alcachofa";
     isPaused = false;
   };
+  # Real, persistent filesystems only: ext4 excludes tmpfs/ramfs/fuse/vfat;
+  # /nix/store is dropped because it mirrors / on NixOS hosts; the two ext2tb
+  # disks on blink are intentionally kept near-full and would alert constantly.
+  diskFsSelector = ''{fstype="ext4", mountpoint!~"/nix/store|/mnt/ext2tb/1|/mnt/ext2tb/3"}'';
+  # One rule fans out into an alert instance per filesystem (labelled by
+  # instance/mountpoint). Warning fires only in the 5–10% band; critical takes
+  # over below 5%, so a filling disk escalates rather than double-alerting.
+  mkDiskSpaceAlert =
+    { uid, title, severity, evaluator, thresholdText }:
+    {
+      inherit uid title;
+      condition = "C";
+      data = [
+        {
+          refId = "A";
+          datasourceUid = prometheusDatasourceUid;
+          queryType = "";
+          relativeTimeRange = {
+            from = 600;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "prometheus";
+              uid = prometheusDatasourceUid;
+            };
+            editorMode = "code";
+            expr = ''node_filesystem_avail_bytes${diskFsSelector} / node_filesystem_size_bytes${diskFsSelector}'';
+            instant = true;
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            refId = "A";
+          };
+        }
+        {
+          refId = "B";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "A";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            reducer = "last";
+            refId = "B";
+            type = "reduce";
+          };
+        }
+        {
+          refId = "C";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            conditions = [
+              {
+                evaluator = evaluator;
+                operator.type = "and";
+                query.params = [ "C" ];
+                reducer.type = "last";
+                type = "query";
+              }
+            ];
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "B";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            refId = "C";
+            type = "threshold";
+          };
+        }
+      ];
+      noDataState = "OK";
+      execErrState = "Error";
+      for = "15m";
+      annotations = {
+        summary = "{{ $labels.instance }} {{ $labels.mountpoint }} is low on disk space";
+        description = "Free space on {{ $labels.mountpoint }} ({{ $labels.instance }}) has been below ${thresholdText} for 15m.";
+      };
+      labels = {
+        inherit severity;
+      };
+      notification_settings.receiver = "Email Alcachofa";
+      isPaused = false;
+    };
 in
 {
   alcachofa.partridge.reverseProxy.routes.${grafanaDomain}.port = grafanaPort;
@@ -357,6 +455,37 @@ in
           interval = "1m";
           rules = [
             targetDownAlert
+          ];
+        }
+        {
+          orgId = 1;
+          name = "Disk Space";
+          folder = "Ops";
+          interval = "5m";
+          rules = [
+            (mkDiskSpaceAlert {
+              uid = "disk-space-low-warning";
+              title = "Disk space low";
+              severity = "warning";
+              thresholdText = "10%";
+              evaluator = {
+                params = [
+                  0.05
+                  0.10
+                ];
+                type = "within_range";
+              };
+            })
+            (mkDiskSpaceAlert {
+              uid = "disk-space-low-critical";
+              title = "Disk space critically low";
+              severity = "critical";
+              thresholdText = "5%";
+              evaluator = {
+                params = [ 0.05 ];
+                type = "lt";
+              };
+            })
           ];
         }
       ];
