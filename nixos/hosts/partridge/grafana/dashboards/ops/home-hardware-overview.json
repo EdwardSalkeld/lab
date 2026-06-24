@@ -406,6 +406,14 @@
       ],
       "transformations": [
         {
+          "id": "filterFieldsByName",
+          "options": {
+            "exclude": {
+              "pattern": "^Time$"
+            }
+          }
+        },
+        {
           "id": "joinByField",
           "options": {
             "byField": "host",
@@ -415,14 +423,7 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "Time #A": true,
-              "Time #B": true,
-              "Time #C": true,
-              "Time #D": true,
-              "Time #E": true,
-              "Time #F": true
-            },
+            "excludeByName": {},
             "renameByName": {
               "host": "Host",
               "Value #A": "Status",
