@@ -109,6 +109,7 @@
           modules = [
             sops-nix.nixosModules.sops
             ./nixos/modules/proxmox-vm-base.nix
+            ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/partridge/configuration.nix
           ];
         };
@@ -118,6 +119,7 @@
           modules = [
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/disposable-dev-machine.nix
+            ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/magpie/configuration.nix
           ];
         };
