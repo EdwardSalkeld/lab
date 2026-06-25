@@ -371,7 +371,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "opnsense_firmware_new_packages",
+          "expr": "max(opnsense_firmware_new_packages)",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -454,7 +454,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "opnsense_firmware_needs_reboot",
+          "expr": "clamp_max(count(opnsense_firmware_needs_reboot{needs_reboot=\"1\"}), 1) or vector(0)",
           "instant": false,
           "range": true,
           "refId": "A"
