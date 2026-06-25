@@ -104,6 +104,14 @@ resource "proxmox_virtual_environment_vm" "partridge" {
   operating_system {
     type = "l26"
   }
+
+  # Stateful host (postgres, prometheus, loki, vaultwarden, forgejo). Block any
+  # destroy/replace so auto-apply can never recreate it; a real teardown is two
+  # passes — remove this, then destroy. In-place changes like disk grows are
+  # unaffected.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "proxmox_virtual_environment_vm" "magpie" {
