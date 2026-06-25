@@ -91,5 +91,5 @@ variable "magpie_vm_name" {
 variable "magpie_root_disk_size" {
   description = "Root disk size for magpie in GiB"
   type        = number
-  default     = 12
+  default     = 24
 }
