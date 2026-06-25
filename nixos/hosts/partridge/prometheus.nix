@@ -84,6 +84,21 @@ in
           { targets = [ "sol.int.alcachofa.faith:9221" ]; }
         ];
       }
+      {
+        job_name = "opnsense";
+        static_configs = [
+          { targets = [ "127.0.0.1:8080" ]; }
+        ];
+      }
+      {
+        # node_exporter plugin on the OPNsense box itself. Separate label from
+        # the Linux `node` job because OPNsense is FreeBSD and exposes different
+        # metric names (no node_memory_MemAvailable_bytes etc.).
+        job_name = "opnsense-node";
+        static_configs = [
+          { targets = [ "10.4.1.1:9100" ]; }
+        ];
+      }
     ];
   };
 
