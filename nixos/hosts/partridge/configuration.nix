@@ -12,6 +12,7 @@
     ./linear-export.nix
     ./octopus-dl.nix
     ./opnsense-exporter.nix
+    ./postgres-readonly.nix
     ./prometheus.nix
     ./reverse-proxy.nix
     ./scheduler-db.nix
