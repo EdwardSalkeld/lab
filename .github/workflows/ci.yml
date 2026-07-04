@@ -4,8 +4,35 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      terraform: ${{ steps.filter.outputs.terraform }}
+      nix: ${{ steps.filter.outputs.nix }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: detect relevant changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            terraform:
+              - '.github/workflows/**'
+              - 'terraform/**'
+            nix:
+              - '.github/workflows/**'
+              - '.sops.yaml'
+              - 'flake.lock'
+              - 'flake.nix'
+              - 'nixos/**'
+              - 'tools/**'
+
   terraform:
     name: terraform
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -26,6 +53,8 @@ jobs:
 
   nix:
     name: nix
+    needs: changes
+    if: needs.changes.outputs.nix == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: checkout
