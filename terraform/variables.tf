@@ -16,6 +16,14 @@ variable "public_ssh_keys" {
   ]
 }
 
+variable "billy_public_ssh_keys" {
+  description = "Billy's SSH public keys for persistent remote admin access"
+  type        = list(string)
+  default = [
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7g5CoTIOcrTpzDqFylWrcMGJIqOQC2RrYcWQzhD4NTB8Uh5ZHhR0LMfRhFXivIs3TY+bAe4ov7FODCOimL6irSoj6Pd/2La3o3hXGz2u/l1/7sLWxtG3H7k2QCOHacVzZUznJpn4rAGtfq2w8cmF/RNO1kc/ZncaIlh2TZ8f3D5cAEKUV2f7YN40d9MSnXNgg6YRgL91wfWDO7DMuWUi5UTqcH/3NBcJXsrTEQ7TT10ISabIVoLNROoAiORZY83iy1fYSGN3u3t72qcVdRIW1vZ7JbgaJ1ue4z2r1LkCKz4bGw3U76joloAv/V6rYR3o4+69atJaPhGapqiu8EkDF0eGjbfEzBi1sLehrzNH21Kv0TbNfwvUecCrvqZqNAhxPiedx1ws5BBcYDjAKpP3YU0hdmjoFDlBX4oFR7NhJ4lLWhAxgqCmzNvJAdFG0pya7hhsivc57vUibkdnRjNIJN+U3zwyT8xmRSiuaH8G1J1dDKjuMwlK0T2B4AsAwoJM= billy-lab@chatting"
+  ]
+}
+
 variable "proxmox_node_name" {
   description = "Proxmox node that will run the first NixOS VM"
   type        = string
@@ -92,4 +100,22 @@ variable "magpie_root_disk_size" {
   description = "Root disk size for magpie in GiB"
   type        = number
   default     = 24
+}
+
+variable "hello_vm_name" {
+  description = "Name of the zero-touch hello-world bootstrap VM"
+  type        = string
+  default     = "wren"
+}
+
+variable "hello_root_disk_size" {
+  description = "Root disk size for the hello bootstrap VM in GiB"
+  type        = number
+  default     = 12
+}
+
+variable "hello_memory_mb" {
+  description = "Memory for the hello bootstrap VM in MiB"
+  type        = number
+  default     = 2048
 }
