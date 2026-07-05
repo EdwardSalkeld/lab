@@ -54,7 +54,6 @@ jobs:
   nix:
     name: nix
     needs: changes
-    if: needs.changes.outputs.nix == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: checkout
