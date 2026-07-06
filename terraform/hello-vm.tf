@@ -13,11 +13,12 @@ resource "proxmox_virtual_environment_vm" "hello" {
   node_name   = var.proxmox_node_name
   tags        = ["bird", "bootstrap", "debian", "hello"]
 
-  bios          = "ovmf"
-  boot_order    = ["scsi0"]
-  on_boot       = true
-  scsi_hardware = "virtio-scsi-single"
-  started       = true
+  bios                = "ovmf"
+  boot_order          = ["scsi0"]
+  on_boot             = true
+  reboot_after_update = true
+  scsi_hardware       = "virtio-scsi-single"
+  started             = true
 
   cpu {
     cores = 2
