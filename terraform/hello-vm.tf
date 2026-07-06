@@ -9,7 +9,7 @@ resource "proxmox_virtual_environment_download_file" "debian_12_genericcloud" {
 
 resource "proxmox_virtual_environment_vm" "hello" {
   name        = var.hello_vm_name
-  description = "Zero-touch bootstrap VM for remote infra exercises. Native cloud-init only."
+  description = "Zero-touch bootstrap VM for remote infra exercises."
   node_name   = var.proxmox_node_name
   tags        = ["bird", "bootstrap", "debian", "hello"]
 
@@ -31,14 +31,26 @@ resource "proxmox_virtual_environment_vm" "hello" {
   initialization {
     datastore_id = var.proxmox_vm_datastore_id
 
+    dns {
+      servers = var.hello_dns_servers
+    }
+
     ip_config {
       ipv4 {
-        address = "dhcp"
+        address = var.hello_ipv4_address
+        gateway = var.hello_ipv4_gateway
       }
     }
+
+    # Use root deliberately for the bootstrap phase so the follow-up automation
+    # can complete without depending on distro-specific sudo defaults.
     user_account {
-      username = "billy"
-      keys     = concat(var.billy_public_ssh_keys, var.public_ssh_keys)
+      username = "root"
+      keys = concat(
+        var.billy_public_ssh_keys,
+        var.public_ssh_keys,
+        var.hello_bootstrap_public_ssh_keys,
+      )
     }
   }
 

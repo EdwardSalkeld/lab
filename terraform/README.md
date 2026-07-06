@@ -77,19 +77,24 @@ has a real NixOS install with `qemu-guest-agent` running.
 - Root disk: 12 GiB on `local-lvm`
 - Memory: 2048 MiB
 - Network bridge: `vmbr0`
+- IPv4: `10.4.1.41/24`
 
 `wren` uses the official Debian 12 generic cloud image plus a cloud-init
 configuration generated natively by Proxmox. The current bootstrap path:
 
-- creates a `billy` SSH user and authorizes both Billy and Edward's repo-managed
-  keys on that account
-- uses DHCP on `vmbr0`
+- creates a root SSH login authorized for Billy, Edward, and the existing
+  GitHub Actions deploy key
+- assigns a fixed LAN IP on `vmbr0`
 - avoids Proxmox snippet uploads and any Terraform-time root SSH into the
   Proxmox host
+- lets a follow-up deploy job call a restricted command on `partridge`, which
+  SSHes into `wren` over the LAN, installs Tailscale and nginx, and writes the
+  hello page
 
-This is intentionally narrower than the first merged attempt. The earlier
-snippet-based approach also tried to install `qemu-guest-agent`, install
-`nginx`, and write the hello page during first boot, but that path depended on
-Proxmox `Snippets` support on `local` plus root-authorized SSH from the deploy
-environment into the Proxmox host. The current config removes those
-prerequisites so Terraform apply can succeed on the existing setup.
+This is still deliberately narrower than the original snippet-based approach.
+That earlier path tried to complete first-boot guest setup directly through
+custom cloud-init, but it depended on Proxmox `Snippets` support on `local`
+plus root-authorized SSH from the deploy environment into the Proxmox host. The
+current path keeps Terraform on the supported Proxmox-native subset, then does
+the guest bootstrap from a repo-managed machine that already has tailnet and LAN
+reachability.

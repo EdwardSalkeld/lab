@@ -1,14 +1,108 @@
 { pkgs, ... }:
 
 let
-  labDeploySmoke = pkgs.writeShellApplication {
-    name = "lab-deploy-smoke";
-    runtimeInputs = [ pkgs.coreutils ];
+  wrenAddress = "10.4.1.41";
+
+  labDeployDispatch = pkgs.writeShellApplication {
+    name = "lab-deploy-dispatch";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.openssh
+    ];
     text = ''
+      set -euo pipefail
+
       log=/var/lib/lab-deploy/invocations.log
       mkdir -p "$(dirname "$log")"
-      printf '%s called lab-deploy-smoke from GitHub Actions\n' "$(date --iso-8601=seconds)" >> "$log"
-      printf 'lab-deploy-smoke called\n'
+
+      command_name="${SSH_ORIGINAL_COMMAND:-lab-deploy-smoke}"
+      printf '%s called %s from GitHub Actions\n' "$(date --iso-8601=seconds)" "$command_name" >> "$log"
+
+      case "$command_name" in
+        lab-deploy-smoke)
+          printf 'lab-deploy-smoke called\n'
+          ;;
+        configure-wren)
+          IFS= read -r ssh_key_b64
+          IFS= read -r tailscale_auth_key
+
+          if [ -z "$ssh_key_b64" ] || [ -z "$tailscale_auth_key" ]; then
+            printf 'configure-wren requires a forwarded SSH key and Tailscale auth key on stdin\n' >&2
+            exit 1
+          fi
+
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          key_file="$tmpdir/wren-bootstrap"
+          printf '%s' "$ssh_key_b64" | base64 -d > "$key_file"
+          chmod 0600 "$key_file"
+
+          cat >"$tmpdir/wren-bootstrap.sh" <<'REMOTE'
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+hostnamectl set-hostname wren
+
+apt-get update
+apt-get install -y ca-certificates curl gnupg nginx
+
+install -d -m 0755 /usr/share/keyrings
+curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg \
+  | gpg --dearmor >/usr/share/keyrings/tailscale-archive-keyring.gpg
+curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list \
+  >/etc/apt/sources.list.d/tailscale.list
+
+apt-get update
+apt-get install -y tailscale
+
+cat >/var/www/html/index.html <<'HTML'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>wren</title>
+  </head>
+  <body>
+    <h1>Hello from wren</h1>
+    <p>Zero-touch bootstrap VM on the lab tailnet.</p>
+  </body>
+</html>
+HTML
+
+systemctl enable --now nginx tailscaled
+
+if tailscale ip -4 >/dev/null 2>&1; then
+  tailscale up \
+    --hostname=wren \
+    --advertise-tags=tag:server,tag:ci-allowed \
+    --ssh=false
+else
+  tailscale up \
+    --auth-key="$TAILSCALE_AUTH_KEY" \
+    --hostname=wren \
+    --advertise-tags=tag:server,tag:ci-allowed \
+    --ssh=false
+fi
+REMOTE
+
+          ssh \
+            -i "$key_file" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            root@${wrenAddress} \
+            "TAILSCALE_AUTH_KEY='$tailscale_auth_key' bash -s" <"$tmpdir/wren-bootstrap.sh"
+
+          printf 'configure-wren called\n'
+          ;;
+        *)
+          printf 'unknown deploy command: %s\n' "$command_name" >&2
+          exit 1
+          ;;
+      esac
     '';
   };
 in
@@ -22,7 +116,7 @@ in
     createHome = true;
     shell = pkgs.bashInteractive;
     openssh.authorizedKeys.keys = [
-      ''command="${labDeploySmoke}/bin/lab-deploy-smoke",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDFqPnPZHEGDv/vZ6HeXne0NxU7h1EO4sZAZEs1W/N2 github-actions-lab-deploy''
+      ''command="${labDeployDispatch}/bin/lab-deploy-dispatch",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDFqPnPZHEGDv/vZ6HeXne0NxU7h1EO4sZAZEs1W/N2 github-actions-lab-deploy''
     ];
   };
 }

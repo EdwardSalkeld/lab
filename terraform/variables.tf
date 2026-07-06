@@ -24,6 +24,14 @@ variable "billy_public_ssh_keys" {
   ]
 }
 
+variable "hello_bootstrap_public_ssh_keys" {
+  description = "Restricted deploy keys temporarily authorized on wren for zero-touch bootstrap from the tailnet"
+  type        = list(string)
+  default = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDFqPnPZHEGDv/vZ6HeXne0NxU7h1EO4sZAZEs1W/N2 github-actions-lab-deploy"
+  ]
+}
+
 variable "proxmox_node_name" {
   description = "Proxmox node that will run the first NixOS VM"
   type        = string
@@ -118,4 +126,22 @@ variable "hello_memory_mb" {
   description = "Memory for the hello bootstrap VM in MiB"
   type        = number
   default     = 2048
+}
+
+variable "hello_ipv4_address" {
+  description = "Static IPv4 address for the hello bootstrap VM in CIDR notation"
+  type        = string
+  default     = "10.4.1.41/24"
+}
+
+variable "hello_ipv4_gateway" {
+  description = "IPv4 gateway for the hello bootstrap VM"
+  type        = string
+  default     = "10.4.1.1"
+}
+
+variable "hello_dns_servers" {
+  description = "DNS servers for the hello bootstrap VM"
+  type        = list(string)
+  default     = ["10.4.1.1", "1.1.1.1"]
 }
