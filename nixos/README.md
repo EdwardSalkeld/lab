@@ -117,7 +117,9 @@ Required GitHub Actions secrets:
 That same `PARTRIDGE_DEPLOY_SSH_KEY` is also authorized on `wren` during the
 bootstrap phase. The deploy workflow streams it transiently to Partridge's
 restricted `configure-wren` command so Partridge can complete the one-time LAN
-bootstrap into `wren` without introducing an extra repository secret.
+bootstrap into `wren` without introducing an extra repository secret. The
+bootstrap uses the existing `TS_OAUTH_SECRET` directly with `tailscale up`
+rather than minting a separate auth key in GitHub Actions.
 
 The Tailscale ACL should allow `tag:ci` to reach only Partridge's Tailscale SSH
 endpoint. The first deployment of this wiring must still be applied manually so

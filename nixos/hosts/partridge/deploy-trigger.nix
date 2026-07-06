@@ -7,6 +7,7 @@ let
     name = "lab-deploy-dispatch";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.curl
       pkgs.openssh
     ];
     text = ''
@@ -24,10 +25,10 @@ let
           ;;
         configure-wren)
           IFS= read -r ssh_key_b64
-          IFS= read -r tailscale_auth_key
+          IFS= read -r tailscale_oauth_secret
 
-          if [ -z "$ssh_key_b64" ] || [ -z "$tailscale_auth_key" ]; then
-            printf 'configure-wren requires a forwarded SSH key and Tailscale auth key on stdin\n' >&2
+          if [ -z "$ssh_key_b64" ] || [ -z "$tailscale_oauth_secret" ]; then
+            printf 'configure-wren requires a forwarded SSH key and Tailscale OAuth secret on stdin\n' >&2
             exit 1
           fi
 
@@ -77,13 +78,13 @@ systemctl enable --now nginx tailscaled
 if tailscale ip -4 >/dev/null 2>&1; then
   tailscale up \
     --hostname=wren \
-    --advertise-tags=tag:server,tag:ci-allowed \
+    --advertise-tags=tag:server \
     --ssh=false
 else
   tailscale up \
-    --auth-key="$TAILSCALE_AUTH_KEY" \
+    --auth-key="''${TAILSCALE_OAUTH_SECRET}?ephemeral=false&preauthorized=true" \
     --hostname=wren \
-    --advertise-tags=tag:server,tag:ci-allowed \
+    --advertise-tags=tag:server \
     --ssh=false
 fi
 REMOTE
@@ -94,9 +95,13 @@ REMOTE
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             root@${wrenAddress} \
-            "TAILSCALE_AUTH_KEY='$tailscale_auth_key' bash -s" <"$tmpdir/wren-bootstrap.sh"
+            "TAILSCALE_OAUTH_SECRET='$tailscale_oauth_secret' bash -s" <"$tmpdir/wren-bootstrap.sh"
 
           printf 'configure-wren called\n'
+          ;;
+        verify-wren)
+          curl --fail --silent http://wren.tailb35748.ts.net | grep -F "Hello from wren"
+          printf 'verify-wren called\n'
           ;;
         *)
           printf 'unknown deploy command: %s\n' "$command_name" >&2
