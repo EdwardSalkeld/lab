@@ -1,13 +1,16 @@
 { pkgs, ... }:
 
 let
-  wrenAddress = "10.4.1.41";
+  wrenStaticAddress = "10.4.1.41";
 
   labDeployDispatch = pkgs.writeShellApplication {
     name = "lab-deploy-dispatch";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.curl
+      pkgs.gawk
+      pkgs.glibc.bin
+      pkgs.gnugrep
       pkgs.openssh
     ];
     text = ''
@@ -18,6 +21,22 @@ let
 
       command_name="''${SSH_ORIGINAL_COMMAND:-lab-deploy-smoke}"
       printf '%s called %s from GitHub Actions\n' "$(date --iso-8601=seconds)" "$command_name" >> "$log"
+
+      resolve_wren_target() {
+        for candidate in wren wren.int.alcachofa.faith; do
+          resolved="$(
+            getent ahostsv4 "$candidate" 2>/dev/null \
+              | grep ' STREAM ' \
+              | awk 'NR == 1 { print $1 }'
+          )"
+          if [ -n "$resolved" ]; then
+            printf '%s\n' "$resolved"
+            return 0
+          fi
+        done
+
+        printf '%s\n' "${wrenStaticAddress}"
+      }
 
       case "$command_name" in
         lab-deploy-smoke)
@@ -89,12 +108,15 @@ else
 fi
 REMOTE
 
+          wren_target="$(resolve_wren_target)"
+          printf 'configure-wren target: %s\n' "$wren_target"
+
           ssh \
             -i "$key_file" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
-            root@${wrenAddress} \
+            "root@$wren_target" \
             "TAILSCALE_OAUTH_SECRET='$tailscale_oauth_secret' bash -s" <"$tmpdir/wren-bootstrap.sh"
 
           printf 'configure-wren called\n'
