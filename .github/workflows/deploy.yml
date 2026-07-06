@@ -72,3 +72,96 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             deploy@fourth.ts.alcachofa.faith \
             nix-switch
+
+  bootstrap-wren:
+    name: bootstrap-wren
+    needs: nix-switch
+    runs-on: ubuntu-latest
+    steps:
+      - name: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: partridge.ts.alcachofa.faith
+
+      - name: install ssh key
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "${{ secrets.PARTRIDGE_DEPLOY_SSH_KEY }}" > ~/.ssh/partridge_deploy
+          chmod 0600 ~/.ssh/partridge_deploy
+
+      - name: generate one-off tailscale auth key
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+        run: |
+          python3 <<'PY' >>"$GITHUB_ENV"
+          import json
+          import os
+          import subprocess
+          import urllib.parse
+          import urllib.request
+
+          token_request = urllib.request.Request(
+              "https://api.tailscale.com/api/v2/oauth/token",
+              data=urllib.parse.urlencode(
+                  {
+                      "client_id": os.environ["TS_OAUTH_CLIENT_ID"],
+                      "client_secret": os.environ["TS_OAUTH_SECRET"],
+                  }
+              ).encode(),
+          )
+          with urllib.request.urlopen(token_request) as response:
+              access_token = json.load(response)["access_token"]
+
+          create_request = urllib.request.Request(
+              "https://api.tailscale.com/api/v2/tailnet/-/keys",
+              data=json.dumps(
+                  {
+                      "capabilities": {
+                          "devices": {
+                              "create": {
+                                  "reusable": False,
+                                  "ephemeral": False,
+                                  "preauthorized": True,
+                                  "tags": ["tag:server", "tag:ci-allowed"],
+                              }
+                          }
+                      },
+                      "expirySeconds": 600,
+                      "description": "lab wren bootstrap",
+                  }
+              ).encode(),
+              headers={
+                  "Authorization": f"Bearer {access_token}",
+                  "Content-Type": "application/json",
+              },
+          )
+          with urllib.request.urlopen(create_request) as response:
+              auth_key = json.load(response)["key"]
+
+          forwarded_key_b64 = subprocess.check_output(
+              ["base64", "-w0", os.path.expanduser("~/.ssh/partridge_deploy")],
+              text=True,
+          ).strip()
+
+          print(f"WREN_AUTH_KEY={auth_key}")
+          print(f"WREN_FORWARD_SSH_KEY_B64={forwarded_key_b64}")
+          PY
+
+      - name: configure wren from partridge
+        run: |
+          printf '%s\n%s\n' "$WREN_FORWARD_SSH_KEY_B64" "$WREN_AUTH_KEY" | \
+            ssh \
+              -i ~/.ssh/partridge_deploy \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=accept-new \
+              deploy@partridge.ts.alcachofa.faith \
+              configure-wren
+
+      - name: verify wren over tailnet
+        run: |
+          tailscale ping --timeout=15s wren.tailb35748.ts.net
+          curl --fail --silent http://wren.tailb35748.ts.net | grep -F "Hello from wren"
