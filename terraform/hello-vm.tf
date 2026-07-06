@@ -7,25 +7,9 @@ resource "proxmox_virtual_environment_download_file" "debian_12_genericcloud" {
   file_name = "debian-12-genericcloud-amd64.qcow2"
 }
 
-resource "proxmox_virtual_environment_file" "hello_user_data_cloud_config" {
-  content_type = "snippets"
-  datastore_id = var.proxmox_iso_datastore_id
-  node_name    = var.proxmox_node_name
-
-  source_raw {
-    data = templatefile("${path.module}/cloud-init/hello-user-data.yaml.tftpl", {
-      hostname        = var.hello_vm_name
-      edward_ssh_keys = var.public_ssh_keys
-      billy_ssh_keys  = var.billy_public_ssh_keys
-    })
-
-    file_name = "${var.hello_vm_name}-user-data.yaml"
-  }
-}
-
 resource "proxmox_virtual_environment_vm" "hello" {
   name        = var.hello_vm_name
-  description = "Zero-touch bootstrap VM for remote infra exercises."
+  description = "Zero-touch bootstrap VM for remote infra exercises. Native cloud-init only."
   node_name   = var.proxmox_node_name
   tags        = ["bird", "bootstrap", "debian", "hello"]
 
@@ -34,10 +18,6 @@ resource "proxmox_virtual_environment_vm" "hello" {
   on_boot       = true
   scsi_hardware = "virtio-scsi-single"
   started       = true
-
-  agent {
-    enabled = true
-  }
 
   cpu {
     cores = 2
@@ -56,8 +36,10 @@ resource "proxmox_virtual_environment_vm" "hello" {
         address = "dhcp"
       }
     }
-
-    user_data_file_id = proxmox_virtual_environment_file.hello_user_data_cloud_config.id
+    user_account {
+      username = "billy"
+      keys     = concat(var.billy_public_ssh_keys, var.public_ssh_keys)
+    }
   }
 
   network_device {

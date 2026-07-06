@@ -12,7 +12,8 @@ Current bootstrap experiment:
 
 - Terraform can also provision a small zero-touch cloud-init VM, `wren`.
 - `wren` is meant as a remote-management proving ground: no Proxmox console,
-  repo-managed SSH access for Edward and Billy, and a basic nginx hello page.
+  repo-managed Billy SSH access on the LAN, with guest-side setup to follow
+  once the bootstrap path is proven.
 
 Start here:
 

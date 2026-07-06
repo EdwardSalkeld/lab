@@ -79,13 +79,17 @@ has a real NixOS install with `qemu-guest-agent` running.
 - Network bridge: `vmbr0`
 
 `wren` uses the official Debian 12 generic cloud image plus a cloud-init
-snippet stored on the Proxmox `local` datastore. The snippet:
+configuration generated natively by Proxmox. The current bootstrap path:
 
-- creates `edward` and `billy` admin users with repo-managed SSH keys
-- installs and starts `qemu-guest-agent`
-- installs and starts `nginx`
-- writes a small hello page to `/var/www/html/index.html`
+- creates a `billy` SSH user and authorizes both Billy and Edward's repo-managed
+  keys on that account
+- uses DHCP on `vmbr0`
+- avoids Proxmox snippet uploads and any Terraform-time root SSH into the
+  Proxmox host
 
-Before applying this config, ensure the `local` datastore allows the `Snippets`
-content type in Proxmox. Without that, the cloud-init user-data upload will
-fail.
+This is intentionally narrower than the first merged attempt. The earlier
+snippet-based approach also tried to install `qemu-guest-agent`, install
+`nginx`, and write the hello page during first boot, but that path depended on
+Proxmox `Snippets` support on `local` plus root-authorized SSH from the deploy
+environment into the Proxmox host. The current config removes those
+prerequisites so Terraform apply can succeed on the existing setup.
