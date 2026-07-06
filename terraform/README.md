@@ -88,8 +88,8 @@ configuration generated natively by Proxmox. The current bootstrap path:
 - avoids Proxmox snippet uploads and any Terraform-time root SSH into the
   Proxmox host
 - lets a follow-up deploy job call a restricted command on `partridge`, which
-  SSHes into `wren` over the LAN, installs Tailscale and nginx, and writes the
-  hello page
+  resolves `wren` on the LAN by DNS before falling back to the fixed address,
+  SSHes into it, installs Tailscale and nginx, and writes the hello page
 
 This is still deliberately narrower than the original snippet-based approach.
 That earlier path tried to complete first-boot guest setup directly through
