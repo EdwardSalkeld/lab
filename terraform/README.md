@@ -1,12 +1,15 @@
 ## Lab Terraform Notes
 
-This Terraform root manages NixOS VMs on Proxmox.
+This Terraform root manages VMs on Proxmox.
 
 Active resources:
 
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
+- `proxmox_virtual_environment_download_file.debian_12_genericcloud`
+- `proxmox_virtual_environment_file.hello_user_data_cloud_config`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
+- `proxmox_virtual_environment_vm.hello`
 
 ## Quick Ops
 
@@ -66,3 +69,23 @@ The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
+
+## Zero-Touch Hello VM
+
+- Name: `wren`
+- Node: `sol`
+- Root disk: 12 GiB on `local-lvm`
+- Memory: 2048 MiB
+- Network bridge: `vmbr0`
+
+`wren` uses the official Debian 12 generic cloud image plus a cloud-init
+snippet stored on the Proxmox `local` datastore. The snippet:
+
+- creates `edward` and `billy` admin users with repo-managed SSH keys
+- installs and starts `qemu-guest-agent`
+- installs and starts `nginx`
+- writes a small hello page to `/var/www/html/index.html`
+
+Before applying this config, ensure the `local` datastore allows the `Snippets`
+content type in Proxmox. Without that, the cloud-init user-data upload will
+fail.

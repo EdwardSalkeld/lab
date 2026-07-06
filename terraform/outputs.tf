@@ -17,3 +17,18 @@ output "magpie_vm_name" {
   value       = proxmox_virtual_environment_vm.magpie.name
   description = "The name of magpie"
 }
+
+output "hello_vm_id" {
+  value       = proxmox_virtual_environment_vm.hello.vm_id
+  description = "The auto-assigned VM ID for the zero-touch hello VM"
+}
+
+output "hello_vm_name" {
+  value       = proxmox_virtual_environment_vm.hello.name
+  description = "The name of the zero-touch hello VM"
+}
+
+output "hello_vm_ipv4_addresses" {
+  value       = proxmox_virtual_environment_vm.hello.ipv4_addresses
+  description = "IPv4 addresses reported by the hello VM guest agent"
+}
