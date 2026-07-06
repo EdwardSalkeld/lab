@@ -15,7 +15,7 @@ let
       log=/var/lib/lab-deploy/invocations.log
       mkdir -p "$(dirname "$log")"
 
-      command_name="${SSH_ORIGINAL_COMMAND:-lab-deploy-smoke}"
+      command_name="''${SSH_ORIGINAL_COMMAND:-lab-deploy-smoke}"
       printf '%s called %s from GitHub Actions\n' "$(date --iso-8601=seconds)" "$command_name" >> "$log"
 
       case "$command_name" in
