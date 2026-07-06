@@ -28,7 +28,7 @@ output "hello_vm_name" {
   description = "The name of the zero-touch hello VM"
 }
 
-output "hello_vm_ipv4_addresses" {
-  value       = proxmox_virtual_environment_vm.hello.ipv4_addresses
-  description = "IPv4 addresses reported by the hello VM guest agent"
+output "hello_vm_ssh_username" {
+  value       = "billy"
+  description = "SSH username baked into the zero-touch hello VM via native cloud-init"
 }
