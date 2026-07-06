@@ -82,7 +82,7 @@ if tailscale ip -4 >/dev/null 2>&1; then
     --ssh=false
 else
   tailscale up \
-    --auth-key="${TAILSCALE_OAUTH_SECRET}?ephemeral=false&preauthorized=true" \
+    --auth-key="''${TAILSCALE_OAUTH_SECRET}?ephemeral=false&preauthorized=true" \
     --hostname=wren \
     --advertise-tags=tag:server \
     --ssh=false
