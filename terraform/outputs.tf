@@ -32,8 +32,3 @@ output "hello_vm_ssh_username" {
   value       = "root"
   description = "SSH username baked into the zero-touch hello VM via native cloud-init"
 }
-
-output "hello_vm_ipv4_address" {
-  value       = split("/", var.hello_ipv4_address)[0]
-  description = "Static IPv4 address assigned to the zero-touch hello VM"
-}

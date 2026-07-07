@@ -77,19 +77,18 @@ has a real NixOS install with `qemu-guest-agent` running.
 - Root disk: 12 GiB on `local-lvm`
 - Memory: 2048 MiB
 - Network bridge: `vmbr0`
-- IPv4: `10.4.1.41/24`
 
 `wren` uses the official Debian 12 generic cloud image plus a cloud-init
 configuration generated natively by Proxmox. The current bootstrap path:
 
 - creates a root SSH login authorized for Billy, Edward, and the existing
   GitHub Actions deploy key
-- assigns a fixed LAN IP on `vmbr0`
+- requests DHCP on `vmbr0` and keeps explicit guest DNS servers
 - avoids Proxmox snippet uploads and any Terraform-time root SSH into the
   Proxmox host
 - lets a follow-up deploy job call a restricted command on `partridge`, which
-  resolves `wren` on the LAN by DNS before falling back to the fixed address,
-  SSHes into it, installs Tailscale and nginx, and writes the hello page
+  waits for `wren` to appear in LAN DNS, SSHes into it, installs Tailscale and
+  nginx, and writes the hello page
 
 This is still deliberately narrower than the original snippet-based approach.
 That earlier path tried to complete first-boot guest setup directly through

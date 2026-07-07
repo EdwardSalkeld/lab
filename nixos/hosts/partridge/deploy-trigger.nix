@@ -1,8 +1,6 @@
 { pkgs, ... }:
 
 let
-  wrenStaticAddress = "10.4.1.41";
-
   labDeployDispatch = pkgs.writeShellApplication {
     name = "lab-deploy-dispatch";
     runtimeInputs = [
@@ -23,19 +21,46 @@ let
       printf '%s called %s from GitHub Actions\n' "$(date --iso-8601=seconds)" "$command_name" >> "$log"
 
       resolve_wren_target() {
-        for candidate in wren wren.int.alcachofa.faith; do
-          resolved="$(
-            getent ahostsv4 "$candidate" 2>/dev/null \
-              | grep ' STREAM ' \
-              | awk 'NR == 1 { print $1 }'
-          )"
-          if [ -n "$resolved" ]; then
-            printf '%s\n' "$resolved"
-            return 0
-          fi
+        for _ in $(seq 1 30); do
+          for candidate in wren wren.int.alcachofa.faith; do
+            resolved="$(
+              getent ahostsv4 "$candidate" 2>/dev/null \
+                | grep ' STREAM ' \
+                | awk 'NR == 1 { print $1 }'
+            )"
+            if [ -n "$resolved" ]; then
+              printf '%s\n' "$resolved"
+              return 0
+            fi
+          done
+
+          sleep 2
         done
 
-        printf '%s\n' "${wrenStaticAddress}"
+        printf 'could not resolve wren on the LAN after waiting for DHCP/DNS\n' >&2
+        return 1
+      }
+
+      wait_for_wren_ssh() {
+        wren_target="$1"
+        shift
+
+        for _ in $(seq 1 30); do
+          if ssh \
+            -o BatchMode=yes \
+            -o ConnectTimeout=5 \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "$@" \
+            true >/dev/null 2>&1; then
+            return 0
+          fi
+
+          sleep 2
+        done
+
+        printf 'wren resolved to %s but ssh did not come up in time\n' "$wren_target" >&2
+        return 1
       }
 
       case "$command_name" in
@@ -110,6 +135,9 @@ REMOTE
 
           wren_target="$(resolve_wren_target)"
           printf 'configure-wren target: %s\n' "$wren_target"
+          wait_for_wren_ssh "$wren_target" \
+            -i "$key_file" \
+            "root@$wren_target"
 
           ssh \
             -i "$key_file" \
