@@ -128,18 +128,6 @@ variable "hello_memory_mb" {
   default     = 2048
 }
 
-variable "hello_ipv4_address" {
-  description = "Static IPv4 address for the hello bootstrap VM in CIDR notation"
-  type        = string
-  default     = "10.4.1.41/24"
-}
-
-variable "hello_ipv4_gateway" {
-  description = "IPv4 gateway for the hello bootstrap VM"
-  type        = string
-  default     = "10.4.1.1"
-}
-
 variable "hello_dns_servers" {
   description = "DNS servers for the hello bootstrap VM"
   type        = list(string)

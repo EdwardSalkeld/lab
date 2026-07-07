@@ -12,7 +12,7 @@ Current bootstrap experiment:
 
 - Terraform can also provision a small zero-touch cloud-init VM, `wren`.
 - `wren` is meant as a remote-management proving ground: no Proxmox console,
-  deterministic LAN addressing, repo-managed SSH access, and a follow-up deploy
+  DHCP-backed LAN discovery, repo-managed SSH access, and a follow-up deploy
   path from Partridge to finish Tailscale + hello-world bootstrap.
 
 Start here:
