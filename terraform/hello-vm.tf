@@ -11,7 +11,7 @@ resource "terraform_data" "wren_replace_signature" {
   input = local.wren_replace_signature
 }
 
-resource "proxmox_virtual_environment_vm" "wren" {
+resource "proxmox_virtual_environment_vm" "wren_recreated" {
   name        = var.hello_vm_name
   description = "Zero-touch bootstrap VM for remote infra exercises."
   node_name   = var.proxmox_node_name

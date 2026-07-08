@@ -23,6 +23,7 @@ for resource_change in plan.get("resource_changes", []):
     if resource_change.get("address") not in {
         "proxmox_virtual_environment_vm.hello",
         "proxmox_virtual_environment_vm.wren",
+        "proxmox_virtual_environment_vm.wren_recreated",
     }:
         continue
 
@@ -40,6 +41,7 @@ stop_wren_if_needed() {
   vm_id="$(
     (
       terraform -chdir=terraform state show proxmox_virtual_environment_vm.wren 2>/dev/null || \
+      terraform -chdir=terraform state show proxmox_virtual_environment_vm.wren_recreated 2>/dev/null || \
       terraform -chdir=terraform state show proxmox_virtual_environment_vm.hello 2>/dev/null
     ) | sed -n 's/^vm_id *= *//p' | head -n1
   )"
