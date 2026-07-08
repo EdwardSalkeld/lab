@@ -8,16 +8,31 @@ set -euo pipefail
 
 : "${TF_TOKEN_app_terraform_io:?TFC token missing — set it in creds/lab.env}"
 
-hello_vm_files_changed() {
-  git rev-parse --verify HEAD^ >/dev/null 2>&1 || return 1
-  git diff --name-only HEAD^ HEAD -- \
-    terraform/hello-vm.tf \
-    terraform/variables.tf \
-    terraform/outputs.tf | grep -q .
+wren_has_planned_update() {
+  plan_file="$(mktemp)"
+  trap 'rm -f "$plan_file"' RETURN
+
+  terraform -chdir=terraform plan -input=false -out="$plan_file" >/dev/null
+
+  terraform -chdir=terraform show -json "$plan_file" | python3 -c '
+import json
+import sys
+
+plan = json.load(sys.stdin)
+for resource_change in plan.get("resource_changes", []):
+    if resource_change.get("address") != "proxmox_virtual_environment_vm.hello":
+        continue
+
+    actions = resource_change.get("change", {}).get("actions", [])
+    if actions != ["no-op"]:
+        sys.exit(0)
+
+sys.exit(1)
+'
 }
 
 stop_wren_if_needed() {
-  hello_vm_files_changed || return 0
+  wren_has_planned_update || return 0
 
   vm_id="$(terraform -chdir=terraform state show proxmox_virtual_environment_vm.hello 2>/dev/null | sed -n 's/^vm_id *= *//p' | head -n1)"
   [ -n "${vm_id}" ] || return 0
