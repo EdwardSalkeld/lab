@@ -7,7 +7,7 @@ resource "proxmox_virtual_environment_download_file" "debian_12_genericcloud" {
   file_name = "debian-12-genericcloud-amd64.qcow2"
 }
 
-resource "proxmox_virtual_environment_vm" "hello" {
+resource "proxmox_virtual_environment_vm" "wren" {
   name        = var.hello_vm_name
   description = "Zero-touch bootstrap VM for remote infra exercises."
   node_name   = var.proxmox_node_name
@@ -19,6 +19,7 @@ resource "proxmox_virtual_environment_vm" "hello" {
   reboot_after_update = true
   scsi_hardware       = "virtio-scsi-single"
   started             = true
+  stop_on_destroy     = true
 
   cpu {
     cores = 2
@@ -42,14 +43,11 @@ resource "proxmox_virtual_environment_vm" "hello" {
       }
     }
 
-    # Use root deliberately for the bootstrap phase so the follow-up automation
-    # can complete without depending on distro-specific sudo defaults.
     user_account {
-      username = "root"
+      username = "billy"
       keys = concat(
         var.billy_public_ssh_keys,
         var.public_ssh_keys,
-        var.hello_bootstrap_public_ssh_keys,
       )
     }
   }

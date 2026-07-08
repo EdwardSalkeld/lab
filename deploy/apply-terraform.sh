@@ -20,7 +20,10 @@ import sys
 
 plan = json.load(sys.stdin)
 for resource_change in plan.get("resource_changes", []):
-    if resource_change.get("address") != "proxmox_virtual_environment_vm.hello":
+    if resource_change.get("address") not in {
+        "proxmox_virtual_environment_vm.hello",
+        "proxmox_virtual_environment_vm.wren",
+    }:
         continue
 
     actions = resource_change.get("change", {}).get("actions", [])
@@ -34,7 +37,12 @@ sys.exit(1)
 stop_wren_if_needed() {
   wren_has_planned_update || return 0
 
-  vm_id="$(terraform -chdir=terraform state show proxmox_virtual_environment_vm.hello 2>/dev/null | sed -n 's/^vm_id *= *//p' | head -n1)"
+  vm_id="$(
+    (
+      terraform -chdir=terraform state show proxmox_virtual_environment_vm.wren 2>/dev/null || \
+      terraform -chdir=terraform state show proxmox_virtual_environment_vm.hello 2>/dev/null
+    ) | sed -n 's/^vm_id *= *//p' | head -n1
+  )"
   [ -n "${vm_id}" ] || return 0
 
   proxmox_endpoint="${PROXMOXENDPOINT:-${TF_VAR_PROXMOXENDPOINT:-}}"

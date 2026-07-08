@@ -6,10 +6,9 @@ Active resources:
 
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_download_file.debian_12_genericcloud`
-- `proxmox_virtual_environment_file.hello_user_data_cloud_config`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
-- `proxmox_virtual_environment_vm.hello`
+- `proxmox_virtual_environment_vm.wren`
 
 ## Quick Ops
 
@@ -81,19 +80,17 @@ has a real NixOS install with `qemu-guest-agent` running.
 `wren` uses the official Debian 12 generic cloud image plus a cloud-init
 configuration generated natively by Proxmox. The current bootstrap path:
 
-- creates a root SSH login authorized for Billy, Edward, and the existing
-  GitHub Actions deploy key
+- creates a `billy` SSH login authorized for Billy and Edward
 - requests DHCP on `vmbr0` and keeps explicit guest DNS servers
 - avoids Proxmox snippet uploads and any Terraform-time root SSH into the
   Proxmox host
-- lets a follow-up deploy job call a restricted command on `partridge`, which
-  waits for `wren` to appear in LAN DNS, SSHes into it, installs Tailscale and
-  nginx, and writes the hello page
+- leaves guest bring-up for a direct follow-up SSH session once the VM appears
+  on the LAN
 
 This is still deliberately narrower than the original snippet-based approach.
 That earlier path tried to complete first-boot guest setup directly through
 custom cloud-init, but it depended on Proxmox `Snippets` support on `local`
 plus root-authorized SSH from the deploy environment into the Proxmox host. The
 current path keeps Terraform on the supported Proxmox-native subset, then does
-the guest bootstrap from a repo-managed machine that already has tailnet and LAN
-reachability.
+the guest bootstrap directly from Billy's runtime once LAN reachability is
+confirmed.
