@@ -24,14 +24,6 @@ variable "billy_public_ssh_keys" {
   ]
 }
 
-variable "hello_bootstrap_public_ssh_keys" {
-  description = "Restricted deploy keys temporarily authorized on wren for zero-touch bootstrap from the tailnet"
-  type        = list(string)
-  default = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDFqPnPZHEGDv/vZ6HeXne0NxU7h1EO4sZAZEs1W/N2 github-actions-lab-deploy"
-  ]
-}
-
 variable "proxmox_node_name" {
   description = "Proxmox node that will run the first NixOS VM"
   type        = string
