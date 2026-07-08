@@ -19,12 +19,12 @@ output "magpie_vm_name" {
 }
 
 output "hello_vm_id" {
-  value       = proxmox_virtual_environment_vm.wren.vm_id
+  value       = proxmox_virtual_environment_vm.wren_recreated.vm_id
   description = "The auto-assigned VM ID for the zero-touch hello VM"
 }
 
 output "hello_vm_name" {
-  value       = proxmox_virtual_environment_vm.wren.name
+  value       = proxmox_virtual_environment_vm.wren_recreated.name
   description = "The name of the zero-touch hello VM"
 }
 
