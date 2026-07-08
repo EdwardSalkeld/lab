@@ -7,6 +7,10 @@ resource "proxmox_virtual_environment_download_file" "debian_12_genericcloud" {
   file_name = "debian-12-genericcloud-amd64.qcow2"
 }
 
+resource "terraform_data" "wren_replace_signature" {
+  input = local.wren_replace_signature
+}
+
 resource "proxmox_virtual_environment_vm" "wren" {
   name        = var.hello_vm_name
   description = "Zero-touch bootstrap VM for remote infra exercises."
@@ -70,5 +74,9 @@ resource "proxmox_virtual_environment_vm" "wren" {
 
   operating_system {
     type = "l26"
+  }
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.wren_replace_signature]
   }
 }
