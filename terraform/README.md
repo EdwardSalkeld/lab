@@ -85,6 +85,9 @@ configuration generated natively by Proxmox. The current bootstrap path:
 - keeps the VM boot shape close to the provider's minimal cloud-image example:
   SeaBIOS defaults, an imported `virtio0` root disk, and a serial console
   display that matches Proxmox's cloud-init guidance
+- treats future boot-profile reshapes as replace-only so Terraform recreates
+  the disposable VM instead of attempting unsupported in-place boot-disk
+  controller migrations on Proxmox
 - avoids Proxmox snippet uploads and any Terraform-time root SSH into the
   Proxmox host
 - leaves guest bring-up for a direct follow-up SSH session once the VM appears
