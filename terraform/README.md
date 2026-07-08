@@ -82,6 +82,9 @@ configuration generated natively by Proxmox. The current bootstrap path:
 
 - creates a `billy` SSH login authorized for Billy and Edward
 - requests DHCP on `vmbr0` and keeps explicit guest DNS servers
+- keeps the VM boot shape close to the provider's minimal cloud-image example:
+  SeaBIOS defaults, an imported `virtio0` root disk, and a serial console
+  display that matches Proxmox's cloud-init guidance
 - avoids Proxmox snippet uploads and any Terraform-time root SSH into the
   Proxmox host
 - leaves guest bring-up for a direct follow-up SSH session once the VM appears

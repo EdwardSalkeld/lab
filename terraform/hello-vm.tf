@@ -13,11 +13,8 @@ resource "proxmox_virtual_environment_vm" "wren" {
   node_name   = var.proxmox_node_name
   tags        = ["bird", "bootstrap", "debian", "hello"]
 
-  bios                = "ovmf"
-  boot_order          = ["scsi0"]
   on_boot             = true
   reboot_after_update = true
-  scsi_hardware       = "virtio-scsi-single"
   started             = true
   stop_on_destroy     = true
 
@@ -56,17 +53,18 @@ resource "proxmox_virtual_environment_vm" "wren" {
     bridge = var.proxmox_network_bridge
   }
 
-  efi_disk {
-    datastore_id = var.proxmox_vm_datastore_id
+  serial_device {}
+
+  vga {
+    type = "serial0"
   }
 
   disk {
     datastore_id = var.proxmox_vm_datastore_id
     import_from  = proxmox_virtual_environment_download_file.debian_12_genericcloud.id
-    interface    = "scsi0"
+    interface    = "virtio0"
     size         = var.hello_root_disk_size
     discard      = "on"
-    iothread     = true
     serial       = "${var.hello_vm_name}-root"
   }
 
