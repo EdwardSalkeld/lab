@@ -131,8 +131,8 @@ of a browser auth URL. It joins the GitHub Actions runner to the tailnet as
 `tailscale up` on `wren` with the existing OAuth secret plus
 `?ephemeral=false&preauthorized=true`.
 
-That keeps the flow non-interactive while reusing the trust credential already
-stored in GitHub Actions.
+The workflow accepts the advertised Tailscale tag set as an input because the
+underlying OAuth client may be limited to a subset of tags such as `tag:ci`.
 
 ## Prometheus Exporters
 
