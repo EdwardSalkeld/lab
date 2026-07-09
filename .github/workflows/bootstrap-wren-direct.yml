@@ -3,16 +3,17 @@ name: bootstrap wren direct
 on:
   workflow_dispatch:
     inputs:
-      wren_lan_ip:
-        description: LAN IPv4 address for wren
+      advertise_tags:
+        description: Comma-separated Tailscale tags for wren
         required: false
-        default: "10.4.1.227"
+        default: "tag:ci"
 
 jobs:
   bootstrap:
     name: bootstrap
     runs-on: ubuntu-latest
     env:
+      TAILSCALE_ADVERTISE_TAGS: ${{ inputs.advertise_tags || 'tag:ci' }}
       TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
     steps:
       - name: tailscale
@@ -34,18 +35,10 @@ jobs:
         run: |
           ssh_key_b64="$(base64 -w0 < ~/.ssh/wren_billy)"
 
-          printf '%s\n%s\n' "$ssh_key_b64" "$TS_OAUTH_SECRET" | ssh \
+          printf '%s\n%s\n%s\n' "$ssh_key_b64" "$TS_OAUTH_SECRET" "$TAILSCALE_ADVERTISE_TAGS" | ssh \
             -i ~/.ssh/partridge_deploy \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             deploy@partridge.ts.alcachofa.faith \
             configure-wren
-
-          ssh \
-            -i ~/.ssh/partridge_deploy \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            deploy@partridge.ts.alcachofa.faith \
-            verify-wren

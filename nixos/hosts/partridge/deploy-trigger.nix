@@ -100,6 +100,11 @@ let
         configure-wren)
           IFS= read -r ssh_key_b64
           IFS= read -r tailscale_oauth_secret
+          IFS= read -r tailscale_advertise_tags || true
+
+          if [ -z "$tailscale_advertise_tags" ]; then
+            tailscale_advertise_tags="tag:server"
+          fi
 
           if [ -z "$ssh_key_b64" ] || [ -z "$tailscale_oauth_secret" ]; then
             printf 'configure-wren requires a forwarded SSH key and Tailscale OAuth secret on stdin\n' >&2
@@ -152,13 +157,13 @@ systemctl enable --now nginx tailscaled
 if tailscale ip -4 >/dev/null 2>&1; then
   tailscale up \
     --hostname=wren \
-    --advertise-tags=tag:server \
+    --advertise-tags="''${TAILSCALE_ADVERTISE_TAGS}" \
     --ssh=false
 else
   tailscale up \
     --auth-key="''${TAILSCALE_OAUTH_SECRET}?ephemeral=false&preauthorized=true" \
     --hostname=wren \
-    --advertise-tags=tag:server \
+    --advertise-tags="''${TAILSCALE_ADVERTISE_TAGS}" \
     --ssh=false
 fi
 REMOTE
@@ -175,7 +180,7 @@ REMOTE
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             "billy@$wren_target" \
-            "sudo env TAILSCALE_OAUTH_SECRET='$tailscale_oauth_secret' bash -s" <"$tmpdir/wren-bootstrap.sh"
+            "sudo env TAILSCALE_OAUTH_SECRET='$tailscale_oauth_secret' TAILSCALE_ADVERTISE_TAGS='$tailscale_advertise_tags' bash -s" <"$tmpdir/wren-bootstrap.sh"
 
           printf 'configure-wren called\n'
           ;;
