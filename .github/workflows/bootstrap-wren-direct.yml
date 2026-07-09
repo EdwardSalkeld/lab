@@ -1,9 +1,6 @@
 name: bootstrap wren direct
 
 on:
-  push:
-    branches:
-      - billy/wren-direct-tailnet-join
   workflow_dispatch:
     inputs:
       wren_lan_ip:
