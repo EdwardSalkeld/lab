@@ -16,7 +16,6 @@ jobs:
     name: bootstrap
     runs-on: ubuntu-latest
     env:
-      WREN_LAN_IP: ${{ inputs.wren_lan_ip || '10.4.1.227' }}
       TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
     steps:
       - name: tailscale
@@ -34,31 +33,22 @@ jobs:
           printf '%s\n' "${{ secrets.WREN_BILLY_SSH_KEY }}" > ~/.ssh/wren_billy
           chmod 0600 ~/.ssh/partridge_deploy ~/.ssh/wren_billy
 
-          cat > ~/.ssh/config <<'EOF'
-          Host partridge-deploy
-            HostName partridge.ts.alcachofa.faith
-            User deploy
-            IdentityFile ~/.ssh/partridge_deploy
-            IdentitiesOnly yes
-            StrictHostKeyChecking accept-new
-
-          Host wren-lan
-            HostName __WREN_LAN_IP__
-            User billy
-            IdentityFile ~/.ssh/wren_billy
-            IdentitiesOnly yes
-            StrictHostKeyChecking accept-new
-            ProxyJump partridge-deploy
-          EOF
-
-          perl -0pi -e 's/__WREN_LAN_IP__/$ENV{WREN_LAN_IP}/g' ~/.ssh/config
-
       - name: join tailnet and verify
         run: |
-          auth_key="${TS_OAUTH_SECRET}?ephemeral=false&preauthorized=true"
-          auth_key_quoted="$(printf '%q' "$auth_key")"
+          ssh_key_b64="$(base64 -w0 < ~/.ssh/wren_billy)"
 
-          ssh wren-lan "sudo tailscale up --auth-key=${auth_key_quoted} --advertise-tags=tag:server --hostname=wren --ssh=false"
-          ssh wren-lan 'sudo tailscale ip -4'
-          ssh wren-lan 'hostnamectl --static'
-          ssh wren-lan 'curl --fail --silent http://localhost | grep -F "Hello from wren"'
+          printf '%s\n%s\n' "$ssh_key_b64" "$TS_OAUTH_SECRET" | ssh \
+            -i ~/.ssh/partridge_deploy \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            deploy@partridge.ts.alcachofa.faith \
+            configure-wren
+
+          ssh \
+            -i ~/.ssh/partridge_deploy \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            deploy@partridge.ts.alcachofa.faith \
+            verify-wren
