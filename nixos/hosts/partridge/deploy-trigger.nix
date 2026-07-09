@@ -9,6 +9,7 @@ let
       pkgs.gawk
       pkgs.glibc.bin
       pkgs.gnugrep
+      pkgs.netcat-openbsd
       pkgs.openssh
     ];
     text = ''
@@ -19,27 +20,6 @@ let
 
       command_name="''${SSH_ORIGINAL_COMMAND:-lab-deploy-smoke}"
       printf '%s called %s from GitHub Actions\n' "$(date --iso-8601=seconds)" "$command_name" >> "$log"
-
-      resolve_wren_target() {
-        for _ in $(seq 1 30); do
-          for candidate in wren wren.int.alcachofa.faith; do
-            resolved="$(
-              getent ahostsv4 "$candidate" 2>/dev/null \
-                | grep ' STREAM ' \
-                | awk 'NR == 1 { print $1 }'
-            )"
-            if [ -n "$resolved" ]; then
-              printf '%s\n' "$resolved"
-              return 0
-            fi
-          done
-
-          sleep 2
-        done
-
-        printf 'could not resolve wren on the LAN after waiting for DHCP/DNS\n' >&2
-        return 1
-      }
 
       wait_for_wren_ssh() {
         wren_target="$1"
@@ -60,6 +40,56 @@ let
         done
 
         printf 'wren resolved to %s but ssh did not come up in time\n' "$wren_target" >&2
+        return 1
+      }
+
+      find_wren_target_via_ssh() {
+        key_file="$1"
+
+        for host_octet in $(seq 1 254); do
+          candidate_ip="10.4.1.$host_octet"
+
+          if ! nc -z -w1 "$candidate_ip" 22 >/dev/null 2>&1; then
+            continue
+          fi
+
+          if ssh \
+            -i "$key_file" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=5 \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "billy@$candidate_ip" \
+            true >/dev/null 2>&1; then
+            printf '%s\n' "$candidate_ip"
+            return 0
+          fi
+        done
+
+        return 1
+      }
+
+      resolve_wren_target() {
+        key_file="$1"
+
+        for candidate in wren wren.int.alcachofa.faith; do
+          resolved="$(
+            getent ahostsv4 "$candidate" 2>/dev/null \
+              | grep ' STREAM ' \
+              | awk 'NR == 1 { print $1 }'
+          )"
+          if [ -n "$resolved" ]; then
+            printf '%s\n' "$resolved"
+            return 0
+          fi
+        done
+
+        if resolved="$(find_wren_target_via_ssh "$key_file")"; then
+          printf '%s\n' "$resolved"
+          return 0
+        fi
+
+        printf 'could not resolve wren on the LAN via DNS or Billy SSH key\n' >&2
         return 1
       }
 
@@ -133,19 +163,19 @@ else
 fi
 REMOTE
 
-          wren_target="$(resolve_wren_target)"
+          wren_target="$(resolve_wren_target "$key_file")"
           printf 'configure-wren target: %s\n' "$wren_target"
           wait_for_wren_ssh "$wren_target" \
             -i "$key_file" \
-            "root@$wren_target"
+            "billy@$wren_target"
 
           ssh \
             -i "$key_file" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
-            "root@$wren_target" \
-            "TAILSCALE_OAUTH_SECRET='$tailscale_oauth_secret' bash -s" <"$tmpdir/wren-bootstrap.sh"
+            "billy@$wren_target" \
+            "sudo env TAILSCALE_OAUTH_SECRET='$tailscale_oauth_secret' bash -s" <"$tmpdir/wren-bootstrap.sh"
 
           printf 'configure-wren called\n'
           ;;
