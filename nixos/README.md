@@ -128,8 +128,7 @@ the `deploy` user and forced command exist before the workflow can connect.
 For disposable `wren` bring-up, use the `bootstrap wren direct` workflow instead
 of a browser auth URL. It joins the GitHub Actions runner to the tailnet as
 `tag:ci`, reaches `wren` through `partridge` as a jump host, and runs
-`tailscale up` on `wren` with the existing OAuth secret plus
-`?ephemeral=false&preauthorized=true`.
+`tailscale up` on `wren` with the existing OAuth client ID and secret.
 
 The workflow accepts the advertised Tailscale tag set as an input because the
 underlying OAuth client may be limited to a subset of tags such as `tag:ci`.
