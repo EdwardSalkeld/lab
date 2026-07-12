@@ -5,10 +5,8 @@ This Terraform root manages VMs on Proxmox.
 Active resources:
 
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
-- `proxmox_virtual_environment_download_file.debian_12_genericcloud`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
-- `proxmox_virtual_environment_vm.wren` when `hello_vm_enabled=true`
 
 ## Quick Ops
 
@@ -38,8 +36,10 @@ Show VM outputs:
 terraform -chdir=terraform output
 ```
 
-For the full disposable `wren` recreate flow, including the follow-up Tailscale
-bootstrap, use [../docs/wren-playbook.md](../docs/wren-playbook.md).
+There is no standing disposable Debian cloud-image VM on `main`. When the next
+remote-only bootstrap exercise starts, add its Terraform resources in a branch
+and use [../docs/wren-playbook.md](../docs/wren-playbook.md) as the reference
+pattern.
 
 ## Repo-Managed VM
 
@@ -72,38 +72,17 @@ installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
 
-## Zero-Touch Hello VM
+## Disposable Debian VM Reference
 
-- Name: `wren`
-- Node: `sol`
-- Root disk: 12 GiB on `local-lvm`
-- Memory: 2048 MiB
-- Network bridge: `vmbr0`
+The `wren` exercise established the current reference pattern for a disposable
+remote-only Debian cloud-image VM:
 
-`wren` uses the official Debian 12 generic cloud image plus a cloud-init
-configuration generated natively by Proxmox. The current bootstrap path:
+- use Proxmox native cloud-init rather than snippet uploads
+- keep the guest on DHCP
+- use a minimal boot shape: imported `virtio0` root disk plus serial console
+- treat boot-shape changes as replacement-only
+- do direct guest SSH debugging once the machine is reachable
 
-- creates a `billy` SSH login authorized for Billy and Edward
-- requests DHCP on `vmbr0` and keeps explicit guest DNS servers
-- keeps the VM boot shape close to the provider's minimal cloud-image example:
-  SeaBIOS defaults, an imported `virtio0` root disk, and a serial console
-  display that matches Proxmox's cloud-init guidance
-- treats future boot-profile reshapes as replace-only so Terraform recreates
-  the disposable VM instead of attempting unsupported in-place boot-disk
-  controller migrations on Proxmox
-- avoids Proxmox snippet uploads and any Terraform-time root SSH into the
-  Proxmox host
-- leaves guest bring-up for a direct follow-up SSH session once the VM appears
-  on the LAN
-
-`wren` is currently gated by `hello_vm_enabled`. Keep that variable `false` for
-a full teardown that destroys the VM and its stateful root disk while retaining
-the reusable Debian cloud image template in Proxmox.
-
-This is still deliberately narrower than the original snippet-based approach.
-That earlier path tried to complete first-boot guest setup directly through
-custom cloud-init, but it depended on Proxmox `Snippets` support on `local`
-plus root-authorized SSH from the deploy environment into the Proxmox host. The
-current path keeps Terraform on the supported Proxmox-native subset, then uses
-the manual `bootstrap wren direct` workflow for the zero-interaction Tailscale
-and nginx bootstrap.
+That flow is documented in [../docs/wren-playbook.md](../docs/wren-playbook.md)
+and should be reapplied in a fresh branch when the next disposable VM is
+introduced.

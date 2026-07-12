@@ -17,18 +17,3 @@ output "magpie_vm_name" {
   value       = proxmox_virtual_environment_vm.magpie.name
   description = "The name of magpie"
 }
-
-output "hello_vm_id" {
-  value       = try(proxmox_virtual_environment_vm.wren_recreated[0].vm_id, null)
-  description = "The auto-assigned VM ID for the zero-touch hello VM"
-}
-
-output "hello_vm_name" {
-  value       = try(proxmox_virtual_environment_vm.wren_recreated[0].name, null)
-  description = "The name of the zero-touch hello VM"
-}
-
-output "hello_vm_ssh_username" {
-  value       = "billy"
-  description = "SSH username baked into the zero-touch hello VM via native cloud-init"
-}
