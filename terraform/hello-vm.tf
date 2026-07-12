@@ -8,10 +8,13 @@ resource "proxmox_virtual_environment_download_file" "debian_12_genericcloud" {
 }
 
 resource "terraform_data" "wren_replace_signature" {
+  count = var.hello_vm_enabled ? 1 : 0
   input = local.wren_replace_signature
 }
 
 resource "proxmox_virtual_environment_vm" "wren_recreated" {
+  count = var.hello_vm_enabled ? 1 : 0
+
   name        = var.hello_vm_name
   description = "Zero-touch bootstrap VM for remote infra exercises."
   node_name   = var.proxmox_node_name
@@ -77,6 +80,6 @@ resource "proxmox_virtual_environment_vm" "wren_recreated" {
   }
 
   lifecycle {
-    replace_triggered_by = [terraform_data.wren_replace_signature]
+    replace_triggered_by = [terraform_data.wren_replace_signature[0]]
   }
 }

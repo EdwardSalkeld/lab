@@ -6,7 +6,7 @@ Current managed paths:
 
 - `partridge`: repo-managed NixOS VM
 - `magpie`: disposable NixOS installer VM
-- `wren`: disposable zero-touch Debian cloud-init VM for remote bring-up tests
+- `wren`: disposable zero-touch Debian cloud-init VM for remote bring-up tests, currently disabled until explicitly recreated
 
 `wren` is the current proving ground for remote-only VM creation: DHCP-backed
 discovery, repo-managed SSH access, non-interactive Tailscale join, and a small

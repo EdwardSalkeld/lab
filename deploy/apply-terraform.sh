@@ -24,6 +24,7 @@ for resource_change in plan.get("resource_changes", []):
         "proxmox_virtual_environment_vm.hello",
         "proxmox_virtual_environment_vm.wren",
         "proxmox_virtual_environment_vm.wren_recreated",
+        "proxmox_virtual_environment_vm.wren_recreated[0]",
     }:
         continue
 
@@ -42,6 +43,7 @@ stop_wren_if_needed() {
     (
       terraform -chdir=terraform state show proxmox_virtual_environment_vm.wren 2>/dev/null || \
       terraform -chdir=terraform state show proxmox_virtual_environment_vm.wren_recreated 2>/dev/null || \
+      terraform -chdir=terraform state show 'proxmox_virtual_environment_vm.wren_recreated[0]' 2>/dev/null || \
       terraform -chdir=terraform state show proxmox_virtual_environment_vm.hello 2>/dev/null
     ) | sed -n 's/^vm_id *= *//p' | head -n1
   )"
