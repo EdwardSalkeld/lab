@@ -38,6 +38,9 @@ Show VM outputs:
 terraform -chdir=terraform output
 ```
 
+For the full disposable `wren` recreate flow, including the follow-up Tailscale
+bootstrap, use [../docs/wren-playbook.md](../docs/wren-playbook.md).
+
 ## Repo-Managed VM
 
 - Name: `partridge`
@@ -97,6 +100,6 @@ This is still deliberately narrower than the original snippet-based approach.
 That earlier path tried to complete first-boot guest setup directly through
 custom cloud-init, but it depended on Proxmox `Snippets` support on `local`
 plus root-authorized SSH from the deploy environment into the Proxmox host. The
-current path keeps Terraform on the supported Proxmox-native subset, then does
-the guest bootstrap directly from Billy's runtime once LAN reachability is
-confirmed.
+current path keeps Terraform on the supported Proxmox-native subset, then uses
+the manual `bootstrap wren direct` workflow for the zero-interaction Tailscale
+and nginx bootstrap.

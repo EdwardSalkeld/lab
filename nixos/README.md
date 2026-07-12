@@ -133,6 +133,10 @@ of a browser auth URL. It joins the GitHub Actions runner to the tailnet as
 The workflow accepts the advertised Tailscale tag set as an input because the
 underlying OAuth client may be limited to a subset of tags such as `tag:ci`.
 
+The full canonical rebuild sequence for `wren`, including Terraform recreate,
+workflow bootstrap, and troubleshooting rules, lives in
+[../docs/wren-playbook.md](../docs/wren-playbook.md).
+
 ## Prometheus Exporters
 
 All Proxmox VM hosts include node exporter on port `9100` from
