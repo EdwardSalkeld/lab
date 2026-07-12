@@ -8,7 +8,7 @@ Active resources:
 - `proxmox_virtual_environment_download_file.debian_12_genericcloud`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
-- `proxmox_virtual_environment_vm.wren`
+- `proxmox_virtual_environment_vm.wren` when `hello_vm_enabled=true`
 
 ## Quick Ops
 
@@ -95,6 +95,10 @@ configuration generated natively by Proxmox. The current bootstrap path:
   Proxmox host
 - leaves guest bring-up for a direct follow-up SSH session once the VM appears
   on the LAN
+
+`wren` is currently gated by `hello_vm_enabled`. Keep that variable `false` for
+a full teardown that destroys the VM and its stateful root disk while retaining
+the reusable Debian cloud image template in Proxmox.
 
 This is still deliberately narrower than the original snippet-based approach.
 That earlier path tried to complete first-boot guest setup directly through

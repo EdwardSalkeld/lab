@@ -6,6 +6,10 @@ repo's disposable zero-touch Debian VM.
 Use this when the goal is: create a fresh VM in Proxmox, get Billy SSH access,
 join the tailnet without browser interaction, and serve the hello page.
 
+The teardown and recreate are separate phases. For a complete teardown, first
+merge `hello_vm_enabled=false` on current `main` and let the normal deploy
+destroy `wren` and its root disk. Only then begin the recreate flow below.
+
 ## Success Criteria
 
 At the end of a successful run:
@@ -62,12 +66,12 @@ If you are making repo changes as part of the rebuild, branch from current
 The expected implementation is in `terraform/hello-vm.tf` and `terraform/locals.tf`.
 Before applying, confirm it still has these properties:
 
-- `proxmox_virtual_environment_vm.wren_recreated`
+- `proxmox_virtual_environment_vm.wren_recreated[0]` when enabled
 - DHCP in `initialization.ip_config.ipv4.address = "dhcp"`
 - `billy` user keys from `billy_public_ssh_keys` and `public_ssh_keys`
 - imported root disk on `virtio0`
 - serial console via `serial_device {}` and `vga { type = "serial0" }`
-- lifecycle replacement driven by `terraform_data.wren_replace_signature`
+- lifecycle replacement driven by `terraform_data.wren_replace_signature[0]`
 
 If Terraform is about to migrate the root disk controller or boot profile
 in place, stop and make it a replacement instead.
@@ -217,4 +221,3 @@ For disposable `wren` work, direct SSH is the shortest source of truth for:
 - `terraform/locals.tf`
 - `.github/workflows/bootstrap-wren-direct.yml`
 - `nixos/hosts/partridge/deploy-trigger.nix`
-

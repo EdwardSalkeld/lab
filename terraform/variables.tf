@@ -108,6 +108,12 @@ variable "hello_vm_name" {
   default     = "wren"
 }
 
+variable "hello_vm_enabled" {
+  description = "Whether the disposable zero-touch hello VM should exist"
+  type        = bool
+  default     = false
+}
+
 variable "hello_root_disk_size" {
   description = "Root disk size for the hello bootstrap VM in GiB"
   type        = number
