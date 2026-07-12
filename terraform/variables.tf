@@ -101,33 +101,3 @@ variable "magpie_root_disk_size" {
   type        = number
   default     = 24
 }
-
-variable "hello_vm_name" {
-  description = "Name of the zero-touch hello-world bootstrap VM"
-  type        = string
-  default     = "wren"
-}
-
-variable "hello_vm_enabled" {
-  description = "Whether the disposable zero-touch hello VM should exist"
-  type        = bool
-  default     = false
-}
-
-variable "hello_root_disk_size" {
-  description = "Root disk size for the hello bootstrap VM in GiB"
-  type        = number
-  default     = 12
-}
-
-variable "hello_memory_mb" {
-  description = "Memory for the hello bootstrap VM in MiB"
-  type        = number
-  default     = 2048
-}
-
-variable "hello_dns_servers" {
-  description = "DNS servers for the hello bootstrap VM"
-  type        = list(string)
-  default     = ["10.4.1.1", "1.1.1.1"]
-}

@@ -6,15 +6,16 @@ Current managed paths:
 
 - `partridge`: repo-managed NixOS VM
 - `magpie`: disposable NixOS installer VM
-- `wren`: disposable zero-touch Debian cloud-init VM for remote bring-up tests, currently disabled until explicitly recreated
 
-`wren` is the current proving ground for remote-only VM creation: DHCP-backed
-discovery, repo-managed SSH access, non-interactive Tailscale join, and a small
-nginx hello page without needing a Proxmox console after Terraform apply.
+There is no standing disposable Debian cloud-image VM on `main` right now. The
+July 2026 `wren` exercise was torn down completely; the next disposable VM
+should be reintroduced in a dedicated branch rather than left disabled on
+`main`.
 
 Start here:
 
 - `AGENTS.md` for current operational notes.
 - `terraform/README.md` for Terraform commands.
 - `nixos/README.md` for NixOS host configuration and deploy commands.
-- `docs/wren-playbook.md` for the canonical `wren` teardown/recreate flow.
+- `docs/wren-playbook.md` for the reusable pattern to recreate a disposable
+  zero-touch Debian VM from scratch.

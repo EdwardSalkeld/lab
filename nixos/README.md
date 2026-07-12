@@ -113,29 +113,16 @@ Required GitHub Actions secrets:
 - `TS_OAUTH_CLIENT_ID`: Tailscale OAuth client ID with `auth_keys` scope
 - `TS_OAUTH_SECRET`: Tailscale OAuth client secret
 - `PARTRIDGE_DEPLOY_SSH_KEY`: private key matching the repo-declared deploy key
-- `WREN_BILLY_SSH_KEY`: Billy's private key for direct SSH bootstrap into `wren`
 
 `PARTRIDGE_DEPLOY_SSH_KEY` is only for the restricted Partridge deploy trigger.
-`wren` itself is intended to come up on DHCP with Billy and Edward's SSH keys,
-then be handled directly over SSH rather than through the deploy workflow.
 
 The Tailscale ACL should allow `tag:ci` to reach only Partridge's Tailscale SSH
 endpoint. The first deployment of this wiring must still be applied manually so
 the `deploy` user and forced command exist before the workflow can connect.
 
-## Direct Wren Bootstrap
-
-For disposable `wren` bring-up, use the `bootstrap wren direct` workflow instead
-of a browser auth URL. It joins the GitHub Actions runner to the tailnet as
-`tag:ci`, reaches `wren` through `partridge` as a jump host, and runs
-`tailscale up` on `wren` with the existing OAuth client ID and secret.
-
-The workflow accepts the advertised Tailscale tag set as an input because the
-underlying OAuth client may be limited to a subset of tags such as `tag:ci`.
-
-The full canonical rebuild sequence for `wren`, including Terraform recreate,
-workflow bootstrap, and troubleshooting rules, lives in
-[../docs/wren-playbook.md](../docs/wren-playbook.md).
+The July 2026 `wren` bootstrap experiment has been torn down. Keep `partridge`
+focused on the generic deploy trigger until the next disposable VM path is
+reintroduced in a dedicated branch.
 
 ## Prometheus Exporters
 
