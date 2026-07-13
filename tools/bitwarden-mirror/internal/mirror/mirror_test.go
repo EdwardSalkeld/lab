@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -38,8 +39,16 @@ func TestRunCommandOrderDeletesItemsBeforeFoldersAndImports(t *testing.T) {
 		"unlock --raw --passwordenv BW_PASSWORD",
 		"list items",
 		"list folders",
+		"status --raw",
+		"config server https://vault.alcachofa.faith",
+		"login --apikey",
+		"unlock --raw --passwordenv BW_PASSWORD",
 		"delete item item-1 --permanent",
 		"delete item item-2 --permanent",
+		"status --raw",
+		"config server https://vault.alcachofa.faith",
+		"login --apikey",
+		"unlock --raw --passwordenv BW_PASSWORD",
 		"delete folder folder-1 --permanent",
 		"import bitwardenjson /work/bitwarden-export.json",
 	}
@@ -167,6 +176,38 @@ func TestSeparateSourceAndDestinationAppdataDirs(t *testing.T) {
 	}
 }
 
+func TestParallelDeletesUseIsolatedWorkerAppdataDirs(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[{"id":"item-1"},{"id":"item-2"},{"id":"item-3"}]`),
+		"list folders":                           []byte(`[]`),
+	}
+
+	m := testMirror(runner, nil, false)
+	m.Config.DeleteConcurrency = 3
+	err := m.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	deleteDirs := map[string]bool{}
+	for _, call := range runner.snapshotCalls() {
+		if len(call.Args) > 0 && call.Args[0] == "delete" {
+			deleteDirs[call.Env["BITWARDENCLI_APPDATA_DIR"]] = true
+		}
+	}
+	for got := range deleteDirs {
+		if !strings.HasPrefix(got, "/state/destination-delete/worker-") {
+			t.Fatalf("delete used non-worker appdata %q; got %v", got, deleteDirs)
+		}
+	}
+	if deleteDirs["/state/destination"] {
+		t.Fatalf("delete used shared destination appdata: %v", deleteDirs)
+	}
+}
+
 func TestMalformedListJSONFailsBeforeDeletion(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
@@ -288,6 +329,7 @@ func testFiles(removed *[]string) *FileOps {
 }
 
 type fakeRunner struct {
+	mu       sync.Mutex
 	calls    []Command
 	outputs  map[string][]byte
 	failures map[string]error
@@ -301,8 +343,10 @@ func newFakeRunner() *fakeRunner {
 }
 
 func (r *fakeRunner) Run(_ context.Context, cmd Command) ([]byte, error) {
+	r.mu.Lock()
 	r.calls = append(r.calls, cmd)
 	line := strings.Join(cmd.Args, " ")
+	r.mu.Unlock()
 	if err, ok := r.failures[line]; ok {
 		return nil, err
 	}
@@ -313,11 +357,18 @@ func (r *fakeRunner) Run(_ context.Context, cmd Command) ([]byte, error) {
 }
 
 func (r *fakeRunner) commandLines() []string {
-	lines := make([]string, 0, len(r.calls))
-	for _, call := range r.calls {
+	calls := r.snapshotCalls()
+	lines := make([]string, 0, len(calls))
+	for _, call := range calls {
 		lines = append(lines, strings.Join(call.Args, " "))
 	}
 	return lines
+}
+
+func (r *fakeRunner) snapshotCalls() []Command {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]Command(nil), r.calls...)
 }
 
 func contains(values []string, want string) bool {
