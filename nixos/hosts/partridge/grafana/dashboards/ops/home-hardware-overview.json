@@ -661,6 +661,84 @@
       ],
       "title": "Targets down",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fdp9rmnopl3wgf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "id": 10,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Host"
+          }
+        ]
+      },
+      "pluginVersion": "11",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fdp9rmnopl3wgf"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(node_systemd_unit_state{state=\"failed\"} == 1, \"host\", \"$1\", \"instance\", \"([^.:]+).*\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "state": true,
+              "type": true
+            },
+            "indexByName": {
+              "host": 0,
+              "name": 1
+            },
+            "renameByName": {
+              "host": "Host",
+              "name": "Unit"
+            }
+          }
+        }
+      ],
+      "title": "Failed systemd units",
+      "type": "table"
     }
   ],
   "refresh": "1m",
