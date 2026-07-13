@@ -187,11 +187,11 @@ func (m Mirror) Run(ctx context.Context) error {
 	}
 
 	logger.Printf("permanently deleting %d destination items", len(items))
-	if err := m.deleteObjects(ctx, "item", items, destEnv, logger, cfg.DeleteConcurrency, 25); err != nil {
+	if err := m.deleteObjects(ctx, "item", items, cfg, m.Env.Destination, files, logger, cfg.DeleteConcurrency, 25); err != nil {
 		return err
 	}
 	logger.Printf("permanently deleting %d destination folders", len(folders))
-	if err := m.deleteObjects(ctx, "folder", folders, destEnv, logger, cfg.DeleteConcurrency, 10); err != nil {
+	if err := m.deleteObjects(ctx, "folder", folders, cfg, m.Env.Destination, files, logger, cfg.DeleteConcurrency, 10); err != nil {
 		return err
 	}
 
@@ -210,7 +210,7 @@ func (m Mirror) Run(ctx context.Context) error {
 	return nil
 }
 
-func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObject, env map[string]string, logger *log.Logger, concurrency int, logEvery int64) error {
+func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObject, cfg Config, creds Credentials, files FileOps, logger *log.Logger, concurrency int, logEvery int64) error {
 	if len(objects) == 0 {
 		return nil
 	}
@@ -232,10 +232,21 @@ func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObje
 	var done int64
 	var wg sync.WaitGroup
 
-	for range concurrency {
+	for workerID := range concurrency {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			appdataDir := cfg.destinationDeleteAppdataDir(workerID)
+			env, err := m.destinationDeleteEnv(ctx, cfg.DestinationServer, appdataDir, creds, files)
+			if err != nil {
+				select {
+				case errs <- err:
+					cancel()
+				default:
+				}
+				return
+			}
+
 			for object := range jobs {
 				if err := m.run(ctx, "delete destination "+kind, Command{
 					Args: []string{"delete", kind, object.ID, "--permanent"},
@@ -274,6 +285,17 @@ send:
 	default:
 		return nil
 	}
+}
+
+func (m Mirror) destinationDeleteEnv(ctx context.Context, server, appdataDir string, creds Credentials, files FileOps) (map[string]string, error) {
+	if err := files.MkdirAll(appdataDir, 0o700); err != nil {
+		return nil, fmt.Errorf("create destination delete appdata dir %s: %w", appdataDir, err)
+	}
+	session, err := m.loginUnlock(ctx, "destination delete worker", server, appdataDir, creds)
+	if err != nil {
+		return nil, err
+	}
+	return bwEnv(appdataDir, creds, session), nil
 }
 
 func (m Mirror) loginUnlockSyncExport(ctx context.Context, label, server, appdataDir string, creds Credentials, exportPath string) (string, error) {
@@ -405,6 +427,10 @@ func (c Config) sourceAppdataDir() string {
 
 func (c Config) destinationAppdataDir() string {
 	return filepath.Join(c.StateDir, "destination")
+}
+
+func (c Config) destinationDeleteAppdataDir(workerID int) string {
+	return filepath.Join(c.StateDir, "destination-delete", fmt.Sprintf("worker-%d", workerID))
 }
 
 func bytesTrimSpace(in []byte) []byte {
