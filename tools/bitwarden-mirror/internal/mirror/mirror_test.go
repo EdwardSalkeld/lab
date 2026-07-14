@@ -199,12 +199,44 @@ func TestParallelDeletesUseIsolatedWorkerAppdataDirs(t *testing.T) {
 		}
 	}
 	for got := range deleteDirs {
-		if !strings.HasPrefix(got, "/state/destination-delete/worker-") {
+		if !strings.HasPrefix(got, "/work/destination-delete/worker-") {
 			t.Fatalf("delete used non-worker appdata %q; got %v", got, deleteDirs)
 		}
 	}
 	if deleteDirs["/state/destination"] {
 		t.Fatalf("delete used shared destination appdata: %v", deleteDirs)
+	}
+}
+
+func TestDeleteWorkersArePreparedBeforeDeleting(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[{"id":"item-1"},{"id":"item-2"},{"id":"item-3"}]`),
+		"list folders":                           []byte(`[]`),
+	}
+
+	m := testMirror(runner, nil, false)
+	m.Config.DeleteConcurrency = 3
+	err := m.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	lines := runner.commandLines()
+	firstDelete := indexPrefix(lines, "delete ")
+	if firstDelete == -1 {
+		t.Fatalf("no delete command issued: %v", lines)
+	}
+	unlocksBeforeDelete := 0
+	for _, line := range lines[:firstDelete] {
+		if line == "unlock --raw --passwordenv BW_PASSWORD" {
+			unlocksBeforeDelete++
+		}
+	}
+	if unlocksBeforeDelete != 5 {
+		t.Fatalf("unlocks before first delete = %d, want 5; commands=%v", unlocksBeforeDelete, lines)
 	}
 }
 
@@ -387,4 +419,13 @@ func containsPrefix(values []string, prefix string) bool {
 		}
 	}
 	return false
+}
+
+func indexPrefix(values []string, prefix string) int {
+	for i, value := range values {
+		if strings.HasPrefix(value, prefix) {
+			return i
+		}
+	}
+	return -1
 }
