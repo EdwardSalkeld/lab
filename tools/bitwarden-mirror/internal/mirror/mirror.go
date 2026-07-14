@@ -232,20 +232,20 @@ func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObje
 	var done int64
 	var wg sync.WaitGroup
 
+	envs := make([]map[string]string, 0, concurrency)
 	for workerID := range concurrency {
+		appdataDir := cfg.destinationDeleteAppdataDir(workerID)
+		env, err := m.destinationDeleteEnv(ctx, cfg.DestinationServer, appdataDir, creds, files)
+		if err != nil {
+			return err
+		}
+		envs = append(envs, env)
+	}
+
+	for _, env := range envs {
 		wg.Add(1)
-		go func() {
+		go func(env map[string]string) {
 			defer wg.Done()
-			appdataDir := cfg.destinationDeleteAppdataDir(workerID)
-			env, err := m.destinationDeleteEnv(ctx, cfg.DestinationServer, appdataDir, creds, files)
-			if err != nil {
-				select {
-				case errs <- err:
-					cancel()
-				default:
-				}
-				return
-			}
 
 			for object := range jobs {
 				if err := m.run(ctx, "delete destination "+kind, Command{
@@ -265,7 +265,7 @@ func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObje
 					logger.Printf("deleted destination %ss %d/%d", kind, current, len(objects))
 				}
 			}
-		}()
+		}(env)
 	}
 
 send:
@@ -430,7 +430,7 @@ func (c Config) destinationAppdataDir() string {
 }
 
 func (c Config) destinationDeleteAppdataDir(workerID int) string {
-	return filepath.Join(c.StateDir, "destination-delete", fmt.Sprintf("worker-%d", workerID))
+	return filepath.Join(c.WorkDir, "destination-delete", fmt.Sprintf("worker-%d", workerID))
 }
 
 func bytesTrimSpace(in []byte) []byte {

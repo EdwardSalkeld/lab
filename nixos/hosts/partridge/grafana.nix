@@ -204,6 +204,100 @@ let
     notification_settings.receiver = "Email Alcachofa";
     isPaused = false;
   };
+  systemdUnitFailedAlert = {
+    uid = "systemd-unit-failed";
+    title = "Systemd unit failed";
+    condition = "C";
+    data = [
+      {
+        refId = "A";
+        datasourceUid = prometheusDatasourceUid;
+        queryType = "";
+        relativeTimeRange = {
+          from = 600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "prometheus";
+            uid = prometheusDatasourceUid;
+          };
+          editorMode = "code";
+          expr = ''node_systemd_unit_state{state="failed"}'';
+          instant = true;
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "A";
+        };
+      }
+      {
+        refId = "B";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "A";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          reducer = "last";
+          refId = "B";
+          type = "reduce";
+        };
+      }
+      {
+        refId = "C";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          conditions = [
+            {
+              evaluator = {
+                params = [ 0 ];
+                type = "gt";
+              };
+              operator.type = "and";
+              query.params = [ "C" ];
+              reducer.type = "last";
+              type = "query";
+            }
+          ];
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "B";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "C";
+          type = "threshold";
+        };
+      }
+    ];
+    noDataState = "Alerting";
+    execErrState = "Error";
+    for = "5m";
+    annotations = {
+      summary = "{{ $labels.name }} is failed on {{ $labels.instance }}";
+      description = "Systemd unit {{ $labels.name }} on {{ $labels.instance }} has been in failed state for 5m. Check journalctl -u {{ $labels.name }} on the affected host.";
+    };
+    labels = {
+      service = "systemd";
+      severity = "critical";
+    };
+    notification_settings.receiver = "Email Alcachofa";
+    isPaused = false;
+  };
   # Real, persistent filesystems only: ext4 excludes tmpfs/ramfs/fuse/vfat;
   # /nix/store is dropped because it mirrors / on NixOS hosts; the two ext2tb
   # disks on blink are intentionally kept near-full and would alert constantly.
@@ -455,6 +549,15 @@ in
           interval = "1m";
           rules = [
             targetDownAlert
+          ];
+        }
+        {
+          orgId = 1;
+          name = "Systemd Units";
+          folder = "Ops";
+          interval = "1m";
+          rules = [
+            systemdUnitFailedAlert
           ];
         }
         {
