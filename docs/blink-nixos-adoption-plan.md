@@ -3,6 +3,8 @@
 Planning and decision log for the bare-metal `blink` adoption. Initial NixOS
 implementation now lives under `nixos/hosts/blink/`.
 
+The concrete deployment runbook is in `nixos/hosts/blink/README.md`.
+
 `blink` is the current bare-metal server. The migration goal is to bring its
 base OS, mounts, services, scheduled jobs, and Docker workloads under this repo
 without losing the data currently living on attached disks.
