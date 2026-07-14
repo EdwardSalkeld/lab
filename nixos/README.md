@@ -4,6 +4,7 @@ This directory is the start of the repo-owned NixOS configuration.
 
 Current targets:
 
+- `blink`: bare-metal server, initially adopted with Docker Compose workloads.
 - `partridge`: the first repo-managed NixOS VM.
 - `magpie`: disposable NixOS development VM.
 
@@ -48,6 +49,22 @@ nix profile install nixpkgs#htop
 
 Prefer `environment.systemPackages` for lab infrastructure so the machine can
 be recreated from the repo.
+
+## Deploying `blink`
+
+`blink` is a bare-metal host. Its first repo-owned config lives in
+`nixos/hosts/blink/` and intentionally keeps Docker Compose as the workload
+boundary for cutover.
+
+Before reinstalling the root disk, migrate kept Docker named volumes to the
+persistent data disk:
+
+```sh
+sudo ./scripts/blink-migrate-docker-volumes.sh
+```
+
+See `nixos/hosts/blink/README.md` and
+`docs/blink-nixos-adoption-plan.md` for the full cutover notes.
 
 ## Deploying `partridge`
 

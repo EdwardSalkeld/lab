@@ -95,9 +95,17 @@
           '';
 
         partridge = self.nixosConfigurations.partridge.config.system.build.toplevel;
+        blink = self.nixosConfigurations.blink.config.system.build.toplevel;
       };
 
       nixosConfigurations = {
+        blink = nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            ./nixos/hosts/blink/configuration.nix
+          ];
+        };
+
         partridge = nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
