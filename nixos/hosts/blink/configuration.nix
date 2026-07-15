@@ -175,7 +175,6 @@ in
 
   networking.hostName = "blink";
   networking.networkmanager.enable = true;
-  networking.useDHCP = true;
 
   networking.firewall = {
     enable = true;
