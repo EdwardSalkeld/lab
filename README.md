@@ -4,6 +4,7 @@ Home infrastructure learning lab for Proxmox + NixOS.
 
 Current managed paths:
 
+- `blink`: bare-metal server, adopted into repo-managed NixOS
 - `partridge`: repo-managed NixOS VM
 - `magpie`: disposable NixOS installer VM
 
