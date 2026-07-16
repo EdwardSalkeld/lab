@@ -30,6 +30,19 @@
     nix-direnv.enable = true;
   };
 
+  # Run foreign (generic-linux) dynamically-linked binaries such as the
+  # Claude Code CLI, which ships a glibc-linked prebuilt executable and would
+  # otherwise hit the NixOS stub-ld. Codex ships a static musl binary and does
+  # not need this.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc.lib
+      zlib
+      openssl
+    ];
+  };
+
   environment.systemPackages = with pkgs; [
     awscli2
     awslogs
