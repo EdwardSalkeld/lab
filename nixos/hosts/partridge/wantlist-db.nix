@@ -1,23 +1,18 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   dbName = "wantlist";
   role = "wantlist";
+  passwordFile = "/var/lib/postgresql/wantlist-db-password";
   psql = "${config.services.postgresql.package}/bin/psql";
-  passwordFile = config.sops.secrets."wantlist/db_password".path;
 in
 {
-  # Database for the wantlist music app. The app itself runs in Docker on blink and connects
-  # here over the tailnet; only its Postgres lives on partridge. Postgres already listens on
-  # all interfaces (see scheduler-db.nix) — this adds the login role, its pg_hba rules and a
-  # password. The role OWNS its database so the app can run its own Alembic migrations.
-  sops.secrets."wantlist/db_password" = {
-    sopsFile = ./secrets/wantlist-db.yaml;
-    key = "db_password";
-    owner = "postgres";
-    group = "postgres";
-  };
-
+  # Database for the wantlist music app. The app runs in Docker on blink and connects here over
+  # the tailnet; only its Postgres lives on partridge. Postgres already listens on all interfaces
+  # (see scheduler-db.nix) — this adds the login role, its pg_hba rules and a password. The role
+  # OWNS its database so the app can run its own Alembic migrations. Password is generated on-host
+  # (like scheduler-db); read it off partridge for the app's .env:
+  #   sudo cat /var/lib/postgresql/wantlist-db-password
   services.postgresql.ensureDatabases = [ dbName ];
   services.postgresql.ensureUsers = [
     {
@@ -33,8 +28,18 @@ in
     host ${dbName} ${role} fd7a:115c:a1e0::/48 scram-sha-256
   '';
 
+  system.activationScripts.wantlistDbPassword.text = ''
+    install -d -m 0700 -o postgres -g postgres /var/lib/postgresql
+    if [ ! -s ${passwordFile} ]; then
+      umask 077
+      ${pkgs.openssl}/bin/openssl rand -base64 36 > ${passwordFile}
+    fi
+    chown postgres:postgres ${passwordFile}
+    chmod 0400 ${passwordFile}
+  '';
+
   systemd.services.wantlist-db-setup = {
-    description = "Set the wantlist database login password";
+    description = "Configure the wantlist database role password";
     after = [
       "postgresql.service"
       "postgresql-setup.service"
