@@ -36,7 +36,7 @@ in
     install -d -m 0700 -o postgres -g postgres /var/lib/postgresql
     if [ ! -s ${passwordFile} ]; then
       umask 077
-      ${pkgs.openssl}/bin/openssl rand -base64 36 > ${passwordFile}
+      ${pkgs.openssl}/bin/openssl rand -hex 32 > ${passwordFile}
     fi
     chown postgres:postgres ${passwordFile}
     chmod 0400 ${passwordFile}
