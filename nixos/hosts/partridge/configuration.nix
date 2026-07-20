@@ -17,6 +17,7 @@
     ./reverse-proxy.nix
     ./scheduler-db.nix
     ./vaultwarden.nix
+    ./wantlist-db.nix
     ./web.nix
   ];
 
