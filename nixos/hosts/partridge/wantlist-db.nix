@@ -3,15 +3,17 @@
 let
   dbName = "wantlist";
   role = "wantlist";
+  lanCidr = "10.4.1.0/24";
+  lanInterface = "ens18";
   passwordFile = "/var/lib/postgresql/wantlist-db-password";
   psql = "${config.services.postgresql.package}/bin/psql";
 in
 {
   # Database for the wantlist music app. The app runs in Docker on blink and connects here over
-  # the tailnet; only its Postgres lives on partridge. Postgres already listens on all interfaces
-  # (see scheduler-db.nix) — this adds the login role, its pg_hba rules and a password. The role
-  # OWNS its database so the app can run its own Alembic migrations. Password is generated on-host
-  # (like scheduler-db); read it off partridge for the app's .env:
+  # the LAN; only its Postgres lives on partridge. Postgres already listens on all interfaces
+  # (see scheduler-db.nix) — this adds the login role, its LAN-only pg_hba rule and a password.
+  # The role OWNS its database so the app can run its own Alembic migrations. Password is
+  # generated on-host (like scheduler-db); read it off partridge for the app's .env:
   #   sudo cat /var/lib/postgresql/wantlist-db-password
   services.postgresql.ensureDatabases = [ dbName ];
   services.postgresql.ensureUsers = [
@@ -21,11 +23,13 @@ in
     }
   ];
 
-  # Tailnet only (Tailscale CGNAT range + IPv6 ULA). Appended after the base rules in
-  # scheduler-db.nix — services.postgresql.authentication is `types.lines`, so it concatenates.
+  # LAN-facing only, not the tailnet: open 5432 on the LAN interface (mirrors postgres-readonly)
+  # and restrict this role to the LAN subnet at the pg_hba layer. Postgres rejects any wantlist
+  # connection without a matching rule, so tailnet clients can't reach this database even though
+  # tailscale0 is a trusted interface. Appended after the base rules in scheduler-db.nix.
+  networking.firewall.interfaces.${lanInterface}.allowedTCPPorts = [ 5432 ];
   services.postgresql.authentication = lib.mkAfter ''
-    host ${dbName} ${role} 100.64.0.0/10 scram-sha-256
-    host ${dbName} ${role} fd7a:115c:a1e0::/48 scram-sha-256
+    host ${dbName} ${role} ${lanCidr} scram-sha-256
   '';
 
   system.activationScripts.wantlistDbPassword.text = ''
