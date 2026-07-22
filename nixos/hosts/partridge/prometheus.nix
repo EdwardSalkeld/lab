@@ -44,10 +44,7 @@ in
         ];
       }
       {
-        # wantlist (music want-list app) on blink. Scraped through its Traefik vhost over HTTPS
-        # rather than a direct port: the app publishes no host port (only the reverse-proxy
-        # network), and 8000 isn't in blink's firewall allow-list. The FastAPI app serves
-        # /metrics on the same origin as the UI.
+        # wantlist (music want-list app) on blink. 
         job_name = "wantlist";
         scheme = "https";
         metrics_path = "/metrics";
