@@ -44,6 +44,18 @@ in
         ];
       }
       {
+        # wantlist (music want-list app) on blink. Scraped through its Traefik vhost over HTTPS
+        # rather than a direct port: the app publishes no host port (only the reverse-proxy
+        # network), and 8000 isn't in blink's firewall allow-list. The FastAPI app serves
+        # /metrics on the same origin as the UI.
+        job_name = "wantlist";
+        scheme = "https";
+        metrics_path = "/metrics";
+        static_configs = [
+          { targets = [ "wantlist.b.alcachofa.faith:443" ]; }
+        ];
+      }
+      {
         job_name = "cadvisor";
         scrape_interval = "5s";
         static_configs = [
