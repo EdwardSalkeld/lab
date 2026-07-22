@@ -44,6 +44,15 @@ in
         ];
       }
       {
+        # wantlist (music want-list app) on blink. 
+        job_name = "wantlist";
+        scheme = "https";
+        metrics_path = "/metrics";
+        static_configs = [
+          { targets = [ "wantlist.b.alcachofa.faith:443" ]; }
+        ];
+      }
+      {
         job_name = "cadvisor";
         scrape_interval = "5s";
         static_configs = [
