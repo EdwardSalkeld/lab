@@ -298,6 +298,104 @@ let
     notification_settings.receiver = "Email Alcachofa";
     isPaused = false;
   };
+  # wantlist pauses ingest/reconcile/plays when its Spotify refresh token is missing or
+  # expired (§8c re-auth). The app always exports wantlist_spotify_connected (1 connected,
+  # 0 reconnect-needed), so alert when it reads 0. NoData is left OK: a full wantlist outage
+  # drops the series and is already covered by the target-down alert.
+  wantlistSpotifyDisconnectedAlert = {
+    uid = "wantlist-spotify-disconnected";
+    title = "wantlist Spotify disconnected";
+    condition = "C";
+    data = [
+      {
+        refId = "A";
+        datasourceUid = prometheusDatasourceUid;
+        queryType = "";
+        relativeTimeRange = {
+          from = 600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "prometheus";
+            uid = prometheusDatasourceUid;
+          };
+          editorMode = "code";
+          expr = "wantlist_spotify_connected";
+          instant = true;
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "A";
+        };
+      }
+      {
+        refId = "B";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "A";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          reducer = "last";
+          refId = "B";
+          type = "reduce";
+        };
+      }
+      {
+        refId = "C";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          conditions = [
+            {
+              evaluator = {
+                params = [ 1 ];
+                type = "lt";
+              };
+              operator.type = "and";
+              query.params = [ "C" ];
+              reducer.type = "last";
+              type = "query";
+            }
+          ];
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "B";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "C";
+          type = "threshold";
+        };
+      }
+    ];
+    noDataState = "OK";
+    execErrState = "Error";
+    for = "10m";
+    annotations = {
+      summary = "wantlist is disconnected from Spotify";
+      description = "wantlist_spotify_connected is 0 — the Spotify refresh token is missing or expired, so ingest/reconcile/plays are paused until you reconnect at https://wantlist.b.alcachofa.faith/.";
+    };
+    labels = {
+      service = "wantlist";
+      severity = "warning";
+    };
+    notification_settings.receiver = "Email Alcachofa";
+    isPaused = false;
+  };
   # Real, persistent filesystems only: ext4 excludes tmpfs/ramfs/fuse/vfat;
   # /nix/store is dropped because it mirrors / on NixOS hosts; the two ext2tb
   # disks on blink are intentionally kept near-full and would alert constantly.
@@ -595,6 +693,15 @@ in
                 type = "lt";
               };
             })
+          ];
+        }
+        {
+          orgId = 1;
+          name = "Wantlist";
+          folder = "Ops";
+          interval = "5m";
+          rules = [
+            wantlistSpotifyDisconnectedAlert
           ];
         }
       ];
