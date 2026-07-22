@@ -516,6 +516,12 @@ in
           allowUiUpdates = false;
           options.path = ./grafana/dashboards/fitness;
         }
+        {
+          name = "music";
+          folder = "Music";
+          allowUiUpdates = false;
+          options.path = ./grafana/dashboards/music;
+        }
       ];
     };
 
