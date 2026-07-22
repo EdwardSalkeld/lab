@@ -1,0 +1,698 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "kwatth"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "weekly_kwh"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "weekly total"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rolling_4w_avg_kwh"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "4-week average"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "scheduler-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'electricity'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) AS weekly_kwh,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_kwh\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_kwh,\n  AVG(weekly_kwh) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_kwh\nFROM full_weeks\nORDER BY time",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 1000
+          }
+        }
+      ],
+      "title": "Weekly Electricity Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "kwatth"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "weekly_kwh"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "weekly total"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rolling_4w_avg_kwh"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "4-week average"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "scheduler-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'gas'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) AS weekly_kwh,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_kwh\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_kwh,\n  AVG(weekly_kwh) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_kwh\nFROM full_weeks\nORDER BY time",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 1000
+          }
+        }
+      ],
+      "title": "Weekly Gas Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "description": "Rough cost at 28p/kWh, excluding standing charges.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "currencyGBP"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "weekly_cost_gbp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "weekly total"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rolling_4w_avg_cost_gbp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "4-week average"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "scheduler-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'electricity'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) * 0.28 AS weekly_cost_gbp,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_cost_gbp\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_cost_gbp,\n  AVG(weekly_cost_gbp) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_cost_gbp\nFROM full_weeks\nORDER BY time",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 1000
+          }
+        }
+      ],
+      "title": "Weekly Electricity Cost",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "description": "Rough cost at 7p/kWh, excluding standing charges.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "currencyGBP"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "weekly_cost_gbp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "weekly total"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rolling_4w_avg_cost_gbp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "4-week average"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "scheduler-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'gas'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) * 0.07 AS weekly_cost_gbp,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_cost_gbp\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_cost_gbp,\n  AVG(weekly_cost_gbp) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_cost_gbp\nFROM full_weeks\nORDER BY time",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 1000
+          }
+        }
+      ],
+      "title": "Weekly Gas Cost",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "octopus",
+    "energy"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Octopus Energy Weekly Trends",
+  "uid": "ops-octopus-energy-weekly",
+  "version": 1,
+  "weekStart": ""
+}
