@@ -17,6 +17,7 @@ in
     config = {
       DATA_FOLDER = "/var/lib/vaultwarden";
       DOMAIN = "https://${vaultwardenDomain}";
+      LOGIN_RATELIMIT_MAX_BURST = 20;
       ROCKET_ADDRESS = "127.0.0.1";
       ROCKET_PORT = vaultwardenPort;
       SIGNUPS_ALLOWED = true;

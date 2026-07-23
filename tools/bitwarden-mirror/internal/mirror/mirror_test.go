@@ -241,6 +241,82 @@ func TestDeleteWorkersArePreparedBeforeDeleting(t *testing.T) {
 	}
 }
 
+func TestDeleteWorkersContinueWhenOneWorkerCannotStart(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[{"id":"item-1"},{"id":"item-2"},{"id":"item-3"}]`),
+		"list folders":                           []byte(`[]`),
+	}
+
+	removed := []string{}
+	files := testFilesWithRemoveAll(&removed, nil)
+	originalMkdirAll := files.MkdirAll
+	files.MkdirAll = func(path string, perm os.FileMode) error {
+		if path == "/work/destination-delete/worker-1" {
+			return errors.New("mkdir failed")
+		}
+		return originalMkdirAll(path, perm)
+	}
+
+	m := testMirror(runner, files, false)
+	m.Config.DeleteConcurrency = 3
+	err := m.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	deleteDirs := map[string]bool{}
+	for _, call := range runner.snapshotCalls() {
+		if len(call.Args) > 0 && call.Args[0] == "delete" {
+			deleteDirs[call.Env["BITWARDENCLI_APPDATA_DIR"]] = true
+		}
+	}
+	if deleteDirs["/work/destination-delete/worker-1"] {
+		t.Fatalf("delete used failed worker appdata: %v", deleteDirs)
+	}
+	if len(deleteDirs) == 0 {
+		t.Fatalf("expected delete commands to run with a healthy worker; got %v", deleteDirs)
+	}
+	for got := range deleteDirs {
+		if got != "/work/destination-delete/worker-0" && got != "/work/destination-delete/worker-2" {
+			t.Fatalf("delete used unexpected worker appdata %q; got %v", got, deleteDirs)
+		}
+	}
+}
+
+func TestDeleteWorkersFailWhenNoneCanStart(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+		"list items":                             []byte(`[{"id":"item-1"}]`),
+		"list folders":                           []byte(`[]`),
+	}
+
+	removed := []string{}
+	files := testFilesWithRemoveAll(&removed, nil)
+	files.MkdirAll = func(path string, _ os.FileMode) error {
+		if strings.HasPrefix(path, "/work/destination-delete/worker-") {
+			return errors.New("mkdir failed")
+		}
+		return nil
+	}
+
+	m := testMirror(runner, files, false)
+	err := m.Run(context.Background())
+	if err == nil {
+		t.Fatal("Run() error = nil")
+	}
+	if !strings.Contains(err.Error(), "prepare destination delete workers") {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if containsPrefix(runner.commandLines(), "delete ") {
+		t.Fatalf("delete commands should not run when all workers fail: %v", runner.commandLines())
+	}
+}
+
 func TestMalformedListJSONFailsBeforeDeletion(t *testing.T) {
 	runner := newFakeRunner()
 	runner.outputs = map[string][]byte{
@@ -405,8 +481,8 @@ func TestLoginUnlockWithRecoveryRetriesRateLimitWithoutResettingAppdata(t *testi
 	if len(removedDirs) != 0 {
 		t.Fatalf("did not expect appdata reset, removedDirs=%v", removedDirs)
 	}
-	if len(slept) != 1 || slept[0] != 15*time.Second {
-		t.Fatalf("sleep calls = %v, want [15s]", slept)
+	if len(slept) != 1 || slept[0] != time.Minute {
+		t.Fatalf("sleep calls = %v, want [1m0s]", slept)
 	}
 }
 
