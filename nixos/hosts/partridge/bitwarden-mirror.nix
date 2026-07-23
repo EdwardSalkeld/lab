@@ -80,6 +80,8 @@ in
       Group = group;
       EnvironmentFile = config.sops.templates."bitwarden-mirror.env".path;
       ExecStart = "${bitwardenMirrorPackage}/bin/bitwarden-mirror";
+      Restart = "on-failure";
+      RestartSec = "15m";
       RuntimeDirectory = "bitwarden-mirror";
       RuntimeDirectoryMode = "0700";
       StateDirectory = "bitwarden-mirror";
