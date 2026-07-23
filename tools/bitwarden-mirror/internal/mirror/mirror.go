@@ -9,8 +9,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -18,6 +20,7 @@ const (
 	defaultDestinationServer = "https://vault.alcachofa.faith"
 	defaultWorkDir           = "/run/bitwarden-mirror"
 	defaultStateDir          = "/var/lib/bitwarden-mirror"
+	defaultRetryAttempts     = 3
 )
 
 type Config struct {
@@ -102,14 +105,16 @@ type Command struct {
 }
 
 type FileOps struct {
-	MkdirAll func(path string, perm os.FileMode) error
-	Remove   func(path string) error
+	MkdirAll  func(path string, perm os.FileMode) error
+	Remove    func(path string) error
+	RemoveAll func(path string) error
 }
 
 func DefaultFileOps() FileOps {
 	return FileOps{
-		MkdirAll: os.MkdirAll,
-		Remove:   os.Remove,
+		MkdirAll:  os.MkdirAll,
+		Remove:    os.Remove,
+		RemoveAll: os.RemoveAll,
 	}
 }
 
@@ -119,6 +124,7 @@ type Mirror struct {
 	Runner Runner
 	Files  FileOps
 	Logger *log.Logger
+	Sleep  func(context.Context, time.Duration) error
 }
 
 func (m Mirror) Run(ctx context.Context) error {
@@ -134,9 +140,16 @@ func (m Mirror) Run(ctx context.Context) error {
 	if files.Remove == nil {
 		files.Remove = os.Remove
 	}
+	if files.RemoveAll == nil {
+		files.RemoveAll = os.RemoveAll
+	}
 	logger := m.Logger
 	if logger == nil {
 		logger = log.New(io.Discard, "", 0)
+	}
+	sleep := m.Sleep
+	if sleep == nil {
+		sleep = sleepWithContext
 	}
 
 	if err := files.MkdirAll(cfg.WorkDir, 0o700); err != nil {
@@ -161,11 +174,11 @@ func (m Mirror) Run(ctx context.Context) error {
 		}
 	}()
 
-	if _, err := m.loginUnlockSyncExport(ctx, "source", cfg.SourceServer, cfg.sourceAppdataDir(), m.Env.Source, exportPath); err != nil {
+	if _, err := m.loginUnlockSyncExport(ctx, "source", cfg.SourceServer, cfg.sourceAppdataDir(), m.Env.Source, exportPath, files, logger, sleep); err != nil {
 		return err
 	}
 
-	destSession, err := m.loginUnlock(ctx, "destination", cfg.DestinationServer, cfg.destinationAppdataDir(), m.Env.Destination)
+	destSession, err := m.loginUnlockWithRecovery(ctx, "destination", cfg.DestinationServer, cfg.destinationAppdataDir(), m.Env.Destination, files, logger, sleep)
 	if err != nil {
 		return err
 	}
@@ -187,11 +200,11 @@ func (m Mirror) Run(ctx context.Context) error {
 	}
 
 	logger.Printf("permanently deleting %d destination items", len(items))
-	if err := m.deleteObjects(ctx, "item", items, cfg, m.Env.Destination, files, logger, cfg.DeleteConcurrency, 25); err != nil {
+	if err := m.deleteObjects(ctx, "item", items, cfg, m.Env.Destination, files, logger, sleep, cfg.DeleteConcurrency, 25); err != nil {
 		return err
 	}
 	logger.Printf("permanently deleting %d destination folders", len(folders))
-	if err := m.deleteObjects(ctx, "folder", folders, cfg, m.Env.Destination, files, logger, cfg.DeleteConcurrency, 10); err != nil {
+	if err := m.deleteObjects(ctx, "folder", folders, cfg, m.Env.Destination, files, logger, sleep, cfg.DeleteConcurrency, 10); err != nil {
 		return err
 	}
 
@@ -210,7 +223,7 @@ func (m Mirror) Run(ctx context.Context) error {
 	return nil
 }
 
-func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObject, cfg Config, creds Credentials, files FileOps, logger *log.Logger, concurrency int, logEvery int64) error {
+func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObject, cfg Config, creds Credentials, files FileOps, logger *log.Logger, sleep func(context.Context, time.Duration) error, concurrency int, logEvery int64) error {
 	if len(objects) == 0 {
 		return nil
 	}
@@ -235,7 +248,7 @@ func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObje
 	envs := make([]map[string]string, 0, concurrency)
 	for workerID := range concurrency {
 		appdataDir := cfg.destinationDeleteAppdataDir(workerID)
-		env, err := m.destinationDeleteEnv(ctx, cfg.DestinationServer, appdataDir, creds, files)
+		env, err := m.destinationDeleteEnv(ctx, cfg.DestinationServer, appdataDir, creds, files, logger, sleep)
 		if err != nil {
 			return err
 		}
@@ -287,19 +300,19 @@ send:
 	}
 }
 
-func (m Mirror) destinationDeleteEnv(ctx context.Context, server, appdataDir string, creds Credentials, files FileOps) (map[string]string, error) {
+func (m Mirror) destinationDeleteEnv(ctx context.Context, server, appdataDir string, creds Credentials, files FileOps, logger *log.Logger, sleep func(context.Context, time.Duration) error) (map[string]string, error) {
 	if err := files.MkdirAll(appdataDir, 0o700); err != nil {
 		return nil, fmt.Errorf("create destination delete appdata dir %s: %w", appdataDir, err)
 	}
-	session, err := m.loginUnlock(ctx, "destination delete worker", server, appdataDir, creds)
+	session, err := m.loginUnlockWithRecovery(ctx, "destination delete worker", server, appdataDir, creds, files, logger, sleep)
 	if err != nil {
 		return nil, err
 	}
 	return bwEnv(appdataDir, creds, session), nil
 }
 
-func (m Mirror) loginUnlockSyncExport(ctx context.Context, label, server, appdataDir string, creds Credentials, exportPath string) (string, error) {
-	session, err := m.loginUnlock(ctx, label, server, appdataDir, creds)
+func (m Mirror) loginUnlockSyncExport(ctx context.Context, label, server, appdataDir string, creds Credentials, exportPath string, files FileOps, logger *log.Logger, sleep func(context.Context, time.Duration) error) (string, error) {
+	session, err := m.loginUnlockWithRecovery(ctx, label, server, appdataDir, creds, files, logger, sleep)
 	if err != nil {
 		return "", err
 	}
@@ -314,6 +327,39 @@ func (m Mirror) loginUnlockSyncExport(ctx context.Context, label, server, appdat
 		return "", err
 	}
 	return session, nil
+}
+
+func (m Mirror) loginUnlockWithRecovery(ctx context.Context, label, server, appdataDir string, creds Credentials, files FileOps, logger *log.Logger, sleep func(context.Context, time.Duration) error) (string, error) {
+	var lastErr error
+	for attempt := 1; attempt <= defaultRetryAttempts; attempt++ {
+		session, err := m.loginUnlock(ctx, label, server, appdataDir, creds)
+		if err == nil {
+			return session, nil
+		}
+		lastErr = err
+
+		recovery := classifyLoginError(err)
+		if !recovery.retry || attempt == defaultRetryAttempts {
+			return "", err
+		}
+
+		if recovery.resetAppdata {
+			if err := files.RemoveAll(appdataDir); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return "", fmt.Errorf("%s reset appdata %s: %w", label, appdataDir, err)
+			}
+			if err := files.MkdirAll(appdataDir, 0o700); err != nil {
+				return "", fmt.Errorf("%s recreate appdata %s: %w", label, appdataDir, err)
+			}
+			logger.Printf("%s: cleared appdata %s after recoverable bw state error", label, appdataDir)
+		}
+
+		backoff := retryBackoff(attempt)
+		logger.Printf("%s: retrying after %s due to recoverable error: %v", label, backoff, err)
+		if err := sleep(ctx, backoff); err != nil {
+			return "", err
+		}
+	}
+	return "", lastErr
 }
 
 func (m Mirror) loginUnlock(ctx context.Context, label, server, appdataDir string, creds Credentials) (string, error) {
@@ -349,6 +395,25 @@ func (m Mirror) loginUnlock(ctx context.Context, label, server, appdataDir strin
 		return "", fmt.Errorf("%s unlock: bw returned empty session", label)
 	}
 	return session, nil
+}
+
+type loginRecovery struct {
+	retry        bool
+	resetAppdata bool
+}
+
+func classifyLoginError(err error) loginRecovery {
+	message := err.Error()
+	switch {
+	case strings.Contains(message, "bw returned empty session"):
+		return loginRecovery{retry: true, resetAppdata: true}
+	case strings.Contains(message, "Rate limit exceeded. Try again later."):
+		return loginRecovery{retry: true}
+	case strings.Contains(message, "Too many requests, try again later."):
+		return loginRecovery{retry: true}
+	default:
+		return loginRecovery{}
+	}
 }
 
 type bwStatus struct {
@@ -431,6 +496,25 @@ func (c Config) destinationAppdataDir() string {
 
 func (c Config) destinationDeleteAppdataDir(workerID int) string {
 	return filepath.Join(c.WorkDir, "destination-delete", fmt.Sprintf("worker-%d", workerID))
+}
+
+func retryBackoff(attempt int) time.Duration {
+	if attempt < 1 {
+		attempt = 1
+	}
+	return time.Duration(15*(1<<(attempt-1))) * time.Second
+}
+
+func sleepWithContext(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
 
 func bytesTrimSpace(in []byte) []byte {

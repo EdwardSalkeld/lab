@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestRunCommandOrderDeletesItemsBeforeFoldersAndImports(t *testing.T) {
@@ -316,6 +317,99 @@ func TestExistingLoginSkipsConfigureAndLogin(t *testing.T) {
 	}
 }
 
+func TestLoginUnlockWithRecoveryClearsAppdataAfterEmptySession(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw": []byte(`{"status":"locked"}`),
+	}
+	runner.sequenceOutputs = map[string][][]byte{
+		"unlock --raw --passwordenv BW_PASSWORD": {
+			[]byte(""),
+			[]byte("session\n"),
+		},
+	}
+
+	removed := []string{}
+	removedDirs := []string{}
+	slept := []time.Duration{}
+	files := testFilesWithRemoveAll(&removed, &removedDirs)
+	m := testMirror(runner, files, true)
+	m.Sleep = func(_ context.Context, d time.Duration) error {
+		slept = append(slept, d)
+		return nil
+	}
+
+	session, err := m.loginUnlockWithRecovery(
+		context.Background(),
+		"destination delete worker",
+		"https://vault.alcachofa.faith",
+		"/work/destination-delete/worker-7",
+		m.Env.Destination,
+		m.Files,
+		m.Logger,
+		m.Sleep,
+	)
+	if err != nil {
+		t.Fatalf("loginUnlockWithRecovery() error = %v", err)
+	}
+	if session != "session" {
+		t.Fatalf("session = %q", session)
+	}
+	if !contains(removedDirs, "/work/destination-delete/worker-7") {
+		t.Fatalf("expected appdata reset, removedDirs=%v", removedDirs)
+	}
+	if len(slept) != 1 || slept[0] != 15*time.Second {
+		t.Fatalf("sleep calls = %v, want [15s]", slept)
+	}
+}
+
+func TestLoginUnlockWithRecoveryRetriesRateLimitWithoutResettingAppdata(t *testing.T) {
+	runner := newFakeRunner()
+	runner.outputs = map[string][]byte{
+		"status --raw":                           []byte(`{"status":"unauthenticated"}`),
+		"unlock --raw --passwordenv BW_PASSWORD": []byte("session\n"),
+	}
+	runner.sequenceFailures = map[string][]error{
+		"login --apikey": {
+			errors.New("Rate limit exceeded. Try again later."),
+			nil,
+		},
+	}
+
+	removed := []string{}
+	removedDirs := []string{}
+	slept := []time.Duration{}
+	files := testFilesWithRemoveAll(&removed, &removedDirs)
+	m := testMirror(runner, files, true)
+	m.Sleep = func(_ context.Context, d time.Duration) error {
+		slept = append(slept, d)
+		return nil
+	}
+
+	session, err := m.loginUnlockWithRecovery(
+		context.Background(),
+		"source",
+		"https://vault.bitwarden.eu",
+		"/state/source",
+		m.Env.Source,
+		m.Files,
+		m.Logger,
+		m.Sleep,
+	)
+	if err != nil {
+		t.Fatalf("loginUnlockWithRecovery() error = %v", err)
+	}
+	if session != "session" {
+		t.Fatalf("session = %q", session)
+	}
+	if len(removedDirs) != 0 {
+		t.Fatalf("did not expect appdata reset, removedDirs=%v", removedDirs)
+	}
+	if len(slept) != 1 || slept[0] != 15*time.Second {
+		t.Fatalf("sleep calls = %v, want [15s]", slept)
+	}
+}
+
 func testMirror(runner *fakeRunner, files *FileOps, dryRun bool) Mirror {
 	m := Mirror{
 		Config: Config{
@@ -349,6 +443,10 @@ func testMirror(runner *fakeRunner, files *FileOps, dryRun bool) Mirror {
 }
 
 func testFiles(removed *[]string) *FileOps {
+	return testFilesWithRemoveAll(removed, nil)
+}
+
+func testFilesWithRemoveAll(removed *[]string, removedDirs *[]string) *FileOps {
 	return &FileOps{
 		MkdirAll: func(path string, _ os.FileMode) error {
 			return nil
@@ -357,28 +455,51 @@ func testFiles(removed *[]string) *FileOps {
 			*removed = append(*removed, path)
 			return nil
 		},
+		RemoveAll: func(path string) error {
+			if removedDirs != nil {
+				*removedDirs = append(*removedDirs, path)
+			}
+			return nil
+		},
 	}
 }
 
 type fakeRunner struct {
-	mu       sync.Mutex
-	calls    []Command
-	outputs  map[string][]byte
-	failures map[string]error
+	mu               sync.Mutex
+	calls            []Command
+	outputs          map[string][]byte
+	failures         map[string]error
+	sequenceOutputs  map[string][][]byte
+	sequenceFailures map[string][]error
 }
 
 func newFakeRunner() *fakeRunner {
 	return &fakeRunner{
-		outputs:  map[string][]byte{},
-		failures: map[string]error{},
+		outputs:          map[string][]byte{},
+		failures:         map[string]error{},
+		sequenceOutputs:  map[string][][]byte{},
+		sequenceFailures: map[string][]error{},
 	}
 }
 
 func (r *fakeRunner) Run(_ context.Context, cmd Command) ([]byte, error) {
 	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	r.calls = append(r.calls, cmd)
 	line := strings.Join(cmd.Args, " ")
-	r.mu.Unlock()
+	if outputs, ok := r.sequenceOutputs[line]; ok && len(outputs) > 0 {
+		out := outputs[0]
+		r.sequenceOutputs[line] = outputs[1:]
+		return out, nil
+	}
+	if failures, ok := r.sequenceFailures[line]; ok && len(failures) > 0 {
+		err := failures[0]
+		r.sequenceFailures[line] = failures[1:]
+		if err != nil {
+			return nil, err
+		}
+	}
 	if err, ok := r.failures[line]; ok {
 		return nil, err
 	}
