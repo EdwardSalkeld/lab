@@ -246,13 +246,22 @@ func (m Mirror) deleteObjects(ctx context.Context, kind string, objects []bwObje
 	var wg sync.WaitGroup
 
 	envs := make([]map[string]string, 0, concurrency)
+	var setupErrs []error
 	for workerID := range concurrency {
 		appdataDir := cfg.destinationDeleteAppdataDir(workerID)
 		env, err := m.destinationDeleteEnv(ctx, cfg.DestinationServer, appdataDir, creds, files, logger, sleep)
 		if err != nil {
-			return err
+			logger.Printf("destination delete worker-%d unavailable, continuing without it: %v", workerID, err)
+			setupErrs = append(setupErrs, fmt.Errorf("worker-%d: %w", workerID, err))
+			continue
 		}
 		envs = append(envs, env)
+	}
+	if len(envs) == 0 {
+		return fmt.Errorf("prepare destination delete workers: %s", joinErrors(setupErrs))
+	}
+	if len(envs) != concurrency {
+		logger.Printf("continuing destination %s deletion with %d/%d healthy workers", kind, len(envs), concurrency)
 	}
 
 	for _, env := range envs {
@@ -354,6 +363,9 @@ func (m Mirror) loginUnlockWithRecovery(ctx context.Context, label, server, appd
 		}
 
 		backoff := retryBackoff(attempt)
+		if recovery.minBackoff > backoff {
+			backoff = recovery.minBackoff
+		}
 		logger.Printf("%s: retrying after %s due to recoverable error: %v", label, backoff, err)
 		if err := sleep(ctx, backoff); err != nil {
 			return "", err
@@ -400,6 +412,7 @@ func (m Mirror) loginUnlock(ctx context.Context, label, server, appdataDir strin
 type loginRecovery struct {
 	retry        bool
 	resetAppdata bool
+	minBackoff   time.Duration
 }
 
 func classifyLoginError(err error) loginRecovery {
@@ -408,9 +421,9 @@ func classifyLoginError(err error) loginRecovery {
 	case strings.Contains(message, "bw returned empty session"):
 		return loginRecovery{retry: true, resetAppdata: true}
 	case strings.Contains(message, "Rate limit exceeded. Try again later."):
-		return loginRecovery{retry: true}
+		return loginRecovery{retry: true, minBackoff: time.Minute}
 	case strings.Contains(message, "Too many requests, try again later."):
-		return loginRecovery{retry: true}
+		return loginRecovery{retry: true, minBackoff: time.Minute}
 	default:
 		return loginRecovery{}
 	}
@@ -503,6 +516,24 @@ func retryBackoff(attempt int) time.Duration {
 		attempt = 1
 	}
 	return time.Duration(15*(1<<(attempt-1))) * time.Second
+}
+
+func joinErrors(errs []error) string {
+	if len(errs) == 0 {
+		return "no worker details available"
+	}
+
+	parts := make([]string, 0, len(errs))
+	for _, err := range errs {
+		if err == nil {
+			continue
+		}
+		parts = append(parts, err.Error())
+	}
+	if len(parts) == 0 {
+		return "no worker details available"
+	}
+	return strings.Join(parts, "; ")
 }
 
 func sleepWithContext(ctx context.Context, d time.Duration) error {
