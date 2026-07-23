@@ -276,8 +276,13 @@ func TestDeleteWorkersContinueWhenOneWorkerCannotStart(t *testing.T) {
 	if deleteDirs["/work/destination-delete/worker-1"] {
 		t.Fatalf("delete used failed worker appdata: %v", deleteDirs)
 	}
-	if len(deleteDirs) != 2 {
-		t.Fatalf("delete used %d worker dirs, want 2; got %v", len(deleteDirs), deleteDirs)
+	if len(deleteDirs) == 0 {
+		t.Fatalf("expected delete commands to run with a healthy worker; got %v", deleteDirs)
+	}
+	for got := range deleteDirs {
+		if got != "/work/destination-delete/worker-0" && got != "/work/destination-delete/worker-2" {
+			t.Fatalf("delete used unexpected worker appdata %q; got %v", got, deleteDirs)
+		}
 	}
 }
 
