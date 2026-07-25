@@ -750,11 +750,9 @@ in
               type = "telegram";
               disableResolveMessage = false;
               settings = {
+                bottoken = "$GRAFANA_TELEGRAM_BOT_TOKEN";
                 chatid = alertsTelegramChatId;
                 uploadImage = false;
-              };
-              secure_settings = {
-                bottoken = "$GRAFANA_TELEGRAM_BOT_TOKEN";
               };
             }
           ];
