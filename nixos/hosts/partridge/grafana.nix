@@ -514,6 +514,17 @@ in
     group = "grafana";
     mode = "0400";
   };
+  sops.templates."grafana-alerting.env" = {
+    owner = "grafana";
+    group = "grafana";
+    mode = "0400";
+    content = ''
+      GRAFANA_TELEGRAM_BOT_TOKEN=${config.sops.placeholder."grafana/telegram_bot_token"}
+    '';
+  };
+
+  systemd.services.grafana.serviceConfig.EnvironmentFile =
+    config.sops.templates."grafana-alerting.env".path;
 
   services.postgresql = {
     ensureDatabases = [ "grafana" ];
@@ -743,7 +754,7 @@ in
                 uploadImage = false;
               };
               secure_settings = {
-                bottoken = "$__file{${config.sops.secrets."grafana/telegram_bot_token".path}}";
+                bottoken = "$GRAFANA_TELEGRAM_BOT_TOKEN";
               };
             }
           ];
