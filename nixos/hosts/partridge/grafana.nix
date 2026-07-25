@@ -4,6 +4,8 @@ let
   grafanaDomain = "grafana.alcachofa.faith";
   grafanaPort = 3001;
   octopusStaleDataThresholdDays = 4;
+  alertsContactPointName = "Alcachofa Alerts";
+  alertsTelegramChatId = "-5594899826";
   mkOctopusFreshnessAlert =
     { uid, title, usageType, panelId }:
     {
@@ -103,7 +105,7 @@ let
         service = "octopus";
         usage_type = usageType;
       };
-      notification_settings.receiver = "Email Alcachofa";
+      notification_settings.receiver = alertsContactPointName;
       isPaused = false;
     };
   prometheusDatasourceUid = "fdp9rmnopl3wgf";
@@ -201,7 +203,7 @@ let
     labels = {
       severity = "critical";
     };
-    notification_settings.receiver = "Email Alcachofa";
+    notification_settings.receiver = alertsContactPointName;
     isPaused = false;
   };
   systemdUnitFailedAlert = {
@@ -295,7 +297,7 @@ let
       service = "systemd";
       severity = "critical";
     };
-    notification_settings.receiver = "Email Alcachofa";
+    notification_settings.receiver = alertsContactPointName;
     isPaused = false;
   };
   # wantlist pauses ingest/reconcile/plays when its Spotify refresh token is missing or
@@ -393,7 +395,7 @@ let
       service = "wantlist";
       severity = "warning";
     };
-    notification_settings.receiver = "Email Alcachofa";
+    notification_settings.receiver = alertsContactPointName;
     isPaused = false;
   };
   # Real, persistent filesystems only: ext4 excludes tmpfs/ramfs/fuse/vfat;
@@ -491,7 +493,7 @@ let
       labels = {
         inherit severity;
       };
-      notification_settings.receiver = "Email Alcachofa";
+      notification_settings.receiver = alertsContactPointName;
       isPaused = false;
     };
 in
@@ -501,6 +503,13 @@ in
   sops.secrets."grafana/smtp_password" = {
     sopsFile = ./secrets/grafana-smtp.yaml;
     key = "smtp_password";
+    owner = "grafana";
+    group = "grafana";
+    mode = "0400";
+  };
+  sops.secrets."grafana/telegram_bot_token" = {
+    sopsFile = ./secrets/grafana-telegram.yaml;
+    key = "telegram_bot_token";
     owner = "grafana";
     group = "grafana";
     mode = "0400";
@@ -712,7 +721,7 @@ in
       contactPoints = [
         {
           orgId = 1;
-          name = "Email Alcachofa";
+          name = alertsContactPointName;
           receivers = [
             {
               uid = "benye0c2pvif4a";
@@ -722,6 +731,19 @@ in
               settings = {
                 addresses = "edsalkeld@fastmail.com";
                 singleEmail = false;
+              };
+            }
+            {
+              uid = "telegram-alerts";
+              name = "Telegram Alerts";
+              type = "telegram";
+              disableResolveMessage = false;
+              settings = {
+                chatid = alertsTelegramChatId;
+                uploadImage = false;
+              };
+              secure_settings = {
+                bottoken = "$__file{${config.sops.secrets."grafana/telegram_bot_token".path}}";
               };
             }
           ];
@@ -734,7 +756,7 @@ in
       policies = [
         {
           orgId = 1;
-          receiver = "Email Alcachofa";
+          receiver = alertsContactPointName;
           group_by = [
             "grafana_folder"
             "alertname"
