@@ -89,6 +89,6 @@ let
 in
 {
   users.users.root.openssh.authorizedKeys.keys = [
-    ''command="${deployDispatch}",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty ${fourthDeployKey}''
+    "command=\"${deployDispatch}\",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty ${fourthDeployKey}"
   ];
 }
