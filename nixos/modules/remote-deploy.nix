@@ -63,27 +63,29 @@ let
       ''
     else
       null;
-  deployDispatch = pkgs.writeShellScript "remote-deploy-dispatch" ''
-    set -euo pipefail
+  deployDispatch = pkgs.writeShellScript "remote-deploy-dispatch" (
+    ''
+      set -euo pipefail
 
-    case "''${SSH_ORIGINAL_COMMAND:-}" in
-      lab-switch)
-        exec ${labSwitch}
+      case "''${SSH_ORIGINAL_COMMAND:-}" in
+        lab-switch)
+          exec ${labSwitch}
+          ;;
+    ''
+    + (if host == "blink" then ''
+      "chatting-deploy "*)
+        target_sha="''${SSH_ORIGINAL_COMMAND#chatting-deploy }"
+        exec ${chattingDeploy} "$target_sha"
         ;;
-  ''
-  + (if host == "blink" then ''
-    "chatting-deploy "*)
-      target_sha="''${SSH_ORIGINAL_COMMAND#chatting-deploy }"
-      exec ${chattingDeploy} "$target_sha"
-      ;;
-  '' else "")
-  + ''
-      *)
-        echo "unsupported deploy command: ''${SSH_ORIGINAL_COMMAND:-<empty>}" >&2
-        exit 64
-        ;;
-    esac
-  '';
+    '' else "")
+    + ''
+        *)
+          echo "unsupported deploy command: ''${SSH_ORIGINAL_COMMAND:-<empty>}" >&2
+          exit 64
+          ;;
+      esac
+    ''
+  );
   # fourth's onward deploy public key — from creds/onward_ed25519.pub on fourth.
   fourthDeployKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEHQr6Slpjl/R7ZMoIf9CWb/Mmwjn5MaFXTpyqxUE952 fourth-deploy";
 in
