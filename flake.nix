@@ -55,7 +55,7 @@
           exec python -m app.main_worker "$@"
         '';
       };
-      bbmbServer = pkgs.buildGoModule {
+      bbmbServer = pkgs.buildGo126Module {
         pname = "bbmb-server";
         version = "v7";
         src = bbmbSrc;
@@ -63,6 +63,7 @@
         vendorHash = null;
         subPackages = [ "." ];
         doCheck = false;
+        # Upstream bbmb v7 now requires Go 1.26.
         postInstall = ''
           mv "$out/bin/server" "$out/bin/bbmb-server"
         '';
