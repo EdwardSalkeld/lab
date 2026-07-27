@@ -7,7 +7,6 @@ Active resources:
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
-- `proxmox_virtual_environment_vm.chatting`
 
 ## Quick Ops
 
