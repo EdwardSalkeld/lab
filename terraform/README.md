@@ -65,7 +65,8 @@ pattern.
 
 `magpie` is managed by the root Nix flake as `.#magpie`. It is now the base
 host target for moving `chatting` off Blink, so the VM shape includes a small
-dedicated workspace disk mounted separately from the root filesystem.
+dedicated workspace disk mounted separately from the root filesystem when that
+disk is present.
 
 The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
