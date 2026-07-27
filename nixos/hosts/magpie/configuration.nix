@@ -3,6 +3,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./chatting.nix
   ];
 
   networking.hostName = "magpie";
