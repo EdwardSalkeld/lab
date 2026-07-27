@@ -35,7 +35,7 @@
   };
 
   fileSystems."/srv/chatting/workspace" = {
-    device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1";
+    device = "/dev/disk/by-label/workspace";
     fsType = "ext4";
     options = [
       "nofail"
