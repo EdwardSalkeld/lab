@@ -116,64 +116,15 @@ resource "proxmox_virtual_environment_vm" "partridge" {
 
 resource "proxmox_virtual_environment_vm" "magpie" {
   name        = var.magpie_vm_name
-  description = "Repo-managed disposable NixOS development VM."
+  description = "Repo-managed NixOS host for chatting."
   node_name   = var.proxmox_node_name
-  tags        = ["bird", "nixos", "dev"]
+  tags        = ["bird", "nixos", "chatting"]
 
   bios          = "ovmf"
   boot_order    = ["scsi0"]
   on_boot       = true
   scsi_hardware = "virtio-scsi-single"
   # Installer-stage VMs cannot service Proxmox guest-agent reboot requests.
-  reboot_after_update = false
-  started             = true
-
-  cpu {
-    cores = 2
-    type  = "x86-64-v2-AES"
-  }
-
-  memory {
-    dedicated = 4096
-  }
-
-  network_device {
-    bridge = var.proxmox_network_bridge
-  }
-
-  efi_disk {
-    datastore_id = var.proxmox_vm_datastore_id
-  }
-
-  disk {
-    datastore_id = var.proxmox_vm_datastore_id
-    interface    = "scsi0"
-    size         = var.magpie_root_disk_size
-    discard      = "on"
-    iothread     = true
-    serial       = "magpie-root"
-  }
-
-  cdrom {
-    file_id   = "none"
-    interface = "ide3"
-  }
-
-  operating_system {
-    type = "l26"
-  }
-}
-
-resource "proxmox_virtual_environment_vm" "chatting" {
-  name        = var.chatting_vm_name
-  description = "Dedicated NixOS VM for chatting."
-  node_name   = var.proxmox_node_name
-  tags        = ["nixos", "prod", "chatting"]
-
-  bios          = "ovmf"
-  boot_order    = ["scsi0"]
-  on_boot       = true
-  scsi_hardware = "virtio-scsi-single"
   reboot_after_update = false
   started             = true
 
@@ -197,24 +148,24 @@ resource "proxmox_virtual_environment_vm" "chatting" {
   disk {
     datastore_id = var.proxmox_vm_datastore_id
     interface    = "scsi0"
-    size         = var.chatting_root_disk_size
+    size         = var.magpie_root_disk_size
     discard      = "on"
     iothread     = true
-    serial       = "chatting-root"
+    serial       = "magpie-root"
   }
 
   disk {
     datastore_id = var.proxmox_vm_datastore_id
     interface    = "scsi1"
-    size         = var.chatting_workspace_disk_size
+    size         = var.magpie_workspace_disk_size
     discard      = "on"
     iothread     = true
-    serial       = "chatting-workspace"
+    serial       = "magpie-workspace"
   }
 
   cdrom {
-    file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
-    interface = "ide2"
+    file_id   = "none"
+    interface = "ide3"
   }
 
   operating_system {

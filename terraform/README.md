@@ -56,17 +56,17 @@ pattern.
 
 `partridge` is managed by the root Nix flake as `.#partridge`.
 
-## Disposable Dev VM
+## Chatting Host
 
 - Name: `magpie`
 - Node: `sol`
-- Root disk: 12 GiB on `local-lvm`
+- Root disk: 24 GiB on `local-lvm`
+- Workspace disk: 5 GiB on `local-lvm`
 - Network bridge: `vmbr0`
 
-`magpie` is managed by the root Nix flake as `.#magpie`. It starts from the
-same Proxmox VM shape as `partridge` but only has a root disk. The NixOS config
-imports the shared Proxmox base module plus a disposable development-machine
-module sized from Edward's dotfiles setup.
+`magpie` is managed by the root Nix flake as `.#magpie`. It is now the base
+host target for moving `chatting` off Blink, so the VM shape includes a small
+dedicated workspace disk mounted separately from the root filesystem.
 
 The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
