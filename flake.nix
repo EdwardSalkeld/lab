@@ -51,7 +51,7 @@
         name = "chatting-worker";
         runtimeInputs = [ chattingWorkerPython ];
         text = ''
-          export PYTHONPATH=${chattingSrc}${PYTHONPATH:+:$PYTHONPATH}
+          export PYTHONPATH=${chattingSrc}''${PYTHONPATH:+:$PYTHONPATH}
           exec python -m app.main_worker "$@"
         '';
       };
