@@ -3,6 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    # The Codex CLI moves fast; the pinned 25.11 channel only has an old
+    # release that the current backend rejects (gpt-5.4 needs a newer CLI), so
+    # the chatting worker takes Codex from unstable.
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,10 +25,11 @@
     };
   };
 
-  outputs = { self, nixpkgs, sops-nix, octopus-dl, linear-export, exercise-tracker, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
+      pkgsUnstable = import nixpkgs-unstable { inherit system; };
       chattingSrc = pkgs.fetchFromGitHub {
         owner = "EdwardSalkeld";
         repo = "chatting";
@@ -182,6 +187,7 @@
           inherit system;
           specialArgs = {
             chattingRuntimePackage = chattingRuntime;
+            codexPackage = pkgsUnstable.codex;
           };
           modules = [
             ./nixos/modules/proxmox-vm-base.nix
