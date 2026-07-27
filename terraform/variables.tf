@@ -91,7 +91,7 @@ variable "partridge_loki_disk_size" {
 }
 
 variable "magpie_vm_name" {
-  description = "Name of the disposable NixOS development VM"
+  description = "Name of the repo-managed chatting host"
   type        = string
   default     = "magpie"
 }
@@ -100,4 +100,10 @@ variable "magpie_root_disk_size" {
   description = "Root disk size for magpie in GiB"
   type        = number
   default     = 24
+}
+
+variable "magpie_workspace_disk_size" {
+  description = "Workspace disk size for magpie in GiB"
+  type        = number
+  default     = 5
 }

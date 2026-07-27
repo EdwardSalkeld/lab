@@ -6,7 +6,7 @@ Current targets:
 
 - `blink`: bare-metal server, initially adopted with Docker Compose workloads.
 - `partridge`: the first repo-managed NixOS VM.
-- `magpie`: disposable NixOS development VM.
+- `magpie`: repo-managed NixOS host for the chatting split runtime.
 
 ## Installing Packages
 
@@ -94,9 +94,9 @@ nixos-rebuild switch --flake .#partridge --target-host edward@partridge --use-re
 
 ## Deploying `magpie`
 
-`magpie` is intended as a disposable development VM. Terraform creates a blank
-VM with the NixOS ISO attached, matching the manual install flow used for
-`partridge`.
+`magpie` is now the base host for moving `chatting` off Blink. Terraform still
+creates a blank VM with the NixOS ISO attached, matching the manual install
+flow used for `partridge`, but the host role is no longer disposable.
 
 Use [install-vm-runbook.md](./install-vm-runbook.md) for the install flow. The
 short version is: use the Proxmox console only to set a temporary root password
@@ -107,16 +107,21 @@ and the EFI filesystem is labelled `BOOT`. Either use those labels during the
 manual install or replace `nixos/hosts/magpie/hardware-configuration.nix` with
 the generated file before switching to the flake config.
 
-The dev package set comes from a read of `~/personal/dotfiles` on 2026-06-03.
-It includes shell/editor/tmux basics, Docker, language runtimes, Terraform,
-Kubernetes tools, cloud CLIs, and the lint tools referenced by the Neovim
-config. Assumptions to revisit after first use:
+The first committed `magpie` role is intentionally narrow:
 
-- dotfiles are still installed separately with stow or a future home-manager setup
-- GUI/macOS-only tools such as Ghostty and skhd are intentionally excluded
-- Node is provided by Nix `nodejs`, not NVM
-- Neovim is provided by Nix, not built from source
-- the VM has no extra persistent data disks until a workflow proves it needs one
+- service users `bbmb`, `handler`, and `worker`
+- sudo users `edward` and `billy`
+- base runtime/build packages needed to replace the current `chatting`
+  container toolchain
+- a dedicated `scsi1` workspace disk mounted at `/srv/chatting/workspace`
+- root-owned config under `/etc/chatting` and private service state under
+  `/var/lib/{bbmb,handler,worker}`
+
+Before switching the NixOS config, format the workspace disk once:
+
+```sh
+sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
+```
 
 ## GitHub Deploy Smoke Trigger
 

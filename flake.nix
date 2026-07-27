@@ -126,7 +126,6 @@
           inherit system;
           modules = [
             ./nixos/modules/proxmox-vm-base.nix
-            ./nixos/modules/disposable-dev-machine.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/magpie/configuration.nix
           ];

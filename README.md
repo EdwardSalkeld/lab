@@ -6,12 +6,12 @@ Current managed paths:
 
 - `blink`: bare-metal server, adopted into repo-managed NixOS
 - `partridge`: repo-managed NixOS VM
-- `magpie`: disposable NixOS installer VM
+- `magpie`: repo-managed NixOS host being repurposed for `chatting`
 
 There is no standing disposable Debian cloud-image VM on `main` right now. The
 July 2026 `wren` exercise was torn down completely; the next disposable VM
-should be reintroduced in a dedicated branch rather than left disabled on
-`main`.
+should be reintroduced in a dedicated branch rather than overload `magpie`
+again.
 
 Start here:
 

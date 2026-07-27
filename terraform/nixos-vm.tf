@@ -116,9 +116,9 @@ resource "proxmox_virtual_environment_vm" "partridge" {
 
 resource "proxmox_virtual_environment_vm" "magpie" {
   name        = var.magpie_vm_name
-  description = "Repo-managed disposable NixOS development VM."
+  description = "Repo-managed NixOS host for chatting."
   node_name   = var.proxmox_node_name
-  tags        = ["bird", "nixos", "dev"]
+  tags        = ["bird", "nixos", "chatting"]
 
   bios          = "ovmf"
   boot_order    = ["scsi0"]
@@ -129,12 +129,12 @@ resource "proxmox_virtual_environment_vm" "magpie" {
   started             = true
 
   cpu {
-    cores = 2
+    cores = 4
     type  = "x86-64-v2-AES"
   }
 
   memory {
-    dedicated = 4096
+    dedicated = 8192
   }
 
   network_device {
@@ -152,6 +152,15 @@ resource "proxmox_virtual_environment_vm" "magpie" {
     discard      = "on"
     iothread     = true
     serial       = "magpie-root"
+  }
+
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi1"
+    size         = var.magpie_workspace_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "magpie-workspace"
   }
 
   cdrom {
