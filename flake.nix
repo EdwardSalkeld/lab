@@ -25,6 +25,56 @@
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
+      chattingSrc = pkgs.fetchFromGitHub {
+        owner = "EdwardSalkeld";
+        repo = "chatting";
+        rev = "573d1e241d7aa7bdeb5383f59286924e5e3ccc05";
+        sha256 = "099f5dfmkwy948y8cxdri2y31r7wv7031mlazbbh40w4y86x16zn";
+      };
+      bbmbSrc = pkgs.fetchFromGitHub {
+        owner = "EdwardSalkeld";
+        repo = "bbmb";
+        rev = "v7";
+        sha256 = "1yqcxw5kbq54zzja4yccz5i7x3ybysyzxxhr9m390hmvvwffymym";
+      };
+      chattingHandler = pkgs.buildGoModule {
+        pname = "chatting-handler";
+        version = "2026-07-27";
+        src = chattingSrc;
+        modRoot = "go/handler";
+        vendorHash = null;
+        subPackages = [ "cmd/chatting-handler" ];
+        doCheck = false;
+      };
+      chattingWorkerPython = pkgs.python3.withPackages (ps: [ ps.croniter ]);
+      chattingWorker = pkgs.writeShellApplication {
+        name = "chatting-worker";
+        runtimeInputs = [ chattingWorkerPython ];
+        text = ''
+          export PYTHONPATH=${chattingSrc}${PYTHONPATH:+:$PYTHONPATH}
+          exec python -m app.main_worker "$@"
+        '';
+      };
+      bbmbServer = pkgs.buildGoModule {
+        pname = "bbmb-server";
+        version = "v7";
+        src = bbmbSrc;
+        modRoot = "server";
+        vendorHash = null;
+        subPackages = [ "." ];
+        doCheck = false;
+        postInstall = ''
+          mv "$out/bin/server" "$out/bin/bbmb-server"
+        '';
+      };
+      chattingRuntime = pkgs.symlinkJoin {
+        name = "chatting-runtime";
+        paths = [
+          bbmbServer
+          chattingHandler
+          chattingWorker
+        ];
+      };
       bitwardenMirror = pkgs.buildGoModule {
         pname = "bitwarden-mirror";
         version = "0.1.0";
@@ -71,7 +121,11 @@
     in
     {
       packages.${system} = {
+        bbmb-server = bbmbServer;
         bitwarden-mirror = bitwardenMirror;
+        chatting-handler = chattingHandler;
+        chatting-runtime = chattingRuntime;
+        chatting-worker = chattingWorker;
         octopus-dl = octopusDl;
         linear-export = linearExport;
         exercise-tracker = exerciseTracker;
@@ -96,6 +150,7 @@
 
         partridge = self.nixosConfigurations.partridge.config.system.build.toplevel;
         blink = self.nixosConfigurations.blink.config.system.build.toplevel;
+        magpie = self.nixosConfigurations.magpie.config.system.build.toplevel;
       };
 
       nixosConfigurations = {
@@ -124,6 +179,9 @@
 
         magpie = nixpkgs.lib.nixosSystem {
           inherit system;
+          specialArgs = {
+            chattingRuntimePackage = chattingRuntime;
+          };
           modules = [
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix

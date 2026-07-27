@@ -1,13 +1,11 @@
-{ pkgs, ... }:
+{ pkgs, chattingRuntimePackage, ... }:
 
 let
-  repoRoot = "/srv/chatting/repo";
   handlerConfigPath = "/etc/chatting/handler.json";
   workerConfigPath = "/etc/chatting/worker.json";
-  runtimeHelperRoot = "${repoRoot}/deploy/host_runtime";
-  runBbmb = "${runtimeHelperRoot}/run-bbmb.sh";
-  runHandler = "${runtimeHelperRoot}/run-handler.sh";
-  runWorker = "${runtimeHelperRoot}/run-worker.sh";
+  bbmbBin = "${chattingRuntimePackage}/bin/bbmb-server";
+  handlerBin = "${chattingRuntimePackage}/bin/chatting-handler";
+  workerBin = "${chattingRuntimePackage}/bin/chatting-worker";
 in
 {
   systemd.targets.chatting = {
@@ -21,20 +19,18 @@ in
     partOf = [ "chatting.target" ];
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
-    unitConfig.ConditionPathExists = runBbmb;
     path = [ pkgs.bash ];
     serviceConfig = {
       Type = "simple";
       User = "bbmb";
       Group = "bbmb";
       Environment = [ "CHATTING_CONFIG_DIR=/etc/chatting" ];
-      ExecStart = runBbmb;
-      WorkingDirectory = repoRoot;
+      ExecStart = "${bbmbBin} --port=9876 --metrics-port=9877";
+      WorkingDirectory = "/var/lib/bbmb";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectHome = true;
       ProtectSystem = "strict";
-      ReadOnlyPaths = [ repoRoot ];
       ReadWritePaths = [ "/var/lib/bbmb" ];
       Restart = "always";
       RestartSec = "5s";
@@ -55,11 +51,13 @@ in
       "chatting-bbmb.service"
     ];
     requires = [ "chatting-bbmb.service" ];
-    unitConfig.ConditionPathExists = [
-      runHandler
-      handlerConfigPath
+    unitConfig.ConditionPathExists = [ handlerConfigPath ];
+    path = [
+      pkgs.bash
+      pkgs.cacert
+      pkgs.gh
+      pkgs.git
     ];
-    path = [ pkgs.bash ];
     serviceConfig = {
       Type = "simple";
       User = "handler";
@@ -69,16 +67,13 @@ in
         "CHATTING_CONFIG_DIR=/etc/chatting"
       ];
       EnvironmentFile = "-/etc/chatting/handler.env";
-      ExecStart = runHandler;
-      WorkingDirectory = repoRoot;
+      ExecStart = "${handlerBin} --config ${handlerConfigPath}";
+      WorkingDirectory = "/var/lib/handler";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectHome = true;
       ProtectSystem = "strict";
-      ReadOnlyPaths = [
-        repoRoot
-        handlerConfigPath
-      ];
+      ReadOnlyPaths = [ handlerConfigPath ];
       ReadWritePaths = [ "/var/lib/handler" ];
       Restart = "always";
       RestartSec = "5s";
@@ -100,11 +95,23 @@ in
     ];
     requires = [ "chatting-bbmb.service" ];
     unitConfig.ConditionPathExists = [
-      runWorker
       workerConfigPath
       "/srv/chatting/workspace"
     ];
-    path = [ pkgs.bash ];
+    path = [
+      pkgs.bash
+      pkgs.bubblewrap
+      pkgs.cacert
+      pkgs.curl
+      pkgs.gh
+      pkgs.git
+      pkgs.nodejs
+      pkgs.openssh
+      pkgs.python3
+      pkgs.ripgrep
+      pkgs.rsync
+      pkgs.sqlite
+    ];
     serviceConfig = {
       Type = "simple";
       User = "worker";
@@ -114,16 +121,13 @@ in
         "CHATTING_CONFIG_DIR=/etc/chatting"
       ];
       EnvironmentFile = "-/etc/chatting/worker.env";
-      ExecStart = runWorker;
-      WorkingDirectory = repoRoot;
+      ExecStart = "${workerBin} --config ${workerConfigPath}";
+      WorkingDirectory = "/var/lib/worker";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectHome = true;
       ProtectSystem = "strict";
-      ReadOnlyPaths = [
-        repoRoot
-        workerConfigPath
-      ];
+      ReadOnlyPaths = [ workerConfigPath ];
       ReadWritePaths = [
         "/var/lib/worker"
         "/srv/chatting/workspace"
