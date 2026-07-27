@@ -7,6 +7,7 @@ Current targets:
 - `blink`: bare-metal server, initially adopted with Docker Compose workloads.
 - `partridge`: the first repo-managed NixOS VM.
 - `magpie`: disposable NixOS development VM.
+- `chatting`: dedicated NixOS VM for the chatting split runtime.
 
 ## Installing Packages
 
@@ -117,6 +118,40 @@ config. Assumptions to revisit after first use:
 - Node is provided by Nix `nodejs`, not NVM
 - Neovim is provided by Nix, not built from source
 - the VM has no extra persistent data disks until a workflow proves it needs one
+
+## Deploying `chatting`
+
+`chatting` is a dedicated NixOS VM for the handler/worker/BBMB split runtime.
+The base host config in this PR only sets up the machine boundary:
+
+- sudo-capable `edward` and `billy` users
+- isolated `handler`, `worker`, and `bbmb` service users
+- the base package/tooling set needed for the current non-Docker migration plan
+- `/srv/chatting/workspace` on a dedicated disk
+- locked-down `/var/lib/{handler,worker,bbmb}` and `/etc/chatting`
+
+Use [install-vm-runbook.md](./install-vm-runbook.md) for the install flow. Two
+extra post-install steps apply to this host:
+
+1. Format the workspace disk once:
+
+```sh
+sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_chatting-workspace
+```
+
+2. Switch to the repo config:
+
+```sh
+sudo nixos-rebuild switch --flake .#chatting
+```
+
+After the first switch, verify the boundary before syncing any live data:
+
+```sh
+sudo -u worker test ! -r /var/lib/handler
+sudo -u handler test ! -r /var/lib/worker
+sudo -u worker test ! -r /etc/chatting/handler.env
+```
 
 ## GitHub Deploy Smoke Trigger
 

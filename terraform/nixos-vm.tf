@@ -163,3 +163,61 @@ resource "proxmox_virtual_environment_vm" "magpie" {
     type = "l26"
   }
 }
+
+resource "proxmox_virtual_environment_vm" "chatting" {
+  name        = var.chatting_vm_name
+  description = "Dedicated NixOS VM for chatting."
+  node_name   = var.proxmox_node_name
+  tags        = ["nixos", "prod", "chatting"]
+
+  bios          = "ovmf"
+  boot_order    = ["scsi0"]
+  on_boot       = true
+  scsi_hardware = "virtio-scsi-single"
+  reboot_after_update = false
+  started             = true
+
+  cpu {
+    cores = 4
+    type  = "x86-64-v2-AES"
+  }
+
+  memory {
+    dedicated = 8192
+  }
+
+  network_device {
+    bridge = var.proxmox_network_bridge
+  }
+
+  efi_disk {
+    datastore_id = var.proxmox_vm_datastore_id
+  }
+
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi0"
+    size         = var.chatting_root_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "chatting-root"
+  }
+
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi1"
+    size         = var.chatting_workspace_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "chatting-workspace"
+  }
+
+  cdrom {
+    file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
+    interface = "ide2"
+  }
+
+  operating_system {
+    type = "l26"
+  }
+}

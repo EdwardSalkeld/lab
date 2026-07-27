@@ -101,3 +101,21 @@ variable "magpie_root_disk_size" {
   type        = number
   default     = 24
 }
+
+variable "chatting_vm_name" {
+  description = "Name of the dedicated chatting VM"
+  type        = string
+  default     = "chatting"
+}
+
+variable "chatting_root_disk_size" {
+  description = "Root disk size for chatting in GiB"
+  type        = number
+  default     = 40
+}
+
+variable "chatting_workspace_disk_size" {
+  description = "Workspace disk size for chatting in GiB"
+  type        = number
+  default     = 80
+}

@@ -7,6 +7,7 @@ Active resources:
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
+- `proxmox_virtual_environment_vm.chatting`
 
 ## Quick Ops
 
@@ -71,6 +72,18 @@ The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
+
+## Dedicated `chatting` VM
+
+- Name: `chatting`
+- Node: `sol`
+- Root disk: 40 GiB on `local-lvm`
+- Workspace disk: 80 GiB on `local-lvm`
+- Network bridge: `vmbr0`
+
+`chatting` is managed by the root Nix flake as `.#chatting`. It starts in the
+same manual-install shape as `magpie`, but with a second persistent workspace
+disk mounted at `/srv/chatting/workspace` by the checked-in host config.
 
 ## Disposable Debian VM Reference
 

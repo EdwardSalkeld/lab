@@ -96,6 +96,7 @@
 
         partridge = self.nixosConfigurations.partridge.config.system.build.toplevel;
         blink = self.nixosConfigurations.blink.config.system.build.toplevel;
+        chatting = self.nixosConfigurations.chatting.config.system.build.toplevel;
       };
 
       nixosConfigurations = {
@@ -129,6 +130,15 @@
             ./nixos/modules/disposable-dev-machine.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/magpie/configuration.nix
+          ];
+        };
+
+        chatting = nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            ./nixos/modules/proxmox-vm-base.nix
+            ./nixos/modules/remote-deploy.nix
+            ./nixos/hosts/chatting/configuration.nix
           ];
         };
       };
