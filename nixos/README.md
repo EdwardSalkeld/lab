@@ -126,6 +126,34 @@ sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
 If the disk is absent, the host still boots and `/srv/chatting/workspace` just
 lives on the root filesystem until the extra disk is added later.
 
+### `chatting` services on `magpie`
+
+The host now includes a `chatting.target` plus three systemd services:
+
+- `chatting-bbmb.service`
+- `chatting-handler.service`
+- `chatting-worker.service`
+
+They stay inert until the runtime has been staged onto the host:
+
+- repo checkout at `/srv/chatting/repo`
+- rendered config files at `/etc/chatting/handler.json` and `/etc/chatting/worker.json`
+- worker workspace at `/srv/chatting/workspace`
+
+The expected staging helpers live in the `chatting` repo under:
+
+```text
+deploy/magpie/
+```
+
+Once the repo, configs, and state have been synced, start the grouped runtime
+with:
+
+```sh
+sudo systemctl start chatting.target
+sudo systemctl status chatting-bbmb chatting-handler chatting-worker
+```
+
 ## GitHub Deploy Smoke Trigger
 
 The `deploy smoke` workflow is the first end-to-end GitHub-to-Partridge deploy
