@@ -113,15 +113,18 @@ The first committed `magpie` role is intentionally narrow:
 - sudo users `edward` and `billy`
 - base runtime/build packages needed to replace the current `chatting`
   container toolchain
-- a dedicated `scsi1` workspace disk mounted at `/srv/chatting/workspace`
+- an optional dedicated `scsi1` workspace disk mounted at `/srv/chatting/workspace`
 - root-owned config under `/etc/chatting` and private service state under
   `/var/lib/{bbmb,handler,worker}`
 
-Before switching the NixOS config, format the workspace disk once:
+If the workspace disk is attached, format it once before relying on it:
 
 ```sh
 sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
 ```
+
+If the disk is absent, the host still boots and `/srv/chatting/workspace` just
+lives on the root filesystem until the extra disk is added later.
 
 ## GitHub Deploy Smoke Trigger
 
