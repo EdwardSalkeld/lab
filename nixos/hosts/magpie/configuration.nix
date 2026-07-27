@@ -71,6 +71,7 @@
     bubblewrap
     cacert
     curl
+    gcc
     git
     gh
     go
@@ -82,7 +83,6 @@
     sqlite
     tmux
     tree
-    uv
     vim
   ];
 }

@@ -134,13 +134,14 @@ The host now includes a `chatting.target` plus three systemd services:
 - `chatting-handler.service`
 - `chatting-worker.service`
 
-They stay inert until the runtime has been staged onto the host:
+They stay inert until the host has the expected repo checkout, config, and
+state staged:
 
 - repo checkout at `/srv/chatting/repo`
 - rendered config files at `/etc/chatting/handler.json` and `/etc/chatting/worker.json`
 - worker workspace at `/srv/chatting/workspace`
 
-The expected staging helpers live in the `chatting` repo under:
+The expected config-render helper lives in the `chatting` repo under:
 
 ```text
 deploy/host_runtime/
@@ -177,11 +178,12 @@ host-side; the important source-to-target mappings are:
 - `/var/lib/docker/volumes/chatting_gh-auth/_data/` -> `/var/lib/worker/.config/gh/`
 - `/mnt/ext2tb/4/billy/` -> `/srv/chatting/workspace/`
 
-5. build the runtime and start the grouped services:
+5. switch `magpie` onto the updated `lab` config so Nix builds the packaged
+runtime, then start the grouped services:
 
 ```sh
-cd /srv/chatting/repo
-sudo ./deploy/host_runtime/build-runtime.sh
+cd /path/to/lab
+sudo nixos-rebuild switch --flake .#magpie
 sudo systemctl start chatting.target
 sudo systemctl status chatting-bbmb chatting-handler chatting-worker
 ```
