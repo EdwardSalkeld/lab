@@ -654,6 +654,12 @@ in
           allowUiUpdates = false;
           options.path = ./grafana/dashboards/music;
         }
+        {
+          name = "chatting";
+          folder = "Chatting";
+          allowUiUpdates = false;
+          options.path = ./grafana/dashboards/chatting;
+        }
       ];
     };
 
