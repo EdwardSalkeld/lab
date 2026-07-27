@@ -33,14 +33,14 @@ in
         job_name = "bbmb";
         scrape_interval = "5s";
         static_configs = [
-          { targets = [ "blink.int.alcachofa.faith:9877" ]; }
+          { targets = [ "magpie.int.alcachofa.faith:9877" ]; }
         ];
       }
       {
         job_name = "billy";
         scrape_interval = "5s";
         static_configs = [
-          { targets = [ "blink.int.alcachofa.faith:9464" ]; }
+          { targets = [ "magpie.int.alcachofa.faith:9464" ]; }
         ];
       }
       {
