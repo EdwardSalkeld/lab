@@ -4,9 +4,10 @@ let
   repoRoot = "/srv/chatting/repo";
   handlerConfigPath = "/etc/chatting/handler.json";
   workerConfigPath = "/etc/chatting/worker.json";
-  runBbmb = "${repoRoot}/deploy/magpie/run-bbmb.sh";
-  runHandler = "${repoRoot}/deploy/magpie/run-handler.sh";
-  runWorker = "${repoRoot}/deploy/magpie/run-worker.sh";
+  runtimeHelperRoot = "${repoRoot}/deploy/host_runtime";
+  runBbmb = "${runtimeHelperRoot}/run-bbmb.sh";
+  runHandler = "${runtimeHelperRoot}/run-handler.sh";
+  runWorker = "${runtimeHelperRoot}/run-worker.sh";
 in
 {
   systemd.targets.chatting = {
@@ -26,6 +27,7 @@ in
       Type = "simple";
       User = "bbmb";
       Group = "bbmb";
+      Environment = [ "CHATTING_CONFIG_DIR=/etc/chatting" ];
       ExecStart = runBbmb;
       WorkingDirectory = repoRoot;
       NoNewPrivileges = true;
@@ -62,7 +64,10 @@ in
       Type = "simple";
       User = "handler";
       Group = "handler";
-      Environment = [ "HOME=/var/lib/handler" ];
+      Environment = [
+        "HOME=/var/lib/handler"
+        "CHATTING_CONFIG_DIR=/etc/chatting"
+      ];
       EnvironmentFile = "-/etc/chatting/handler.env";
       ExecStart = runHandler;
       WorkingDirectory = repoRoot;
@@ -104,7 +109,10 @@ in
       Type = "simple";
       User = "worker";
       Group = "worker";
-      Environment = [ "HOME=/var/lib/worker" ];
+      Environment = [
+        "HOME=/var/lib/worker"
+        "CHATTING_CONFIG_DIR=/etc/chatting"
+      ];
       EnvironmentFile = "-/etc/chatting/worker.env";
       ExecStart = runWorker;
       WorkingDirectory = repoRoot;

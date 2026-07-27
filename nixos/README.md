@@ -143,13 +143,45 @@ They stay inert until the runtime has been staged onto the host:
 The expected staging helpers live in the `chatting` repo under:
 
 ```text
-deploy/magpie/
+deploy/host_runtime/
 ```
 
-Once the repo, configs, and state have been synced, start the grouped runtime
-with:
+Keep the migration mechanics host-side rather than in the `chatting` repo. The
+intended cutover shape is:
+
+1. put the wanted `chatting` checkout on `magpie` at `/srv/chatting/repo`
+2. copy Blink's current `configs/handler/` and `configs/worker/` directories to
+   a temporary path on `magpie`
+3. render host config files on `magpie` with:
 
 ```sh
+cd /srv/chatting/repo
+python3 deploy/host_runtime/render_runtime_config.py \
+  --source-root /tmp/chatting-configs \
+  --output-root /tmp/chatting-rendered \
+  --workspace-dir /srv/chatting/workspace
+sudo install -m 0644 /tmp/chatting-rendered/handler.json /etc/chatting/handler.json
+sudo install -m 0644 /tmp/chatting-rendered/worker.json /etc/chatting/worker.json
+sudo install -m 0400 /tmp/chatting-rendered/handler.env /etc/chatting/handler.env
+sudo install -m 0400 /tmp/chatting-rendered/worker.env /etc/chatting/worker.env
+```
+
+4. rsync the live state from Blink when ready. Keep the transport simple and
+host-side; the important source-to-target mappings are:
+
+- `/var/lib/docker/volumes/chatting_handler-data/_data/` -> `/var/lib/handler/`
+- `/var/lib/docker/volumes/chatting_worker-data/_data/` -> `/var/lib/worker/`
+- `/var/lib/docker/volumes/chatting_codex-auth/_data/` -> `/var/lib/worker/.codex/`
+- `/var/lib/docker/volumes/chatting_claude-auth/_data/` -> `/var/lib/worker/.claude/`
+- `/var/lib/docker/volumes/chatting_gh-auth/_data/` -> `/var/lib/handler/.config/gh/`
+- `/var/lib/docker/volumes/chatting_gh-auth/_data/` -> `/var/lib/worker/.config/gh/`
+- `/mnt/ext2tb/4/billy/` -> `/srv/chatting/workspace/`
+
+5. build the runtime and start the grouped services:
+
+```sh
+cd /srv/chatting/repo
+sudo ./deploy/host_runtime/build-runtime.sh
 sudo systemctl start chatting.target
 sudo systemctl status chatting-bbmb chatting-handler chatting-worker
 ```
