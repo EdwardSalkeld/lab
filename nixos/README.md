@@ -123,40 +123,6 @@ Before switching the NixOS config, format the workspace disk once:
 sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
 ```
 
-## Deploying `chatting`
-
-`chatting` is a dedicated NixOS VM for the handler/worker/BBMB split runtime.
-The base host config in this PR only sets up the machine boundary:
-
-- sudo-capable `edward` and `billy` users
-- isolated `handler`, `worker`, and `bbmb` service users
-- the base package/tooling set needed for the current non-Docker migration plan
-- `/srv/chatting/workspace` on a dedicated disk
-- locked-down `/var/lib/{handler,worker,bbmb}` and `/etc/chatting`
-
-Use [install-vm-runbook.md](./install-vm-runbook.md) for the install flow. Two
-extra post-install steps apply to this host:
-
-1. Format the workspace disk once:
-
-```sh
-sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_chatting-workspace
-```
-
-2. Switch to the repo config:
-
-```sh
-sudo nixos-rebuild switch --flake .#chatting
-```
-
-After the first switch, verify the boundary before syncing any live data:
-
-```sh
-sudo -u worker test ! -r /var/lib/handler
-sudo -u handler test ! -r /var/lib/worker
-sudo -u worker test ! -r /etc/chatting/handler.env
-```
-
 ## GitHub Deploy Smoke Trigger
 
 The `deploy smoke` workflow is the first end-to-end GitHub-to-Partridge deploy
