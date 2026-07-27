@@ -6,6 +6,20 @@ let
   octopusStaleDataThresholdDays = 4;
   alertsContactPointName = "Alcachofa Alerts";
   alertsTelegramChatId = "-5594899826";
+  # Grafana's default Telegram message dumps the firing value, every label and
+  # the raw annotation list. Our rules already carry a tidy summary/description,
+  # so render just those two lines plus the Source/Silence links. Email keeps
+  # Grafana's own HTML template; only the Telegram receiver uses this.
+  alertsTelegramTemplate = ''
+    {{ define "alcachofa.alert" }}{{ .Annotations.summary }}
+    {{ .Annotations.description }}
+    {{ if gt (len .GeneratorURL) 0 }}Source: {{ .GeneratorURL }}
+    {{ end }}{{ if gt (len .SilenceURL) 0 }}Silence: {{ .SilenceURL }}
+    {{ end }}{{ end }}
+    {{ define "alcachofa.message" }}{{ range .Alerts.Firing }}{{ template "alcachofa.alert" . }}
+    {{ end }}{{ range .Alerts.Resolved }}✅ Resolved — {{ template "alcachofa.alert" . }}
+    {{ end }}{{ end }}
+  '';
   mkOctopusFreshnessAlert =
     { uid, title, usageType, panelId }:
     {
@@ -753,9 +767,23 @@ in
                 bottoken = "$GRAFANA_TELEGRAM_BOT_TOKEN";
                 chatid = alertsTelegramChatId;
                 uploadImage = false;
+                message = ''{{ template "alcachofa.message" . }}'';
+                parse_mode = "None";
+                disable_web_page_preview = true;
               };
             }
           ];
+        }
+      ];
+    };
+
+    provision.alerting.templates.settings = {
+      apiVersion = 1;
+      templates = [
+        {
+          orgId = 1;
+          name = "alcachofa-telegram";
+          template = alertsTelegramTemplate;
         }
       ];
     };
