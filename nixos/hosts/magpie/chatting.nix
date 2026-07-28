@@ -1,4 +1,4 @@
-{ pkgs, chattingRuntimePackage, codexPackage, ... }:
+{ config, pkgs, chattingRuntimePackage, codexPackage, ... }:
 
 let
   handlerConfigPath = "/etc/chatting/handler.json";
@@ -66,7 +66,7 @@ in
         "HOME=/var/lib/handler"
         "CHATTING_CONFIG_DIR=/etc/chatting"
       ];
-      EnvironmentFile = "-/etc/chatting/handler.env";
+      EnvironmentFile = config.sops.templates."chatting-handler.env".path;
       ExecStart = "${handlerBin} --config ${handlerConfigPath}";
       WorkingDirectory = "/var/lib/handler";
       NoNewPrivileges = true;
@@ -124,7 +124,7 @@ in
         "HOME=/var/lib/worker"
         "CHATTING_CONFIG_DIR=/etc/chatting"
       ];
-      EnvironmentFile = "-/etc/chatting/worker.env";
+      EnvironmentFile = config.sops.templates."chatting-worker.env".path;
       ExecStart = "${workerBin} --config ${workerConfigPath}";
       WorkingDirectory = "/var/lib/worker";
       NoNewPrivileges = true;
