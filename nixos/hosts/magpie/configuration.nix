@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ./chatting.nix
+    ./chatting-config.nix
     ./chatting-prune.nix
   ];
 
