@@ -5,6 +5,7 @@
     ./hardware-configuration.nix
     ./chatting.nix
     ./chatting-config.nix
+    ./chatting-secrets.nix
     ./chatting-prune.nix
   ];
 

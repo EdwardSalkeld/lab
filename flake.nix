@@ -190,6 +190,7 @@
             codexPackage = pkgsUnstable.codex;
           };
           modules = [
+            sops-nix.nixosModules.sops
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/magpie/configuration.nix
