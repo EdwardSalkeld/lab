@@ -1,5 +1,38 @@
 {
   "nodes": {
+    "bbmb": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1775468671,
+        "narHash": "sha256-1VfvHN+7QpBGTRn2/r32y49+YvmMeaLk/6TgNQvvDPs=",
+        "owner": "EdwardSalkeld",
+        "repo": "bbmb",
+        "rev": "70040bbfefcb25ab141aeac01703452eea95fc22",
+        "type": "github"
+      },
+      "original": {
+        "owner": "EdwardSalkeld",
+        "ref": "v7",
+        "repo": "bbmb",
+        "type": "github"
+      }
+    },
+    "chatting": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785243915,
+        "narHash": "sha256-Gyj7gIBVzzvde8dwYFap413VV2Cr2k4iDSIGSC1Wl34=",
+        "owner": "EdwardSalkeld",
+        "repo": "chatting",
+        "rev": "92da0a6dcd6263aa503d087ef7a977a89943a3fd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "EdwardSalkeld",
+        "repo": "chatting",
+        "type": "github"
+      }
+    },
     "exercise-tracker": {
       "flake": false,
       "locked": {
@@ -82,6 +115,8 @@
     },
     "root": {
       "inputs": {
+        "bbmb": "bbmb",
+        "chatting": "chatting",
         "exercise-tracker": "exercise-tracker",
         "linear-export": "linear-export",
         "nixpkgs": "nixpkgs",

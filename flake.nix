@@ -23,25 +23,25 @@
       url = "github:EdwardSalkeld/exercise-tracker";
       flake = false;
     };
+    # chatting tracks its default branch; bump with `nix flake update chatting`.
+    chatting = {
+      url = "github:EdwardSalkeld/chatting";
+      flake = false;
+    };
+    # bbmb is release-pinned; change the ref to move it.
+    bbmb = {
+      url = "github:EdwardSalkeld/bbmb/v7";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, chatting, bbmb, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       pkgsUnstable = import nixpkgs-unstable { inherit system; };
-      chattingSrc = pkgs.fetchFromGitHub {
-        owner = "EdwardSalkeld";
-        repo = "chatting";
-        rev = "573d1e241d7aa7bdeb5383f59286924e5e3ccc05";
-        sha256 = "099f5dfmkwy948y8cxdri2y31r7wv7031mlazbbh40w4y86x16zn";
-      };
-      bbmbSrc = pkgs.fetchFromGitHub {
-        owner = "EdwardSalkeld";
-        repo = "bbmb";
-        rev = "v7";
-        sha256 = "1yqcxw5kbq54zzja4yccz5i7x3ybysyzxxhr9m390hmvvwffymym";
-      };
+      chattingSrc = chatting;
+      bbmbSrc = bbmb;
       chattingHandler = pkgs.buildGoModule {
         pname = "chatting-handler";
         version = "2026-07-27";
