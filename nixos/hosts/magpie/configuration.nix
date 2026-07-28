@@ -12,11 +12,13 @@
   networking.hostName = "magpie";
   networking.networkmanager.enable = true;
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
-  # Let Partridge's Prometheus scrape the chatting metrics: bbmb broker (9877)
-  # and the message handler (9464). Node exporter (9100) is opened separately by
+  # LAN access to the chatting services: bbmb broker metrics (9877), message
+  # handler metrics (9464), and the worker activity UI (9465). No auth on these,
+  # so they rely on being LAN-only. Node exporter (9100) is opened separately by
   # the shared VM base module.
   networking.firewall.allowedTCPPorts = [
     9464
+    9465
     9877
   ];
 
