@@ -8,12 +8,11 @@
 # service.
 #
 # Secrets are intentionally absent: the handler references them by env-var name
-# (the *_env fields) and reads the actual values from /etc/chatting/handler.env
-# and worker.env, which remain host state for now. Moving those onto sops-nix is
-# a planned follow-up.
+# (the *_env fields); sops-nix renders the actual values into the env files the
+# services load (see chatting-secrets.nix).
 #
-# live-schedule.local.json (referenced by schedule_file) is also left as host
-# state on purpose so the prompt schedule can be edited without a rebuild.
+# Schedules are no longer here either — they live in the handler DB, managed
+# through the /api/schedules API and /schedules UI, so schedule_file is retired.
 
 let
   workspaceDir = "/srv/chatting/workspace";
@@ -69,8 +68,6 @@ let
 
     context_refs = contextRefs;
     auxiliary_ingress_context_refs = null;
-
-    schedule_file = "/etc/chatting/live-schedule.local.json";
 
     github_assignee_login = "billyacachofa";
     github_repositories = [
