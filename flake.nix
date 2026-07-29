@@ -166,7 +166,10 @@
 
           grafana-alerting-lint = pkgs.runCommand "grafana-alerting-lint"
             {
-              nativeBuildInputs = [ pkgs.go ];
+              nativeBuildInputs = [
+                pkgs.go
+                pkgs.grafana
+              ];
               src = ./tools/grafana-alerting-lint;
               templatesJson = partridgeGrafanaTemplates;
               contactPointsJson = partridgeGrafanaContactPoints;
@@ -178,6 +181,39 @@
               export HOME="$TMPDIR"
               export GOCACHE="$TMPDIR/go-cache"
               go run . "$templatesJson" "$contactPointsJson"
+
+              mkdir -p grafana-smoke/provisioning/alerting
+              mkdir -p grafana-smoke/provisioning/dashboards
+              mkdir -p grafana-smoke/provisioning/datasources
+              mkdir -p grafana-smoke/provisioning/plugins
+              mkdir -p grafana-smoke/data
+              mkdir -p grafana-smoke/logs
+              mkdir -p grafana-smoke/plugins
+              cp "$templatesJson" grafana-smoke/provisioning/alerting/templates.json
+              cp "$contactPointsJson" grafana-smoke/provisioning/alerting/contactpoints.json
+
+              export GF_PATHS_PROVISIONING="$PWD/grafana-smoke/provisioning"
+              export GF_PATHS_DATA="$PWD/grafana-smoke/data"
+              export GF_PATHS_LOGS="$PWD/grafana-smoke/logs"
+              export GF_PATHS_PLUGINS="$PWD/grafana-smoke/plugins"
+              export GRAFANA_TELEGRAM_BOT_TOKEN=dummy
+
+              set +e
+              ${pkgs.coreutils}/bin/timeout 20s \
+                ${pkgs.grafana}/bin/grafana server \
+                --homepath ${pkgs.grafana}/share/grafana \
+                --config ${pkgs.grafana}/share/grafana/conf/defaults.ini \
+                > grafana-smoke/stdout.log 2> grafana-smoke/stderr.log
+              status=$?
+              set -e
+
+              if [ "$status" -ne 124 ]; then
+                cat grafana-smoke/stdout.log
+                cat grafana-smoke/stderr.log
+                echo "Grafana alerting smoke test failed with exit status $status" >&2
+                exit 1
+              fi
+
               touch "$out"
             '';
 
