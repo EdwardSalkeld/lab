@@ -138,26 +138,53 @@
         default = bitwardenMirror;
       };
 
-      checks.${system} = {
-        bitwarden-mirror-go-tests = pkgs.runCommand "bitwarden-mirror-go-tests"
-          {
-            nativeBuildInputs = [ pkgs.go ];
-            src = ./tools/bitwarden-mirror;
-          }
-          ''
-            cp -R "$src" source
-            chmod -R u+w source
-            cd source
-            export HOME="$TMPDIR"
-            export GOCACHE="$TMPDIR/go-cache"
-            go test ./...
-            touch "$out"
-          '';
+      checks.${system} =
+        let
+          partridgeConfig = self.nixosConfigurations.partridge.config;
+          partridgeGrafanaTemplates = builtins.toFile "partridge-grafana-alerting-templates.json" (
+            builtins.toJSON partridgeConfig.services.grafana.provision.alerting.templates.settings
+          );
+          partridgeGrafanaContactPoints = builtins.toFile "partridge-grafana-alerting-contact-points.json" (
+            builtins.toJSON partridgeConfig.services.grafana.provision.alerting.contactPoints.settings
+          );
+        in
+        {
+          bitwarden-mirror-go-tests = pkgs.runCommand "bitwarden-mirror-go-tests"
+            {
+              nativeBuildInputs = [ pkgs.go ];
+              src = ./tools/bitwarden-mirror;
+            }
+            ''
+              cp -R "$src" source
+              chmod -R u+w source
+              cd source
+              export HOME="$TMPDIR"
+              export GOCACHE="$TMPDIR/go-cache"
+              go test ./...
+              touch "$out"
+            '';
 
-        partridge = self.nixosConfigurations.partridge.config.system.build.toplevel;
-        blink = self.nixosConfigurations.blink.config.system.build.toplevel;
-        magpie = self.nixosConfigurations.magpie.config.system.build.toplevel;
-      };
+          grafana-alerting-lint = pkgs.runCommand "grafana-alerting-lint"
+            {
+              nativeBuildInputs = [ pkgs.go ];
+              src = ./tools/grafana-alerting-lint;
+              templatesJson = partridgeGrafanaTemplates;
+              contactPointsJson = partridgeGrafanaContactPoints;
+            }
+            ''
+              cp -R "$src" source
+              chmod -R u+w source
+              cd source
+              export HOME="$TMPDIR"
+              export GOCACHE="$TMPDIR/go-cache"
+              go run . "$templatesJson" "$contactPointsJson"
+              touch "$out"
+            '';
+
+          partridge = partridgeConfig.system.build.toplevel;
+          blink = self.nixosConfigurations.blink.config.system.build.toplevel;
+          magpie = self.nixosConfigurations.magpie.config.system.build.toplevel;
+        };
 
       nixosConfigurations = {
         blink = nixpkgs.lib.nixosSystem {

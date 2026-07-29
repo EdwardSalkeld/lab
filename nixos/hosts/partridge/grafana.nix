@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 
 let
   grafanaDomain = "grafana.alcachofa.faith";
@@ -6,6 +6,26 @@ let
   octopusStaleDataThresholdDays = 4;
   alertsContactPointName = "Alcachofa Alerts";
   alertsTelegramChatId = "-5594899826";
+  grafanaFailureNotify = pkgs.writeShellScript "grafana-failure-notify" ''
+    set -euo pipefail
+
+    unit="''${1:?usage: grafana-failure-notify <systemd-unit>}"
+    host="$("/run/current-system/sw/bin/hostname" -s)"
+    now="$("/run/current-system/sw/bin/date" -u +"%Y-%m-%d %H:%M:%S UTC")"
+    result="$("/run/current-system/sw/bin/systemctl" show "$unit" --property=Result --value 2>/dev/null || true)"
+    active_state="$("/run/current-system/sw/bin/systemctl" show "$unit" --property=ActiveState --value 2>/dev/null || true)"
+    sub_state="$("/run/current-system/sw/bin/systemctl" show "$unit" --property=SubState --value 2>/dev/null || true)"
+    text="Grafana failed on $host at $now. unit=$unit active=$active_state sub=$sub_state result=''${result:-unknown}. Check journalctl -u $unit -n 80 --no-pager."
+
+    exec ${pkgs.curl}/bin/curl \
+      --fail \
+      --silent \
+      --show-error \
+      --data-urlencode "chat_id=${alertsTelegramChatId}" \
+      --data-urlencode "text=$text" \
+      --data-urlencode "disable_web_page_preview=true" \
+      "https://api.telegram.org/bot''${GRAFANA_TELEGRAM_BOT_TOKEN}/sendMessage"
+  '';
   # Grafana's default Telegram message dumps the firing value, every label and
   # the raw annotation list. Our rules already carry a tidy summary/description,
   # so render just those two lines plus the Source/Silence links. Email keeps
@@ -540,6 +560,17 @@ in
 
   systemd.services.grafana.serviceConfig.EnvironmentFile =
     config.sops.templates."grafana-alerting.env".path;
+  systemd.services.grafana.onFailure = [ "grafana-failure-notify.service" ];
+  systemd.services.grafana-failure-notify = {
+    description = "Notify Telegram when Grafana fails";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      EnvironmentFile = config.sops.templates."grafana-alerting.env".path;
+      ExecStart = "${grafanaFailureNotify} grafana.service";
+    };
+  };
 
   services.postgresql = {
     ensureDatabases = [ "grafana" ];

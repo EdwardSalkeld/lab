@@ -24,6 +24,7 @@
   networking.hostName = "partridge";
   networking.networkmanager.enable = true;
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
+  alcachofa.remoteDeploy.postSwitchHealthchecks = [ "grafana.service" ];
 
   services.tailscale = {
     enable = true;
