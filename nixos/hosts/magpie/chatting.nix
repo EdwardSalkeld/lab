@@ -52,6 +52,10 @@ in
     ];
     requires = [ "chatting-bbmb.service" ];
     unitConfig.ConditionPathExists = [ handlerConfigPath ];
+    # Restart the handler when its rendered config changes, so declarative
+    # config edits (e.g. allowed egress channels) actually take effect on a
+    # deploy instead of waiting for the next unrelated restart.
+    restartTriggers = [ config.environment.etc."chatting/handler.json".source ];
     path = [
       pkgs.bash
       pkgs.cacert
@@ -98,6 +102,7 @@ in
       workerConfigPath
       "/srv/chatting/workspace"
     ];
+    restartTriggers = [ config.environment.etc."chatting/worker.json".source ];
     path = [
       pkgs.bash
       pkgs.bubblewrap

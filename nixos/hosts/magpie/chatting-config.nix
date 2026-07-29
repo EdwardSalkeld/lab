@@ -31,6 +31,10 @@ let
       "telegram"
       "log"
       "telegram_reaction"
+      # Lets the handler post replies back to GitHub issues/PRs via `gh issue
+      # comment` (the handler runs as the BillyAcachofa gh account). Without
+      # this the egress engine drops github-channel replies as disallowed.
+      "github"
     ];
 
     imap_host = "imap.fastmail.com";
