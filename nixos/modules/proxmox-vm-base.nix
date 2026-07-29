@@ -31,6 +31,12 @@
   users.users.edward = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
+    # Keep edward's systemd user manager persistently active. Otherwise a
+    # short-lived SSH session churning open/closed during a `nixos-rebuild
+    # switch` races the switch's "reload user units" step (logind loses the
+    # uid-1000 user object mid-reload), failing the whole switch. Lingering
+    # makes the deploy robust regardless of who is logged in.
+    linger = true;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD edward@m1"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzhdCoWE/CiY3laW9R/I5UEhQs7krz8ur8OOg7su5MJ edward@m2"
