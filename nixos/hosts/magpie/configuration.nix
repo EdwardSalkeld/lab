@@ -27,6 +27,15 @@
     openFirewall = true;
   };
 
+  # A deploy must leave the chatting split runtime running; if any of these are
+  # down after a switch, the remote-deploy wrapper rolls back and, failing that,
+  # starts them, so a bad or half-applied switch can't silently down chatting.
+  alcachofa.remoteDeploy.postSwitchHealthchecks = [
+    "chatting-bbmb.service"
+    "chatting-handler.service"
+    "chatting-worker.service"
+  ];
+
   users.users.edward = {
     extraGroups = [
       "networkmanager"
@@ -40,6 +49,9 @@
 
   users.users.billy = {
     isNormalUser = true;
+    # Linger for the same reason as edward (see proxmox-vm-base.nix): a churning
+    # SSH session must not be able to race a deploy's user-unit reload.
+    linger = true;
     extraGroups = [
       "networkmanager"
       "systemd-journal"
