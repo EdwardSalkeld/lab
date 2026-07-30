@@ -21,12 +21,10 @@ At the end of a successful run:
 Before starting, make sure these are already true:
 
 - Terraform credentials are available in `terraform/.env`
-- `partridge` has already switched to a config that includes
-  `nixos/hosts/partridge/deploy-trigger.nix` from current `main`
 - GitHub Actions secrets exist:
   - `TS_OAUTH_CLIENT_ID`
   - `TS_OAUTH_SECRET`
-  - `PARTRIDGE_DEPLOY_SSH_KEY`
+  - whatever deploy key the one-off bootstrap workflow uses
 - The Tailscale OAuth client is allowed to advertise the tag set you plan to
   use. The safe default is `tag:ci`.
 
@@ -101,10 +99,10 @@ default input:
 What this workflow does:
 
 - joins the GitHub runner to the tailnet as `tag:ci`
-- SSHes to `deploy@partridge.ts.alcachofa.faith`
-- asks a forced command on `partridge` to find the target guest by LAN DNS
-  first, then by trying Billy's SSH key directly against reachable
-  `10.4.1.0/24` SSH responders
+- reaches whatever bootstrap entrypoint the branch introduces
+- asks that entrypoint to find the target guest by LAN DNS first, then by
+  trying Billy's SSH key directly against reachable `10.4.1.0/24` SSH
+  responders
 - installs nginx and Tailscale on the target guest
 - clears any stale interactive Tailscale login state
 - runs `tailscale up --client-id=... --client-secret=...`
@@ -154,10 +152,10 @@ Symptom:
 
 Response:
 
-- remember that the workflow SSHes to live `partridge` and runs the deployed
-  forced command there
-- changing `nixos/hosts/partridge/deploy-trigger.nix` in Git alone does nothing
-  until `partridge` has switched to that repo state
+- remember that the workflow will hit whatever live bootstrap entrypoint the
+  branch chose, not just the repo copy
+- if that entrypoint lives on an existing host, changing its Nix module in Git
+  alone does nothing until that host has switched to the new repo state
 
 ### Tailscale rejects the requested tag
 
@@ -218,7 +216,6 @@ For disposable guest bring-up, direct SSH is the shortest source of truth for:
 
 ## Files That Define This Path
 
-- `nixos/hosts/partridge/deploy-trigger.nix`
-
-The exact Terraform file and workflow name should be introduced by the branch
-that adds the next disposable VM.
+Current `main` does not define this path. The exact Terraform file, workflow,
+and remote entrypoint should be introduced by the branch that adds the next
+disposable VM.

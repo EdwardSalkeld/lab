@@ -188,27 +188,25 @@ sudo systemctl start chatting.target
 sudo systemctl status chatting-bbmb chatting-handler chatting-worker
 ```
 
-## GitHub Deploy Smoke Trigger
+## GitHub Deploy Workflow
 
-The `deploy smoke` workflow is the first end-to-end GitHub-to-Partridge deploy
-trigger. On pushes to `main`, GitHub Actions joins Tailscale as `tag:ci`, SSHes
-to `deploy@partridge.ts.alcachofa.faith`, and hits a forced command. For now
-that command only appends a line to `/var/lib/lab-deploy/invocations.log`.
+On pushes to `main`, the `deploy` workflow joins Tailscale as `tag:ci`, SSHes
+to `deploy@fourth.ts.alcachofa.faith`, and asks the orchestrator to run
+`apply-terraform` followed by `nix-switch`.
 
 Required GitHub Actions secrets:
 
 - `TS_OAUTH_CLIENT_ID`: Tailscale OAuth client ID with `auth_keys` scope
 - `TS_OAUTH_SECRET`: Tailscale OAuth client secret
-- `PARTRIDGE_DEPLOY_SSH_KEY`: private key matching the repo-declared deploy key
+- `FOURTH_DEPLOY_SSH_KEY`: private key matching the repo-declared deploy key on
+  `fourth`
 
-`PARTRIDGE_DEPLOY_SSH_KEY` is only for the restricted Partridge deploy trigger.
-
-The Tailscale ACL should allow `tag:ci` to reach only Partridge's Tailscale SSH
+The Tailscale ACL should allow `tag:ci` to reach `fourth`'s Tailscale SSH
 endpoint. The first deployment of this wiring must still be applied manually so
 the `deploy` user and forced command exist before the workflow can connect.
 
 The July 2026 `wren` bootstrap experiment has been torn down. Keep `partridge`
-focused on the generic deploy trigger until the next disposable VM path is
+focused on its normal service role until the next disposable VM path is
 reintroduced in a dedicated branch.
 
 ## Prometheus Exporters
