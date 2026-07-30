@@ -580,6 +580,308 @@ let
     severity = "warning";
     panelId = 2;
   };
+  rsyncRecencyAlert = {
+    uid = "fourth-rsync-recency";
+    title = "Rsync Log Recency";
+    condition = "C";
+    data = [
+      {
+        refId = "A";
+        datasourceUid = lokiDatasourceUid;
+        queryType = "range";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "loki";
+            uid = lokiDatasourceUid;
+          };
+          editorMode = "code";
+          expr = ''count_over_time(${fourthRsyncLogSelector} | drop detected_level [36h])'';
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          queryType = "range";
+          refId = "A";
+        };
+      }
+      {
+        refId = "B";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "A";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          reducer = "last";
+          refId = "B";
+          type = "reduce";
+        };
+      }
+      {
+        refId = "C";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          conditions = [
+            {
+              evaluator = {
+                params = [ 3 ];
+                type = "lt";
+              };
+              operator.type = "and";
+              query.params = [ "C" ];
+              reducer.type = "last";
+              type = "query";
+            }
+          ];
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "B";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "C";
+          type = "threshold";
+        };
+      }
+    ];
+    noDataState = "NoData";
+    execErrState = "Error";
+    for = "5m";
+    annotations = {
+      __dashboardUid__ = "ops-backups-blink-fourth";
+      __panelId__ = "4";
+      summary = "Rsync log recency is low on fourth";
+      description = "/host/edward/data-sync.log on fourth has fewer than 3 log entries across the last 36h for 5m, which suggests the sync may not be running.";
+    };
+    labels = {
+      service = "rsync";
+      host = "fourth";
+      severity = "warning";
+    };
+    notification_settings.receiver = alertsContactPointName;
+    isPaused = false;
+  };
+  blinkLongUptimeAlert = {
+    uid = "blink-uptime";
+    title = "Uptime";
+    condition = "C";
+    data = [
+      {
+        refId = "A";
+        datasourceUid = prometheusDatasourceUid;
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "prometheus";
+            uid = prometheusDatasourceUid;
+          };
+          disableTextWrap = false;
+          editorMode = "code";
+          expr = ''(time() - node_boot_time_seconds{instance="blink.int.alcachofa.faith:9100"}) / 60 / 60 / 24 / 7'';
+          fullMetaSearch = false;
+          includeNullMetadata = true;
+          instant = false;
+          interval = "";
+          intervalMs = 15000;
+          legendFormat = "{{instance}}";
+          maxDataPoints = 43200;
+          range = true;
+          refId = "A";
+          useBackend = false;
+        };
+      }
+      {
+        refId = "B";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "A";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          reducer = "last";
+          refId = "B";
+          type = "reduce";
+        };
+      }
+      {
+        refId = "C";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          conditions = [
+            {
+              evaluator = {
+                params = [ 365 ];
+                type = "gt";
+              };
+              operator.type = "and";
+              query.params = [ "C" ];
+              reducer.type = "last";
+              type = "query";
+            }
+          ];
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "B";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "C";
+          type = "threshold";
+        };
+      }
+    ];
+    noDataState = "Alerting";
+    execErrState = "Error";
+    for = "20m";
+    annotations = {
+      __dashboardUid__ = "be4t6tqoju6m8c";
+      __panelId__ = "16";
+      summary = "blink uptime is above the configured threshold";
+      description = "blink has been up for more than 365 weeks for 20m, matching the existing long-uptime rule.";
+    };
+    labels = {
+      uptime = "blink";
+      severity = "warning";
+    };
+    notification_settings.receiver = alertsContactPointName;
+    isPaused = false;
+  };
+  falconDownAlert = {
+    uid = "falcon-down";
+    title = "Falcon Down";
+    condition = "C";
+    data = [
+      {
+        refId = "A";
+        datasourceUid = prometheusDatasourceUid;
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "prometheus";
+            uid = prometheusDatasourceUid;
+          };
+          disableTextWrap = false;
+          editorMode = "code";
+          expr = ''time() - node_boot_time_seconds{instance="falcon.ts.alcachofa.faith:9100"}'';
+          fullMetaSearch = false;
+          includeNullMetadata = true;
+          instant = false;
+          interval = "";
+          intervalMs = 15000;
+          legendFormat = "{{instance}}";
+          maxDataPoints = 43200;
+          range = true;
+          refId = "A";
+          useBackend = false;
+        };
+      }
+      {
+        refId = "B";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "A";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          reducer = "last";
+          refId = "B";
+          type = "reduce";
+        };
+      }
+      {
+        refId = "C";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          conditions = [
+            {
+              evaluator = {
+                params = [ 1800 ];
+                type = "lt";
+              };
+              operator.type = "and";
+              query.params = [ "C" ];
+              reducer.type = "last";
+              type = "query";
+            }
+          ];
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "B";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "C";
+          type = "threshold";
+        };
+      }
+    ];
+    noDataState = "Alerting";
+    execErrState = "Alerting";
+    for = "10m";
+    annotations = {
+      __dashboardUid__ = "be4t6tqoju6m8c";
+      __panelId__ = "10";
+      summary = "falcon is down or has only just come back";
+      description = "falcon has either stopped exporting node metrics or has been back for less than 30 minutes for 10m, matching the existing Falcon Down rule.";
+    };
+    labels = {
+      severity = "critical";
+    };
+    notification_settings.receiver = alertsContactPointName;
+    isPaused = false;
+  };
   # One rule fans out into an alert instance per filesystem (labelled by
   # instance/mountpoint). Warning fires only in the 5–10% band; critical takes
   # over below 5%, so a filling disk escalates rather than double-alerting.
@@ -845,6 +1147,18 @@ in
           orgId = 1;
           uid = "cf5pa2mc5o0zkc";
         }
+        {
+          orgId = 1;
+          uid = "af5pb11hibn5sd";
+        }
+        {
+          orgId = 1;
+          uid = "aenyejmx1k2rka";
+        }
+        {
+          orgId = 1;
+          uid = "df14h5t71ue4gc";
+        }
       ];
       groups = [
         {
@@ -927,10 +1241,21 @@ in
         }
         {
           orgId = 1;
+          name = "Host Uptime";
+          folder = "Ops";
+          interval = "1m";
+          rules = [
+            blinkLongUptimeAlert
+            falconDownAlert
+          ];
+        }
+        {
+          orgId = 1;
           name = "Backups";
           folder = "Ops";
           interval = "1m";
           rules = [
+            rsyncRecencyAlert
             rsyncErrorAlert
             rsyncDeleteVolumeAlert
           ];
