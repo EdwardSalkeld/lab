@@ -144,6 +144,8 @@ let
       isPaused = false;
     };
   prometheusDatasourceUid = "fdp9rmnopl3wgf";
+  lokiDatasourceUid = "ce6j6e2q9rapsa";
+  fourthRsyncLogSelector = ''{host="fourth", source="file", filename="/host/edward/data-sync.log"}'';
   # Single rule over up; Grafana fans it out into one alert instance per scrape
   # target, labelled by `instance`/`job`. up == 0 means the scrape failed (host,
   # exporter or service down) while the series still exists; NoData covers the
@@ -437,6 +439,244 @@ let
   # /nix/store is dropped because it mirrors / on NixOS hosts; the two ext2tb
   # disks on blink are intentionally kept near-full and would alert constantly.
   diskFsSelector = ''{fstype="ext4", mountpoint!~"/nix/store|/mnt/ext2tb/1|/mnt/ext2tb/3"}'';
+  mkLokiLogCountAlert =
+    {
+      uid,
+      title,
+      expr,
+      threshold,
+      for,
+      summary,
+      description,
+      severity,
+      panelId,
+    }:
+    {
+      inherit uid title;
+      condition = "C";
+      data = [
+        {
+          refId = "A";
+          datasourceUid = lokiDatasourceUid;
+          queryType = "";
+          relativeTimeRange = {
+            from = 600;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "loki";
+              uid = lokiDatasourceUid;
+            };
+            editorMode = "code";
+            expr = expr;
+            instant = true;
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            queryType = "instant";
+            refId = "A";
+          };
+        }
+        {
+          refId = "B";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "A";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            reducer = "last";
+            refId = "B";
+            type = "reduce";
+          };
+        }
+        {
+          refId = "C";
+          datasourceUid = "__expr__";
+          queryType = "";
+          relativeTimeRange = {
+            from = 0;
+            to = 0;
+          };
+          model = {
+            conditions = [
+              {
+                evaluator = {
+                  params = [ threshold ];
+                  type = "gt";
+                };
+                operator.type = "and";
+                query.params = [ "C" ];
+                reducer.type = "last";
+                type = "query";
+              }
+            ];
+            datasource = {
+              type = "__expr__";
+              uid = "__expr__";
+            };
+            expression = "B";
+            intervalMs = 1000;
+            maxDataPoints = 43200;
+            refId = "C";
+            type = "threshold";
+          };
+        }
+      ];
+      noDataState = "OK";
+      execErrState = "Error";
+      inherit for;
+      annotations = {
+        __dashboardUid__ = "ops-backups-blink-fourth";
+        __panelId__ = toString panelId;
+        inherit description summary;
+      };
+      labels = {
+        service = "rsync";
+        host = "fourth";
+        severity = severity;
+      };
+      notification_settings.receiver = alertsContactPointName;
+      isPaused = false;
+    };
+  rsyncErrorPatterns = builtins.concatStringsSep "|" [
+    "(?i)rsync error"
+    "(?i)io error"
+    "(?i)permission denied"
+    "(?i)no space left"
+    "(?i)connection unexpectedly closed"
+    "(?i)failed:"
+    "(?i)error code"
+    "(?i)code 23"
+    "(?i)code 24"
+  ];
+  rsyncErrorAlert = mkLokiLogCountAlert {
+    uid = "fourth-rsync-errors";
+    title = "Rsync errors or failures";
+    expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "${rsyncErrorPatterns}" [5m]))'';
+    threshold = 0;
+    for = "2m";
+    summary = "Rsync errors in fourth data sync log";
+    description = "/host/edward/data-sync.log on fourth has matched rsync error/failure patterns for 2m. Check the backup log for transfer failures, permissions issues, space exhaustion, or disconnects.";
+    severity = "critical";
+    panelId = 3;
+  };
+  rsyncDeleteVolumeAlert = mkLokiLogCountAlert {
+    uid = "fourth-rsync-delete-volume";
+    title = "Rsync delete volume";
+    expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "\\*deleting " [5m]))'';
+    threshold = 5;
+    for = "2m";
+    summary = "Rsync delete burst on fourth";
+    description = "/host/edward/data-sync.log on fourth has logged more than 5 delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
+    severity = "warning";
+    panelId = 2;
+  };
+  rsyncRecencyAlert = {
+    uid = "fourth-rsync-recency";
+    title = "Rsync Log Recency";
+    condition = "C";
+    data = [
+      {
+        refId = "A";
+        datasourceUid = lokiDatasourceUid;
+        queryType = "range";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "loki";
+            uid = lokiDatasourceUid;
+          };
+          editorMode = "code";
+          expr = ''count_over_time(${fourthRsyncLogSelector} | drop detected_level [36h])'';
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          queryType = "range";
+          refId = "A";
+        };
+      }
+      {
+        refId = "B";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "A";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          reducer = "last";
+          refId = "B";
+          type = "reduce";
+        };
+      }
+      {
+        refId = "C";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 21600;
+          to = 0;
+        };
+        model = {
+          conditions = [
+            {
+              evaluator = {
+                params = [ 3 ];
+                type = "lt";
+              };
+              operator.type = "and";
+              query.params = [ "C" ];
+              reducer.type = "last";
+              type = "query";
+            }
+          ];
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "B";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "C";
+          type = "threshold";
+        };
+      }
+    ];
+    noDataState = "NoData";
+    execErrState = "Error";
+    for = "5m";
+    annotations = {
+      __dashboardUid__ = "ops-backups-blink-fourth";
+      __panelId__ = "4";
+      summary = "Rsync log recency is low on fourth";
+      description = "/host/edward/data-sync.log on fourth has fewer than 3 log entries across the last 36h for 5m, which suggests the sync may not be running.";
+    };
+    labels = {
+      service = "rsync";
+      host = "fourth";
+      severity = "warning";
+    };
+    notification_settings.receiver = alertsContactPointName;
+    isPaused = false;
+  };
   # One rule fans out into an alert instance per filesystem (labelled by
   # instance/mountpoint). Warning fires only in the 5–10% band; critical takes
   # over below 5%, so a filling disk escalates rather than double-alerting.
@@ -697,6 +937,24 @@ in
 
     provision.alerting.rules.settings = {
       apiVersion = 1;
+      deleteRules = [
+        {
+          orgId = 1;
+          uid = "cf5pa2mc5o0zkc";
+        }
+        {
+          orgId = 1;
+          uid = "af5pb11hibn5sd";
+        }
+        {
+          orgId = 1;
+          uid = "aenyejmx1k2rka";
+        }
+        {
+          orgId = 1;
+          uid = "df14h5t71ue4gc";
+        }
+      ];
       groups = [
         {
           orgId = 1;
@@ -774,6 +1032,17 @@ in
           interval = "5m";
           rules = [
             wantlistSpotifyDisconnectedAlert
+          ];
+        }
+        {
+          orgId = 1;
+          name = "Backups";
+          folder = "Ops";
+          interval = "1m";
+          rules = [
+            rsyncRecencyAlert
+            rsyncErrorAlert
+            rsyncDeleteVolumeAlert
           ];
         }
       ];
