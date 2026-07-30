@@ -110,7 +110,7 @@ the generated file before switching to the flake config.
 The first committed `magpie` role is intentionally narrow:
 
 - service users `bbmb`, `handler`, and `worker`
-- sudo users `edward` and `billy`
+- sudo user `edward`
 - base runtime/build packages needed to replace the current `chatting`
   container toolchain
 - an optional dedicated `scsi1` workspace disk mounted at `/srv/chatting/workspace`
