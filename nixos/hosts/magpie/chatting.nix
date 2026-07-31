@@ -78,7 +78,12 @@ in
       ProtectHome = true;
       ProtectSystem = "strict";
       ReadOnlyPaths = [ handlerConfigPath ];
-      ReadWritePaths = [ "/var/lib/handler" ];
+      ReadWritePaths = [
+        "/var/lib/handler"
+        # Handler downloads Telegram attachments here for the worker to read;
+        # /srv is read-only under ProtectSystem=strict without this.
+        "/srv/chatting/attachments"
+      ];
       Restart = "always";
       RestartSec = "5s";
       UMask = "0077";
