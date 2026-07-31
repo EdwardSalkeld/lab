@@ -68,7 +68,10 @@ let
       "-1003738951842"
     ];
     telegram_context_refs = contextRefs;
-    telegram_attachment_dir = "/var/lib/handler/telegram-attachments";
+    # Shared with the worker (a different OS user), not handler-private: the
+    # worker/executor has to read the downloaded photo. See the tmpfiles rule
+    # and the handler's ReadWritePaths in chatting.nix.
+    telegram_attachment_dir = "/srv/chatting/attachments";
 
     context_refs = contextRefs;
     auxiliary_ingress_context_refs = null;

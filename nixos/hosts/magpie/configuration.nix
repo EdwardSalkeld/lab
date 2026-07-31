@@ -70,6 +70,12 @@
     "d /srv/chatting 0755 root root -"
     "d /srv/chatting/repo 0755 root root -"
     "d /srv/chatting/workspace 0750 worker worker -"
+    # Shared drop point for Telegram attachments: the handler downloads into
+    # it, the worker (a different OS user) reads them back. 0755 so the worker
+    # can traverse; handler owns it so it can write. Pre-created here rather
+    # than left to the handler's runtime MkdirAll, whose 0700 (UMask=0077)
+    # would lock the worker out.
+    "d /srv/chatting/attachments 0755 handler handler -"
     "d /etc/chatting 0755 root root -"
     "d /var/lib/bbmb 0750 bbmb bbmb -"
     "d /var/lib/handler 0700 handler handler -"
