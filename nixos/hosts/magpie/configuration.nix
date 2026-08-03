@@ -47,6 +47,10 @@
     ];
   };
 
+  users.users.billy.extraGroups = [
+    "systemd-journal"
+  ];
+
   users.users.bbmb = {
     isSystemUser = true;
     group = "bbmb";
