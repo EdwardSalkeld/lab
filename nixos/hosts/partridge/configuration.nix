@@ -51,6 +51,9 @@
   users.users.edward.packages = with pkgs; [
     tree
   ];
+  users.users.billy.extraGroups = [
+    "systemd-journal"
+  ];
   environment.systemPackages = with pkgs; [
     git
     vim

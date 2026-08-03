@@ -111,6 +111,7 @@ The first committed `magpie` role is intentionally narrow:
 
 - service users `bbmb`, `handler`, and `worker`
 - sudo user `edward`
+- non-sudo SSH user `billy` with journal access
 - base runtime/build packages needed to replace the current `chatting`
   container toolchain
 - an optional dedicated `scsi1` workspace disk mounted at `/srv/chatting/workspace`
