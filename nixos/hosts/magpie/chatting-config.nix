@@ -72,6 +72,16 @@ let
     # worker/executor has to read the downloaded photo. See the tmpfiles rule
     # and the handler's ReadWritePaths in chatting.nix.
     telegram_attachment_dir = "/srv/chatting/attachments";
+    # The handler refuses to send an outbound attachment whose local path falls
+    # outside this allowlist (a fail-closed guard against a caller naming an
+    # arbitrary file to exfiltrate). Permit the two places a legitimate
+    # attachment lives: the shared attachment dir (inbound photos echoed back)
+    # and the executor workspace (files the agent produced). Empty would block
+    # every outbound file attachment.
+    egress_attachment_allowed_dirs = [
+      "/srv/chatting/attachments"
+      workspaceDir
+    ];
 
     context_refs = contextRefs;
     auxiliary_ingress_context_refs = null;
