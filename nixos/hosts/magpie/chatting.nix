@@ -112,6 +112,9 @@ in
       pkgs.bash
       pkgs.bubblewrap
       pkgs.cacert
+      # Give the worker a browser runtime for screenshot capture and other
+      # headless browser tasks without relying on ad hoc downloads.
+      pkgs.chromium
       # The worker runs `codex exec` as its agent (worker.json codex_command).
       # Codex is a static musl binary, so it needs no nix-ld here. Sourced from
       # nixpkgs-unstable because 25.11 pins a release too old for gpt-5.4.
@@ -121,6 +124,7 @@ in
       pkgs.git
       pkgs.nodejs
       pkgs.openssh
+      pkgs.playwright-driver
       pkgs.python3
       pkgs.ripgrep
       pkgs.rsync
@@ -133,6 +137,10 @@ in
       Environment = [
         "HOME=/var/lib/worker"
         "CHATTING_CONFIG_DIR=/etc/chatting"
+        "BROWSER=${pkgs.chromium}/bin/chromium"
+        "CHROME_EXECUTABLE=${pkgs.chromium}/bin/chromium"
+        "PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers-chromium}"
+        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1"
       ];
       EnvironmentFile = config.sops.templates."chatting-worker.env".path;
       ExecStart = "${workerBin} --config ${workerConfigPath}";
