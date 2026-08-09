@@ -27,6 +27,18 @@
     openFirewall = true;
   };
 
+  # Let repo-pinned generic Linux tool binaries run on NixOS. This keeps
+  # commands like `npm run lint` working when a project depends on a prebuilt
+  # glibc-linked CLI such as Biome.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc.lib
+      zlib
+      openssl
+    ];
+  };
+
   # A deploy must leave the chatting split runtime running; if any of these are
   # down after a switch, the remote-deploy wrapper rolls back and, failing that,
   # starts them, so a bad or half-applied switch can't silently down chatting.
