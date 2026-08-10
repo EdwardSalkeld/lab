@@ -40,14 +40,6 @@ in
     # evaluation; pin the maintained line instead of whitelisting a stale one.
     virtualisation.docker.package = pkgs.docker_29;
 
-    # magpie is not on partridge's tailnet, so MagicDNS points
-    # code.alcachofa.faith at partridge's unreachable tailscale IP. Pin it to
-    # partridge's LAN address instead: both VMs share the Proxmox bridge, and
-    # nginx serves the Forgejo vhost there with a cert valid for this name.
-    # NOTE: 10.4.1.130 is partridge's current DHCP lease — worth a static
-    # reservation so this can't drift.
-    networking.hosts."10.4.1.130" = [ "code.alcachofa.faith" ];
-
     # The module consumes the registration token as an *env file* (TOKEN=...),
     # not a raw value, so render it through a sops template (as chatting does).
     sops.secrets."forgejo-runner/token" = {
