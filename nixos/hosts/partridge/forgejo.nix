@@ -7,6 +7,11 @@ in
 {
   alcachofa.partridge.reverseProxy.routes.${forgejoDomain}.port = forgejoPort;
 
+  # Reach the Forgejo built-in SSH server on any interface. tailscale0 is
+  # already trusted; opening 2222 explicitly also covers LAN access, so SSH
+  # keeps working if local DNS is pointed at partridge's LAN IP.
+  networking.firewall.allowedTCPPorts = [ 2222 ];
+
   services.forgejo = {
     enable = true;
     database.type = "postgres";
@@ -22,10 +27,11 @@ in
         ROOT_URL = "https://${forgejoDomain}/";
 
         # SSH via Forgejo's built-in server on 2222 — the host's own sshd owns
-        # 22. No firewall opening needed: code.alcachofa.faith resolves to
-        # partridge's tailscale IP and tailscale0 is the trusted firewall
-        # interface, so the git SSH port is reachable over the tailnet only,
-        # never exposed on the LAN or publicly. Clone URLs:
+        # 22. 2222 is opened in the firewall below so it works whether clients
+        # reach partridge over tailscale (today code.alcachofa.faith resolves to
+        # its tailscale IP) or over the LAN (if local DNS is later pointed at
+        # partridge's LAN IP). Not public: partridge has no public interface and
+        # the router forwards nothing to it. Clone URLs:
         # ssh://git@code.alcachofa.faith:2222/owner/repo.git
         DISABLE_SSH = false;
         START_SSH_SERVER = true;
