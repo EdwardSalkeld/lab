@@ -7,6 +7,9 @@ in
 {
   alcachofa.partridge.reverseProxy.routes.${forgejoDomain}.port = forgejoPort;
 
+  # Forgejo git SSH (built-in server on 2222, configured below).
+  networking.firewall.allowedTCPPorts = [ 2222 ];
+
   services.forgejo = {
     enable = true;
     database.type = "postgres";
@@ -16,11 +19,17 @@ in
 
     settings = {
       server = {
-        DISABLE_SSH = true;
         DOMAIN = forgejoDomain;
         HTTP_ADDR = "127.0.0.1";
         HTTP_PORT = forgejoPort;
         ROOT_URL = "https://${forgejoDomain}/";
+
+        DISABLE_SSH = false;
+        START_SSH_SERVER = true;
+        SSH_DOMAIN = forgejoDomain;
+        SSH_PORT = 2222;
+        SSH_LISTEN_PORT = 2222;
+        SSH_USER = "git";
       };
 
       service = {
