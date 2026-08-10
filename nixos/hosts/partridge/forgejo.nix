@@ -30,6 +30,9 @@ in
         SSH_PORT = 2222;
         SSH_LISTEN_PORT = 2222;
         SSH_USER = "git";
+        # Without this the built-in server only accepts the run user (forgejo),
+        # so the git@ clone URL the web UI shows is rejected.
+        BUILTIN_SSH_SERVER_USER = "git";
       };
 
       service = {
