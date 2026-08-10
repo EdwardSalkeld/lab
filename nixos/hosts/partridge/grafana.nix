@@ -794,6 +794,7 @@ in
     group = "grafana";
     mode = "0400";
     content = ''
+      GRAFANA_SMTP_PASSWORD=${config.sops.placeholder."grafana/smtp_password"}
       GRAFANA_TELEGRAM_BOT_TOKEN=${config.sops.placeholder."grafana/telegram_bot_token"}
     '';
   };
@@ -849,7 +850,7 @@ in
         enabled = true;
         host = "smtp.fastmail.com:587";
         user = "edsalkeld@fastmail.com";
-        password = "$__file{${config.sops.secrets."grafana/smtp_password".path}}";
+        password = "$__env{GRAFANA_SMTP_PASSWORD}";
         from_address = "edsalkeld@fastmail.com";
         from_name = "Grafana";
         startTLS_policy = "MandatoryStartTLS";
