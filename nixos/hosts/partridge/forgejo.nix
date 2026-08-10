@@ -27,6 +27,13 @@ in
         DISABLE_REGISTRATION = true;
         REQUIRE_SIGNIN_VIEW = true;
       };
+
+      actions = {
+        ENABLED = true;
+        # Resolve `uses:` actions (actions/checkout@v4 etc.) from GitHub, since
+        # private repos moving onto this Forgejo will reference them.
+        DEFAULT_ACTIONS_URL = "github";
+      };
     };
   };
 }

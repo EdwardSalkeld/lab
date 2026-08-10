@@ -163,6 +163,18 @@ resource "proxmox_virtual_environment_vm" "magpie" {
     serial       = "magpie-workspace"
   }
 
+  # Docker/CI storage for the co-located Forgejo Actions runner, kept off the
+  # OS root. Formatted once as ext4 label `dockerdata` and mounted at
+  # /var/lib/docker (see nixos/hosts/magpie/{hardware-configuration,forgejo-runner}.nix).
+  disk {
+    datastore_id = var.proxmox_vm_datastore_id
+    interface    = "scsi2"
+    size         = var.magpie_ci_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "magpie-ci"
+  }
+
   cdrom {
     file_id   = "none"
     interface = "ide3"

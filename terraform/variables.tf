@@ -107,3 +107,9 @@ variable "magpie_workspace_disk_size" {
   type        = number
   default     = 5
 }
+
+variable "magpie_ci_disk_size" {
+  description = "Docker/CI disk size for magpie in GiB"
+  type        = number
+  default     = 30
+}
