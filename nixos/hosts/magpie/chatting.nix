@@ -107,7 +107,10 @@ in
       workerConfigPath
       "/srv/chatting/workspace"
     ];
-    restartTriggers = [ config.environment.etc."chatting/worker.json".source ];
+    restartTriggers = [
+      config.environment.etc."chatting/worker.json".source
+      config.environment.etc."chatting/codex-config.toml".source
+    ];
     path = [
       pkgs.bash
       pkgs.bubblewrap

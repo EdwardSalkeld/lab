@@ -97,6 +97,10 @@
     "d /var/lib/bbmb 0750 bbmb bbmb -"
     "d /var/lib/handler 0700 handler handler -"
     "d /var/lib/worker 0700 worker worker -"
+    "d /var/lib/worker/.codex 0700 worker worker -"
+    # Keep worker auth/session state in /var/lib/worker/.codex, but source the
+    # model/defaults file from the declarative /etc/chatting render.
+    "L+ /var/lib/worker/.codex/config.toml - - - - /etc/chatting/codex-config.toml"
   ];
 
   environment.systemPackages = with pkgs; [
