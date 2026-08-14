@@ -17,6 +17,14 @@
 let
   workspaceDir = "/srv/chatting/workspace";
   contextRefs = [ "repo:${workspaceDir}" ];
+  codexConfig = ''
+    personality = "pragmatic"
+    model = "gpt-5.6-sol"
+    model_reasoning_effort = "medium"
+
+    [projects."${workspaceDir}"]
+    trust_level = "trusted"
+  '';
 
   handlerConfig = {
     db_path = "/var/lib/handler/chatting-message-handler.db";
@@ -108,4 +116,5 @@ in
 {
   environment.etc."chatting/handler.json".text = builtins.toJSON handlerConfig;
   environment.etc."chatting/worker.json".text = builtins.toJSON workerConfig;
+  environment.etc."chatting/codex-config.toml".text = codexConfig;
 }
