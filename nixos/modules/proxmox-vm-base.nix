@@ -24,7 +24,7 @@
 
   nix.gc = {
     automatic = true;
-    dates = "weekly";
+    dates = lib.mkDefault "weekly";
     options = "--delete-older-than 14d";
   };
 
