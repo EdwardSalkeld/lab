@@ -62,6 +62,30 @@ let
 
     exit "$rc"
   '';
+  nixGc = pkgs.writeShellScript "lab-nix-gc" ''
+    set -euo pipefail
+    systemctl=/run/current-system/sw/bin/systemctl
+
+    echo "Disk usage before Nix GC on ${host}:"
+    ${pkgs.coreutils}/bin/df -h /
+    "$systemctl" start nix-gc.service
+    echo "Disk usage after Nix GC on ${host}:"
+    ${pkgs.coreutils}/bin/df -h /
+  '';
+  remoteCommand = pkgs.writeShellScript "lab-remote-command" ''
+    case "''${SSH_ORIGINAL_COMMAND:-}" in
+      lab-switch)
+        exec ${labSwitch}
+        ;;
+      nix-gc)
+        exec ${nixGc}
+        ;;
+      *)
+        echo "unsupported remote command" >&2
+        exit 2
+        ;;
+    esac
+  '';
   # fourth's onward deploy public key — from creds/onward_ed25519.pub on fourth.
   fourthDeployKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEHQr6Slpjl/R7ZMoIf9CWb/Mmwjn5MaFXTpyqxUE952 fourth-deploy";
 in
@@ -73,6 +97,6 @@ in
   };
 
   config.users.users.root.openssh.authorizedKeys.keys = [
-    ''command="${labSwitch}",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty ${fourthDeployKey}''
+    ''command="${remoteCommand}",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty ${fourthDeployKey}''
   ];
 }

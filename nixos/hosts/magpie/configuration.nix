@@ -13,6 +13,11 @@
   networking.hostName = "magpie";
   networking.networkmanager.enable = true;
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
+
+  # Magpie's small root disk fills quickly with Nix build/store churn from the
+  # worker. Keep the shared 14-day retention policy, but collect daily.
+  nix.gc.dates = "daily";
+
   # LAN access to the chatting services: bbmb broker metrics (9877), message
   # handler metrics (9464), and the worker activity UI (9465). No auth on these,
   # so they rely on being LAN-only. Node exporter (9100) is opened separately by

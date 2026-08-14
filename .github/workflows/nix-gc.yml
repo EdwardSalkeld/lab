@@ -1,0 +1,45 @@
+name: nix-gc
+run-name: Nix GC on ${{ inputs.host }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: NixOS host to collect
+        required: true
+        type: choice
+        options:
+          - magpie
+          - partridge
+
+concurrency:
+  group: nix-gc-${{ inputs.host }}
+  cancel-in-progress: false
+
+jobs:
+  nix-gc:
+    name: nix-gc-${{ inputs.host }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: fourth.ts.alcachofa.faith
+
+      - name: install ssh key
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "${{ secrets.FOURTH_DEPLOY_SSH_KEY }}" > ~/.ssh/deploy
+          chmod 0600 ~/.ssh/deploy
+
+      - name: run Nix GC on ${{ inputs.host }}
+        run: |
+          ssh \
+            -i ~/.ssh/deploy \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            deploy@fourth.ts.alcachofa.faith \
+            nix-gc-${{ inputs.host }}

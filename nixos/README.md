@@ -206,6 +206,11 @@ The Tailscale ACL should allow `tag:ci` to reach `fourth`'s Tailscale SSH
 endpoint. The first deployment of this wiring must still be applied manually so
 the `deploy` user and forced command exist before the workflow can connect.
 
+The manually triggered `nix-gc` workflow uses the same restricted path. Choose
+`magpie` or `partridge` when dispatching it; fourth asks the selected host to
+start its configured `nix-gc.service` and logs root filesystem usage before and
+after collection.
+
 The July 2026 `wren` bootstrap experiment has been torn down. Keep `partridge`
 focused on its normal service role until the next disposable VM path is
 reintroduced in a dedicated branch.
