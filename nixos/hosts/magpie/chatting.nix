@@ -1,4 +1,4 @@
-{ config, pkgs, chattingRuntimePackage, codexPackage, ... }:
+{ config, pkgs, chattingRuntimePackage, codexPackage, goosePackage, ... }:
 
 let
   handlerConfigPath = "/etc/chatting/handler.json";
@@ -6,6 +6,8 @@ let
   bbmbBin = "${chattingRuntimePackage}/bin/bbmb-server";
   handlerBin = "${chattingRuntimePackage}/bin/chatting-handler";
   workerBin = "${chattingRuntimePackage}/bin/chatting-worker";
+  # Which OpenRouter model goose runs. Change here, not in chatting.
+  gooseModel = "anthropic/claude-sonnet-4.6";
 in
 {
   systemd.targets.chatting = {
@@ -119,6 +121,10 @@ in
       # Codex is a static musl binary, so it needs no nix-ld here. Sourced from
       # nixpkgs-unstable because 25.11 pins a release too old for gpt-5.4.
       codexPackage
+      # goose is the alternative harness, selected by worker.json `executor`.
+      # Present on the path regardless so switching executor is a config change
+      # rather than a rebuild of the unit.
+      goosePackage
       pkgs.curl
       pkgs.gh
       pkgs.git
@@ -136,6 +142,20 @@ in
       Environment = [
         "HOME=/var/lib/worker"
         "CHATTING_CONFIG_DIR=/etc/chatting"
+        # goose reads its whole configuration from the environment, so which
+        # model it runs is goose's business rather than chatting's — the same
+        # split as Codex, which takes its model from codex-config.toml. Inert
+        # while worker.json selects the Codex executor.
+        "GOOSE_PROVIDER=openrouter"
+        "GOOSE_MODEL=${gooseModel}"
+        # auto is what makes an unattended run possible: without it goose stops
+        # to ask before each tool call and the worker just times out.
+        "GOOSE_MODE=auto"
+        # Summarise rather than fail when a long task overflows the window.
+        "GOOSE_CONTEXT_STRATEGY=summarize"
+        # Session naming spends an extra model call per run for a label nothing
+        # reads, since the worker passes --no-session.
+        "GOOSE_DISABLE_SESSION_NAMING=true"
       ];
       EnvironmentFile = config.sops.templates."chatting-worker.env".path;
       ExecStart = "${workerBin} --config ${workerConfigPath}";

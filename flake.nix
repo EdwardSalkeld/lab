@@ -251,6 +251,7 @@
           specialArgs = {
             chattingRuntimePackage = chattingRuntime;
             codexPackage = pkgsUnstable.codex;
+            goosePackage = pkgsUnstable.goose-cli;
           };
           modules = [
             sops-nix.nixosModules.sops
