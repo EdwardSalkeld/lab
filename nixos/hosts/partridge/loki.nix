@@ -66,4 +66,52 @@ in
       analytics.reporting_enabled = false;
     };
   };
+
+  services.promtail = {
+    enable = true;
+    configuration = {
+      server = {
+        http_listen_address = "127.0.0.1";
+        http_listen_port = 9080;
+        grpc_listen_port = 0;
+      };
+
+      clients = [
+        { url = "http://127.0.0.1:${toString lokiPort}/loki/api/v1/push"; }
+      ];
+
+      scrape_configs = [
+        {
+          job_name = "partridge-systemd-journal";
+          journal = {
+            max_age = "24h";
+            labels = {
+              host = "partridge";
+              source = "journal";
+            };
+          };
+          relabel_configs = [
+            {
+              source_labels = [ "__journal__systemd_unit" ];
+              regex = "exercise-tracker-hevy-sync.service";
+              action = "keep";
+            }
+            {
+              source_labels = [ "__journal__systemd_unit" ];
+              target_label = "systemd_unit";
+            }
+            {
+              source_labels = [ "__journal_priority_keyword" ];
+              target_label = "level";
+            }
+          ];
+        }
+      ];
+    };
+  };
+
+  systemd.services.promtail = {
+    after = [ "loki.service" ];
+    wants = [ "loki.service" ];
+  };
 }
