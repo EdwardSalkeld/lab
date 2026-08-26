@@ -116,7 +116,6 @@
     git
     gh
     go
-    # The worker uses repositories' Makefile targets for formatting and checks.
     gnumake
     htop
     nodejs
