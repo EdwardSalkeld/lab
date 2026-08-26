@@ -88,8 +88,11 @@ in
         request_url text NOT NULL,
         status_code integer NOT NULL,
         body text NOT NULL,
-        body_sha256 text NOT NULL
+        body_sha256 text NOT NULL,
+        transport_error text
       );
+      ALTER TABLE octopus_api_responses
+        ADD COLUMN IF NOT EXISTS transport_error text;
       CREATE INDEX IF NOT EXISTS octopus_api_responses_requested_at_idx
         ON octopus_api_responses (requested_at DESC);
       GRANT SELECT, INSERT, UPDATE ON TABLE usages TO ${user};
