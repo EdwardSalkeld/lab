@@ -25,6 +25,12 @@ in
               type = lib.types.port;
               description = "Upstream port to proxy to.";
             };
+
+            allowedCIDRs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+              description = "Client CIDRs allowed to use this route; an empty list allows all clients.";
+            };
           };
         }
       );
@@ -40,7 +46,12 @@ in
       (_domain: route: {
         forceSSL = true;
         useACMEHost = cfg.acmeHost;
-        locations."/".proxyPass = "http://${route.host}:${toString route.port}";
+        locations."/" = {
+          proxyPass = "http://${route.host}:${toString route.port}";
+          extraConfig = lib.optionalString (route.allowedCIDRs != [ ]) (
+            (lib.concatMapStringsSep "\n" (cidr: "allow ${cidr};") route.allowedCIDRs) + "\ndeny all;"
+          );
+        };
       })
       cfg.routes;
   };
