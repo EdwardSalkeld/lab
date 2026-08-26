@@ -10,11 +10,16 @@ let
 in
 {
   # The endpoint is deliberately restricted at nginx to the Magpie worker's
-  # tailnet address. The downloader itself remains bound to loopback, so no
-  # Octopus credentials or trigger API are reachable directly from the network.
+  # tailnet and LAN addresses. The worker and Partridge share the 10.4.1.0/24
+  # LAN, and its route to Partridge uses that address rather than Tailscale.
+  # The downloader itself remains bound to loopback, so no Octopus credentials
+  # or trigger API are reachable directly from the network.
   alcachofa.partridge.reverseProxy.routes.${triggerDomain} = {
     port = triggerPort;
-    allowedCIDRs = [ "100.74.103.13/32" ];
+    allowedCIDRs = [
+      "100.74.103.13/32"
+      "10.4.1.31/32"
+    ];
   };
 
   sops.secrets."octopus-dl/octopus_api_key" = {
