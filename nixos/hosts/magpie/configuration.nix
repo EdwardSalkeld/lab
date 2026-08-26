@@ -116,6 +116,7 @@
     git
     gh
     go
+    gnumake
     htop
     nodejs
     python3
