@@ -66,7 +66,20 @@ in
         usage_type text NOT NULL,
         PRIMARY KEY (interval_start, usage_type)
       );
+      CREATE TABLE IF NOT EXISTS octopus_api_responses (
+        id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        requested_at timestamptz NOT NULL,
+        usage_type text NOT NULL,
+        request_url text NOT NULL,
+        status_code integer NOT NULL,
+        body text NOT NULL,
+        body_sha256 text NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS octopus_api_responses_requested_at_idx
+        ON octopus_api_responses (requested_at DESC);
       GRANT SELECT, INSERT, UPDATE ON TABLE usages TO ${user};
+      GRANT SELECT, INSERT ON TABLE octopus_api_responses TO ${user};
+      GRANT USAGE ON SEQUENCE octopus_api_responses_id_seq TO ${user};
 SQL
     '';
   };
