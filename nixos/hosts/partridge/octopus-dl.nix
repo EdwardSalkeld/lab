@@ -4,9 +4,19 @@ let
   user = "octopusdl";
   group = "octopusdl";
   dbName = "scheduler";
+  triggerDomain = "octopus-dl.int.alcachofa.faith";
+  triggerPort = 8790;
   psql = "${config.services.postgresql.package}/bin/psql";
 in
 {
+  # The endpoint is deliberately restricted at nginx to the Magpie worker's
+  # tailnet address. The downloader itself remains bound to loopback, so no
+  # Octopus credentials or trigger API are reachable directly from the network.
+  alcachofa.partridge.reverseProxy.routes.${triggerDomain} = {
+    port = triggerPort;
+    allowedCIDRs = [ "100.74.103.13/32" ];
+  };
+
   sops.secrets."octopus-dl/octopus_api_key" = {
     sopsFile = ./secrets/octopus-dl.yaml;
     key = "octopus_api_key";
@@ -66,7 +76,20 @@ in
         usage_type text NOT NULL,
         PRIMARY KEY (interval_start, usage_type)
       );
+      CREATE TABLE IF NOT EXISTS octopus_api_responses (
+        id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        requested_at timestamptz NOT NULL,
+        usage_type text NOT NULL,
+        request_url text NOT NULL,
+        status_code integer NOT NULL,
+        body text NOT NULL,
+        body_sha256 text NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS octopus_api_responses_requested_at_idx
+        ON octopus_api_responses (requested_at DESC);
       GRANT SELECT, INSERT, UPDATE ON TABLE usages TO ${user};
+      GRANT SELECT, INSERT ON TABLE octopus_api_responses TO ${user};
+      GRANT USAGE ON SEQUENCE octopus_api_responses_id_seq TO ${user};
 SQL
     '';
   };
@@ -93,6 +116,36 @@ SQL
       Group = group;
       EnvironmentFile = config.sops.templates."octopus-dl.env".path;
       ExecStart = "${octopusDlPackage}/bin/octopus-dl";
+      NoNewPrivileges = true;
+      ProtectHome = true;
+      ProtectSystem = "strict";
+      PrivateTmp = true;
+    };
+  };
+
+  systemd.services.octopus-dl-trigger = {
+    description = "Serve the manual Octopus Energy download trigger";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "network-online.target" ];
+    after = [
+      "network-online.target"
+      "postgresql.service"
+      "octopus-dl-db-setup.service"
+    ];
+    requires = [ "octopus-dl-db-setup.service" ];
+    environment = {
+      DB_HOST = "/run/postgresql";
+      DB_PORT = "5432";
+      DB_USER = user;
+      DB_NAME = dbName;
+      DB_SSLMODE = "disable";
+    };
+    serviceConfig = {
+      User = user;
+      Group = group;
+      EnvironmentFile = config.sops.templates."octopus-dl.env".path;
+      ExecStart = "${octopusDlPackage}/bin/octopus-dl -listen-addr 127.0.0.1:${toString triggerPort}";
+      Restart = "on-failure";
       NoNewPrivileges = true;
       ProtectHome = true;
       ProtectSystem = "strict";
