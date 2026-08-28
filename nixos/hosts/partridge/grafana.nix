@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, grafanaPackage, ... }:
 
 let
   grafanaDomain = "grafana.alcachofa.faith";
@@ -825,6 +825,7 @@ in
 
   services.grafana = {
     enable = true;
+    package = grafanaPackage;
 
     settings = {
       server = {

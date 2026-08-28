@@ -168,7 +168,7 @@
             {
               nativeBuildInputs = [
                 pkgs.go
-                pkgs.grafana
+                partridgeConfig.services.grafana.package
               ];
               src = ./tools/grafana-alerting-lint;
               templatesJson = partridgeGrafanaTemplates;
@@ -200,9 +200,9 @@
 
               set +e
               ${pkgs.coreutils}/bin/timeout 20s \
-                ${pkgs.grafana}/bin/grafana server \
-                --homepath ${pkgs.grafana}/share/grafana \
-                --config ${pkgs.grafana}/share/grafana/conf/defaults.ini \
+                ${partridgeConfig.services.grafana.package}/bin/grafana server \
+                --homepath ${partridgeConfig.services.grafana.package}/share/grafana \
+                --config ${partridgeConfig.services.grafana.package}/share/grafana/conf/defaults.ini \
                 > grafana-smoke/stdout.log 2> grafana-smoke/stderr.log
               status=$?
               set -e
@@ -237,6 +237,7 @@
             octopusDlPackage = octopusDl;
             linearExportPackage = linearExport;
             exerciseTrackerPackage = exerciseTracker;
+            grafanaPackage = pkgsUnstable.grafana;
           };
           modules = [
             sops-nix.nixosModules.sops
