@@ -83,11 +83,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1787135253,
-        "narHash": "sha256-RD2kNWCG+Bjo6h+JVjWVNntZs2GtRoeY2xHjts/FNkA=",
+        "lastModified": 1787736819,
+        "narHash": "sha256-cV5xEJJK3BvhU8rEd4mC9UsmDi5qscv/kzGPhBRC5WA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ffb3c9b700e759be2ef13237c9d8f953b32a1e46",
+        "rev": "9fbb54b33e91ee4ca368e35a78e0613c720600b3",
         "type": "github"
       },
       "original": {
@@ -100,11 +100,11 @@
     "octopus-dl": {
       "flake": false,
       "locked": {
-        "lastModified": 1787775453,
-        "narHash": "sha256-UYoovFFgVTBTjaXWSxcbxAqwyjpMcypysXg49HRPQnI=",
+        "lastModified": 1787775910,
+        "narHash": "sha256-8xLzKVAf8ZKb0b6wi9LDwccMNN7p98ljYV7TztYdsJo=",
         "owner": "EdwardSalkeld",
         "repo": "octopus-dl",
-        "rev": "fea513b2bde854625eda0f0fea5cab8c12098496",
+        "rev": "8a5a3bebc912ecfc6aa7a7c158c992bce318a674",
         "type": "github"
       },
       "original": {
