@@ -226,6 +226,7 @@
         blink = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
+            sops-nix.nixosModules.sops
             ./nixos/hosts/blink/configuration.nix
           ];
         };
