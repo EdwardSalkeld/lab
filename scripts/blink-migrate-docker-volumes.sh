@@ -7,13 +7,6 @@ volumes=(
   docker_pigallery2-storage
   docker_jfconfig
   docker_jfcache
-  chatting_handler-data
-  chatting_worker-data
-  chatting_html-output
-  chatting_shared-temp
-  chatting_codex-auth
-  chatting_claude-auth
-  chatting_gh-auth
 )
 
 if [[ "${EUID}" -ne 0 ]]; then

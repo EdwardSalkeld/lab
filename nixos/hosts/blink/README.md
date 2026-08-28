@@ -57,7 +57,9 @@ into the containers.
 
    ```text
    /home/edward/develop/house/blink
-   /home/edward/develop/chatting
+   /home/edward/develop/untitled-music-project
+   /home/edward/.config/beets
+   /home/edward/.ssh/ucc
    /etc/fstab
    /etc/exports
    /etc/NetworkManager/system-connections
@@ -102,7 +104,7 @@ into the containers.
    ```sh
    systemctl status docker
    systemctl status blink-house-compose
-   systemctl status blink-chatting-compose
+   systemctl status blink-wantlist-compose
    findmnt /mnt/ssd4tb /mnt/redhdd /mnt/ext2tb/1 /mnt/ext2tb/3 /mnt/ext2tb/4
    exportfs -v
    docker ps
@@ -119,7 +121,7 @@ into the containers.
    cAdvisor: 8083
    node_exporter: 9100
    Alloy: 3101, shipping to Partridge Loki
-   Chatting: 9464, 9465, 9466, 9876, 9877
+   Wantlist: https://wantlist.b.alcachofa.faith/
    ```
 
 9. Confirm the dropped services stay stopped or absent:
@@ -142,7 +144,6 @@ into the containers.
     ```text
     retire MariaDB
     move host-local secrets to sops-nix
-    convert Chatting from Docker to Nix services/users
     archive or delete old Prometheus/Loki volumes
     tighten firewall only if a concrete need appears
     ```
@@ -169,16 +170,18 @@ The unit deliberately stops these old services if they are still running:
 - `jogon`
 - `bitwarden-backup`
 
-From `/home/edward/develop/chatting/docker-compose.yml`:
+From `/home/edward/develop/untitled-music-project/deploy/prod/docker-compose.yml`:
 
-- `bbmb`
-- `handler`
+- `api`
 - `worker`
-- `site`
+
+Wantlist depends on host-local state restored before the Compose unit is
+started: the checkout (including deploy/prod/.env), /home/edward/.config/beets,
+and /home/edward/.ssh/ucc. Its media, inbox, TV, film, and workspace paths are
+already on the retained data disks.
 
 ## Follow-Ups
 
 - Retire the temporary MariaDB container.
-- Convert Chatting from Docker to Nix-managed services with separate users.
 - Move host-local secrets into `sops-nix`.
 - Tighten firewall exposure if there is a concrete reason to do so.
