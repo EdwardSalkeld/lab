@@ -2,7 +2,7 @@
 
 let
   houseComposeDir = "/home/edward/develop/house/blink/docker";
-  chattingComposeDir = "/home/edward/develop/chatting";
+  wantlistComposeDir = "/home/edward/develop/untitled-music-project/deploy/prod";
   dockerVolumeRoot = "/mnt/ssd4tb/docker-volumes";
 
   compose = "${pkgs.docker-compose}/bin/docker-compose";
@@ -86,26 +86,6 @@ let
           - ${dockerVolumeRoot}/docker_pigallery2-storage:/app/data/db
   '';
 
-  chattingComposeOverride = pkgs.writeText "blink-chatting-compose.override.yml" ''
-    services:
-      handler:
-        volumes:
-          - ${dockerVolumeRoot}/chatting_handler-data:/data
-          - ${dockerVolumeRoot}/chatting_shared-temp:/tmp
-          - ${dockerVolumeRoot}/chatting_gh-auth:/home/chatting/.config/gh
-      worker:
-        volumes:
-          - ${dockerVolumeRoot}/chatting_worker-data:/data
-          - ${dockerVolumeRoot}/chatting_html-output:/workspace/html
-          - ${dockerVolumeRoot}/chatting_shared-temp:/tmp
-          - ${dockerVolumeRoot}/chatting_codex-auth:/home/chatting/.codex
-          - ${dockerVolumeRoot}/chatting_claude-auth:/home/chatting/.claude
-          - ${dockerVolumeRoot}/chatting_gh-auth:/home/chatting/.config/gh
-      site:
-        volumes:
-          - ${dockerVolumeRoot}/chatting_html-output:/site
-  '';
-
   houseServices = [
     "jellyfin"
     "cadvisor"
@@ -117,14 +97,21 @@ let
     "navidrome"
   ];
 
-  chattingServices = [
-    "bbmb"
-    "handler"
+  wantlistServices = [
+    "api"
     "worker"
-    "site"
   ];
 
-  composeService = { description, directory, services, files ? [ "docker-compose.yml" ], stopBefore ? [ ] }:
+  composeService =
+    {
+      description,
+      directory,
+      services,
+      files ? [ "docker-compose.yml" ],
+      stopBefore ? [ ],
+      after ? [ ],
+      requires ? [ ],
+    }:
     let
       serviceArgs = lib.concatStringsSep " " services;
       fileArgs = lib.concatMapStringsSep " " (file: "-f ${file}") files;
@@ -137,9 +124,10 @@ let
       after = [
         "docker.service"
         "network-online.target"
-      ];
+      ]
+      ++ after;
       wants = [ "network-online.target" ];
-      requires = [ "docker.service" ];
+      requires = [ "docker.service" ] ++ requires;
       wantedBy = [ "multi-user.target" ];
 
       serviceConfig = {
@@ -271,14 +259,12 @@ in
       ];
     };
 
-    blink-chatting-compose = composeService {
-      description = "Blink Chatting Docker Compose services";
-      directory = chattingComposeDir;
-      files = [
-        "docker-compose.yml"
-        chattingComposeOverride
-      ];
-      services = chattingServices;
+    blink-wantlist-compose = composeService {
+      description = "Blink Wantlist Docker Compose services";
+      directory = wantlistComposeDir;
+      services = wantlistServices;
+      after = [ "blink-house-compose.service" ];
+      requires = [ "blink-house-compose.service" ];
     };
   };
 
@@ -293,6 +279,21 @@ in
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD edward@m1"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzhdCoWE/CiY3laW9R/I5UEhQs7krz8ur8OOg7su5MJ edward@m2"
+    ];
+  };
+
+  # Dedicated, declarative maintenance account.  Keep this separate from
+  # Edward's account so an automated SSH key is not coupled to his login.
+  users.users.billy = {
+    isNormalUser = true;
+    extraGroups = [
+      "docker"
+      "networkmanager"
+      "systemd-journal"
+      "wheel"
+    ];
+    openssh.authorizedKeys.keys = [
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7g5CoTIOcrTpzDqFylWrcMGJIqOQC2RrYcWQzhD4NTB8Uh5ZHhR0LMfRhFXivIs3TY+bAe4ov7FODCOimL6irSoj6Pd/2La3o3hXGz2u/l1/7sLWxtG3H7k2QCOHacVzZUznJpn4rAGtfq2w8cmF/RNO1kc/ZncaIlh2TZ8f3D5cAEKUV2f7YN40d9MSnXNgg6YRgL91wfWDO7DMuWUi5UTqcH/3NBcJXsrTEQ7TT10ISabIVoLNROoAiORZY83iy1fYSGN3u3t72qcVdRIW1vZ7JbgaJ1ue4z2r1LkCKz4bGw3U76joloAv/V6rYR3o4+69atJaPhGapqiu8EkDF0eGjbfEzBi1sLehrzNH21Kv0TbNfwvUecCrvqZqNAhxPiedx1ws5BBcYDjAKpP3YU0hdmjoFDlBX4oFR7NhJ4lLWhAxgqCmzNvJAdFG0pya7hhsivc57vUibkdnRjNIJN+U3zwyT8xmRSiuaH8G1J1dDKjuMwlK0T2B4AsAwoJM= billy@chatting"
     ];
   };
 

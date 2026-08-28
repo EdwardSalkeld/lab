@@ -46,7 +46,7 @@ Reviewed so far:
 | `/mnt/ssd4tb` | Keep | Main app/data disk |
 | `/mnt/ext2tb/1` | Keep | Jellyfin/media data |
 | `/mnt/ext2tb/3` | Keep | Jellyfin/media data |
-| `/mnt/ext2tb/4` | Keep | Jellyfin/media data and chatting workspace |
+| `/mnt/ext2tb/4` | Keep | Jellyfin/media data |
 | `/mnt/redhdd` | Keep | Must add declarative mount; currently mounted but missing from `/etc/fstab` |
 | NFS export `/mnt/ssd4tb/full/photos/inbox` | Keep | Preserve LAN write export |
 | NFS export `/mnt/ssd4tb/full/apple` | Keep | Preserve LAN write export |
@@ -68,7 +68,8 @@ Reviewed so far:
 | Bitwarden backup container | Drop | Replaced by Vaultwarden on Partridge |
 | MariaDB exposed on `0.0.0.0:3306` | Keep temporarily | Revisit when MariaDB is removed |
 | Docker named volumes | Migrate to persistent disk | Move/export kept app volumes before reinstall |
-| Chatting stack | Keep | Keep all Chatting containers for cutover; later migrate Docker to Nix services with separate users |
+| Chatting stack | Drop | Chatting has moved to Magpie; do not restore its checkout, containers, or Docker volumes on Blink |
+| Wantlist stack | Keep | Restore the live Compose project after the house stack; its checkout and root-disk Beets/SSH state need backup |
 | Developer/admin tools | Keep | Preserve common shell/admin workflow |
 | Build/runtime tools | Keep for now | Can move to dev shells later |
 | Network/debug tools | Keep | Useful for server operations |
@@ -80,7 +81,7 @@ Reviewed so far:
 | Install route | Open | Fresh reinstall remains the working default, but no strong preference yet |
 | Root disk layout | Simple ext4 | EFI + ext4 root + swap, similar to current |
 | User `edward` | Keep | Normal admin user with sudo and Docker access |
-| Future Chatting service users | Later | Add when migrating Chatting from Docker to Nix services |
+| User `billy` | Keep | Dedicated declarative maintenance account with SSH, sudo, Docker, network, and journal access |
 | SSH host keys | Preserve if easy | Not a blocker if they change |
 | Tailscale machine identity | Preserve if easy | Not a blocker if it rejoins as a new device |
 | SSH authentication | Prefer keys | Password login only for bootstrap/console convenience if needed |
@@ -98,7 +99,7 @@ Reviewed so far:
 | Shared modules | Use selectively | Do not force Blink through Proxmox VM base module |
 | First implementation branch/PR | Use branch and PR | No direct push to `main` |
 | First boot target | Minimal reliable service set | SSH/Tailscale, mounts, Docker/Compose, then app stacks |
-| Later cleanup target | Separate follow-ups | MariaDB removal, Chatting Nix services, sops-nix, firewall tightening |
+| Later cleanup target | Separate follow-ups | MariaDB removal, sops-nix, firewall tightening |
 
 ## Filesystems And Data
 
@@ -117,7 +118,7 @@ Data disks:
 | `/dev/sdb1` | `/mnt/redhdd` | `ext4` | 3.6 TiB | 2.6 TiB | Mounted, but not present in `/etc/fstab` output |
 | `/dev/sdc1` | `/mnt/ext2tb/1` | `ext4` | 976.6 GiB | 98% | Jellyfin media |
 | `/dev/sdc3` | `/mnt/ext2tb/3` | `ext4` | 488.3 GiB | 99% | Jellyfin media |
-| `/dev/sdc4` | `/mnt/ext2tb/4` | `ext4` | 398.2 GiB | 19% | Jellyfin media and chatting workspace bind |
+| `/dev/sdc4` | `/mnt/ext2tb/4` | `ext4` | 398.2 GiB | 19% | Jellyfin media |
 | `/dev/sdd1` | `/mnt/ssd4tb` | `ext4` | 3.6 TiB | 41% | Main app/data disk |
 
 Current `/etc/fstab` declares root, EFI, swap, `/mnt/ext2tb/{1,3,4}`, and
@@ -136,7 +137,6 @@ Keep these host paths stable during migration unless deliberately changed:
 - `/mnt/ext2tb/1`
 - `/mnt/ext2tb/3`
 - `/mnt/ext2tb/4`
-- `/mnt/ext2tb/4/billy`
 - `/mnt/redhdd`
 
 ## Running System Services
@@ -212,8 +212,6 @@ Known intentional listeners:
 | `8096` | Jellyfin container | Media |
 | `9090` | Prometheus container | Metrics |
 | `9100` | node_exporter container | Host metrics |
-| `9464`, `9465`, `9466` | Chatting stack | Handler, worker, site |
-| `9876`, `9877` | Chatting BBMB | App and metrics/health |
 
 NixOS firewall rules should be explicit. Initial posture is compatibility-first:
 preserve existing LAN-visible app and metrics ports, then tighten later only
@@ -260,22 +258,21 @@ Services:
 | `bitwarden-backup` | local build from `../bwexport` | `/mnt/ssd4tb/full/bwexport`; logs under compose tree | Drop; replaced by Vaultwarden on Partridge |
 | `navidrome` | `deluan/navidrome` | `/home/edward/develop/house/blink/navidrome`; music library bind | Keep |
 
-Chatting compose source:
+Wantlist compose source:
 
-- `/home/edward/develop/chatting/docker-compose.yml`
+- `/home/edward/develop/untitled-music-project/deploy/prod/docker-compose.yml`
 
 Services:
 
 | Service/container | Image/build | Data/config mounts | Initial migration stance |
 | --- | --- | --- | --- |
-| `chatting-bbmb-1` | local build `Dockerfile.bbmb` | no persistent mount found | Keep |
-| `chatting-handler-1` | `ghcr.io/edwardsalkeld/chatting:latest` | handler config bind, data/temp/GitHub auth volumes | Keep |
-| `chatting-worker-1` | `ghcr.io/edwardsalkeld/chatting:latest` | worker config bind, auth volumes, workspace bind `/mnt/ext2tb/4/billy` | Keep |
-| `chatting-site-1` | `node:22-alpine` | generated site volume | Keep |
+| `prod-api-1` | local `wantlist:latest` build | Beets library, music/inbox, TV/film/workspace binds, SSH key, `.env` | Keep |
+| `prod-worker-1` | local `wantlist:latest` build | Same binds and `.env` | Keep |
 
-All Chatting services are marked `Keep` for the initial cutover. Longer term,
-the desired direction is to migrate them from Docker to Nix-managed services
-running as separate service users.
+The NixOS unit starts Wantlist after the house stack so its external Traefik
+network exists. Before the reinstall, back up and restore the checkout,
+`/home/edward/.config/beets`, and `/home/edward/.ssh/ucc`; the media and
+workspace paths are on retained data disks.
 
 Other compose candidates found under `~/develop` may be old copies or for other
 hosts:
@@ -299,12 +296,6 @@ Do not migrate these without a separate review.
   - `docker_pigallery2-storage`
   - `docker_jfconfig`
   - `docker_jfcache`
-  - `chatting_handler-data`
-  - `chatting_worker-data`
-  - `chatting_html-output`
-  - `chatting_codex-auth`
-  - `chatting_claude-auth`
-  - `chatting_gh-auth`
 - Dropped observability volumes can be archived first if easy; otherwise they
   can be discarded with the dropped services:
   - `docker_prometheus-storage`
@@ -369,7 +360,9 @@ Implemented initial shape:
 
 3. Back up before touching the OS.
    - Backup `/home/edward/develop/house/blink`.
-   - Backup `/home/edward/develop/chatting`.
+   - Backup `/home/edward/develop/untitled-music-project`, including
+     `deploy/prod/.env`, plus `/home/edward/.config/beets` and
+     `/home/edward/.ssh/ucc`.
    - Backup `/etc/fstab`, `/etc/exports`, NetworkManager connection profiles,
      SSH host keys, and Tailscale state if preserving identity.
    - Move/export required Docker named volumes onto persistent disk paths.
