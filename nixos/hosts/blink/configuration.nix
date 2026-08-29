@@ -163,6 +163,7 @@ in
 
   networking.hostName = "blink";
   networking.networkmanager.enable = true;
+  networking.modemmanager.enable = false;
 
   networking.firewall = {
     enable = true;
