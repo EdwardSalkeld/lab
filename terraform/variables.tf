@@ -113,3 +113,57 @@ variable "magpie_ci_disk_size" {
   type        = number
   default     = 30
 }
+
+variable "enable_kite_vm" {
+  description = "Create the kite NixOS media VM on the luna Proxmox node"
+  type        = bool
+  default     = false
+}
+
+variable "luna_proxmox_node_name" {
+  description = "Proxmox node name for the luna mini PC after it is installed"
+  type        = string
+  default     = "luna"
+}
+
+variable "luna_vm_datastore_id" {
+  description = "Proxmox datastore for VM disks on luna"
+  type        = string
+  default     = "local-lvm"
+}
+
+variable "kite_vm_name" {
+  description = "Name of the Jellyfin/Navidrome NixOS VM on luna"
+  type        = string
+  default     = "kite"
+}
+
+variable "kite_vm_cores" {
+  description = "CPU cores for kite"
+  type        = number
+  default     = 4
+}
+
+variable "kite_vm_memory" {
+  description = "Dedicated memory for kite in MiB"
+  type        = number
+  default     = 8192
+}
+
+variable "kite_root_disk_size" {
+  description = "Root disk size for kite in GiB"
+  type        = number
+  default     = 32
+}
+
+variable "kite_jellyfin_disk_size" {
+  description = "Jellyfin state disk size for kite in GiB"
+  type        = number
+  default     = 64
+}
+
+variable "kite_navidrome_disk_size" {
+  description = "Navidrome state disk size for kite in GiB"
+  type        = number
+  default     = 16
+}

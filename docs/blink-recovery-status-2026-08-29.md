@@ -137,8 +137,16 @@ Recommended next work:
 6. Move this from recovery notes into repo-managed host documentation or
    automation once the desired permanent host is decided.
 
+## Luna Follow-Up
+
+A replacement mini PC named `luna` has been ordered and is expected to become a
+second Proxmox host. The likely next permanent home for Jellyfin and Navidrome is
+a NixOS VM named `kite` on that host.
+
+See [luna-proxmox-plan.md](luna-proxmox-plan.md) for the install plan and the
+initial Terraform/NixOS scaffolding.
+
 ## Related PRs
 
 - PR 195: declarative Blink Wi-Fi with sops-nix.
 - PR 196: explicit Blink ModemManager disable.
-
