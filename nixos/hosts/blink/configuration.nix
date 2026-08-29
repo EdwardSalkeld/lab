@@ -199,6 +199,7 @@ in
     secrets."networkmanager/lagarza" = {
       sopsFile = ./secrets/networkmanager.yaml;
       format = "yaml";
+      key = "data";
     };
   };
 
