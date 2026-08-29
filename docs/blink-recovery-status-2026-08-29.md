@@ -81,6 +81,91 @@ The recovered service has been verified:
 - Jellyfin logs show library watchers for `/media/film`, `/media/tv`,
   `/media/workspace`, and `/music`
 
+## Temporary Wantlist Service
+
+Wantlist is also running inside CT `57096` as a temporary recovery service.
+
+Direct SSH into the CT is available from the local workstation:
+
+```sh
+ssh blink-recovery-ct
+```
+
+The alias points at `root@10.4.1.20`. Root SSH authorized keys were added inside
+the CT so debugging does not need to go through `pct exec`.
+
+Additional CT bind mounts were added to recreate the important Blink-era paths
+expected by the old Wantlist Compose deployment:
+
+```text
+mp4: /mnt/blink-ssd4tb/partial/record-library,mp=/mnt/ssd4tb/partial/record-library
+mp5: /mnt/blink-redhdd,mp=/mnt/redhdd,ro=1
+```
+
+The restored checkout lives at:
+
+```text
+/root/recovery/wantlist
+```
+
+It was copied from:
+
+```text
+/mnt/blink-ssd4tb/blink-reinstall-backup-20260829T080849Z/home/edward/develop/untitled-music-project
+```
+
+The old UCC SSH key was restored inside the CT at:
+
+```text
+/home/edward/.ssh/ucc
+```
+
+The old Beets config path was recreated as a symlink:
+
+```text
+/home/edward/.config/beets -> /mnt/ssd4tb/partial/record-library
+```
+
+Docker Compose was installed inside the CT from Debian (`docker-compose`
+2.26.1-4). The old Compose file expects an external Docker network named
+`docker_default`, so that network was created locally in the CT. A recovery-only
+Compose override publishes the API directly on port 8000:
+
+```yaml
+services:
+  api:
+    ports:
+      - "8000:8000"
+```
+
+Current runtime:
+
+```sh
+cd /root/recovery/wantlist/deploy/prod
+docker-compose -f docker-compose.yml -f recovery.override.yml ps
+```
+
+Expected services:
+
+```text
+prod-api-1
+prod-worker-1
+```
+
+The recovery service has been verified:
+
+- `http://10.4.1.20:8000/` returns `200 OK`.
+- The API logs show Uvicorn serving on `0.0.0.0:8000`.
+- The worker logs show successful Spotify requests.
+- The worker logs show `artist-watch` running successfully.
+- The worker logs show repeated import jobs completing successfully.
+
+This is intentionally not the original HTTPS/Traefik shape. For now, use:
+
+```text
+http://10.4.1.20:8000/
+```
+
 ## Operational Caveats
 
 This setup is deliberately temporary:
@@ -89,6 +174,13 @@ This setup is deliberately temporary:
 - The `sol` disk mounts were created manually.
 - If `sol` reboots, the mounts should be restored before starting CT `57096`.
 - Only one Jellyfin instance may use the recovered config directory at a time.
+- Wantlist is running from a copied root-state backup in `/root/recovery`, not
+  from a repo-managed checkout.
+- `/mnt/redhdd` is mounted read-only in the CT. Wantlist can run and read media,
+  but any workflow that imports into TV/film/workspace may need a deliberate
+  switch to a writable mount.
+- The recovery Compose override exposes Wantlist over plain HTTP on port 8000;
+  the old Traefik HTTPS route has not been restored.
 
 Before bringing any future Blink-hosted Jellyfin back online, stop CT `57096` or
 point the future service at a separate copy of the Jellyfin config.
@@ -114,6 +206,16 @@ Check Jellyfin:
 pct exec 57096 -- docker ps
 pct exec 57096 -- docker logs --tail=80 jellyfin
 curl -I http://10.4.1.20:8096/
+```
+
+Check Wantlist:
+
+```sh
+ssh blink-recovery-ct
+cd /root/recovery/wantlist/deploy/prod
+docker-compose -f docker-compose.yml -f recovery.override.yml ps
+docker-compose -f docker-compose.yml -f recovery.override.yml logs --tail=80 api worker init
+curl -I http://10.4.1.20:8000/
 ```
 
 If `sol` reboots, restore the current temporary shape with:
