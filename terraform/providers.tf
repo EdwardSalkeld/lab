@@ -32,3 +32,19 @@ provider "proxmox" {
   insecure = true
 
 }
+
+provider "proxmox" {
+  alias = "luna"
+
+  endpoint  = coalesce(var.LUNA_PROXMOXENDPOINT, var.PROXMOXENDPOINT)
+  api_token = coalesce(var.LUNA_PROXMOXTOKEN, var.PROXMOXTOKEN)
+
+  random_vm_ids = true
+
+  ssh {
+    agent    = true
+    username = "root"
+  }
+
+  insecure = true
+}

@@ -85,20 +85,20 @@ The VM resource is disabled by default:
 enable_kite_vm = false
 ```
 
-After Proxmox is installed on `luna` and the provider can reach the node, set
-`enable_kite_vm = true` to create:
+After Proxmox is installed on `luna` and its API token exists, set
+`LUNA_PROXMOXENDPOINT`, `LUNA_PROXMOXTOKEN`, and `enable_kite_vm = true` to
+create `kite` through the standalone luna Proxmox API:
 
-- root disk: 32 GiB
-- Jellyfin state disk: 64 GiB
-- Navidrome state disk: 16 GiB
+- VM disk: 64 GiB root disk for the OS and service metadata
 - CPU: 4 cores
 - memory: 8192 MiB
 - exposed service ports in the NixOS config: 4533, 8000, 8096
 
 The guest config is exposed as `.#kite`. See
 [../docs/luna-proxmox-plan.md](../docs/luna-proxmox-plan.md) before enabling
-the VM; external media disk passthrough and Wantlist packaging are intentionally
-still manual decisions.
+the VM. External multi-TB media disks stay outside Terraform-managed VM disks;
+they should be mounted or passed through separately once the luna disk layout is
+known.
 
 ## Disposable Debian VM Reference
 

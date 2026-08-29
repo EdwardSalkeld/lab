@@ -7,6 +7,19 @@ variable "PROXMOXENDPOINT" {
   type        = string
 }
 
+variable "LUNA_PROXMOXTOKEN" {
+  description = "API token for the standalone luna Proxmox host. Required before enabling kite."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "LUNA_PROXMOXENDPOINT" {
+  description = "Endpoint for the standalone luna Proxmox host. Required before enabling kite."
+  type        = string
+  default     = null
+}
+
 variable "public_ssh_keys" {
   description = "Edward's SSH public keys for NixOS access after manual install"
   type        = list(string)
@@ -151,19 +164,7 @@ variable "kite_vm_memory" {
 }
 
 variable "kite_root_disk_size" {
-  description = "Root disk size for kite in GiB"
-  type        = number
-  default     = 32
-}
-
-variable "kite_jellyfin_disk_size" {
-  description = "Jellyfin state disk size for kite in GiB"
+  description = "Root disk size for kite in GiB. Media remains on external disks mounted into the guest."
   type        = number
   default     = 64
-}
-
-variable "kite_navidrome_disk_size" {
-  description = "Navidrome state disk size for kite in GiB"
-  type        = number
-  default     = 16
 }

@@ -3,9 +3,10 @@
 ## Summary
 
 `luna` is the replacement mini PC ordered after Blink's boot SSD started
-hanging firmware POST. The intended role is a second Proxmox host. The external
-HDDs temporarily attached to `sol` for Jellyfin recovery will probably move to
-`luna` once the host is installed and stable.
+hanging firmware POST. The intended role is a second, standalone Proxmox host,
+not a member of a Proxmox cluster with `sol`. The external HDDs temporarily
+attached to `sol` for Jellyfin recovery will probably move to `luna` once the
+host is installed and stable.
 
 The first planned guest is `kite`, a NixOS VM for Jellyfin, Navidrome, and
 Wantlist.
@@ -33,13 +34,14 @@ sol
   magpie
 
 luna
-  Proxmox host 2
+  standalone Proxmox host 2
   kite
     NixOS VM
     Jellyfin
     Navidrome
     Wantlist
-    external media mounted read-only
+    external media mounted read-only for Jellyfin/Navidrome
+    external media mounted writable for Wantlist imports
 ```
 
 ## Repo State
@@ -47,20 +49,25 @@ luna
 Prepared in this branch:
 
 - Terraform resource `proxmox_virtual_environment_vm.kite`
+- Terraform provider alias `proxmox.luna`
+- Luna-local NixOS ISO download resource
 - Feature flag `enable_kite_vm`, defaulting to `false`
 - NixOS host `.#nixosConfigurations.kite`
 - NixOS check `.#checks.x86_64-linux.kite`
 
-The Terraform resource is disabled by default because `luna` does not exist as
-a Proxmox node yet. A normal Terraform plan should remain a no-op for Luna until
-`enable_kite_vm = true` is set and the provider can reach the `luna` node.
+The Terraform resources are disabled by default because `luna` does not exist
+yet. A normal Terraform plan should remain a no-op for Luna until
+`enable_kite_vm = true` is set. Before enabling it, configure
+`LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` so Terraform talks directly to
+the standalone luna Proxmox API rather than trying to reach a node named `luna`
+through `sol`.
 
 ## Install Plan
 
 1. Install Proxmox VE on `luna`.
 2. Give `luna` a stable LAN address and hostname.
-3. Add the same Proxmox API access pattern used for `sol`, or otherwise make
-   the existing Terraform provider able to create VMs on node `luna`.
+3. Add the same Proxmox API access pattern used for `sol`, but as separate
+   `LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` Terraform variables.
 4. Confirm basic host state:
 
    ```sh
@@ -83,18 +90,17 @@ a Proxmox node yet. A normal Terraform plan should remain a no-op for Luna until
 8. Enable `kite` Terraform only after the host is ready:
 
    ```hcl
+   LUNA_PROXMOXENDPOINT = "https://luna:8006/"
    enable_kite_vm = true
    ```
 
 9. Apply Terraform to create the VM.
 10. Install NixOS from the Proxmox console.
-11. During install, label filesystems to match the checked-in hardware file:
+11. During install, label VM filesystems to match the checked-in hardware file:
 
    ```text
-   /boot              BOOT
-   /                  nixos
-   /var/lib/jellyfin  jellyfin
-   /var/lib/navidrome navidrome
+   /boot  BOOT
+   /      nixos
    ```
 
 12. Switch the VM to the repo config:
@@ -120,7 +126,8 @@ is the only client and the server is LAN-only, operational simplicity matters
 more than a perfect storage design.
 
 Wantlist needs a writable view of the TV/film/workspace paths for torrent
-imports. Jellyfin can keep a read-only view of the same media tree.
+imports. Jellyfin can keep a read-only view of the same media tree. These are
+multi-TB external disks; Terraform should not model them as Proxmox VM disks.
 
 ## Migration From Temporary Jellyfin
 
@@ -174,7 +181,8 @@ Runtime state and paths:
 
 - Beets config/library root: `/mnt/ssd4tb/partial/record-library`
 - Music library: `/mnt/ssd4tb/partial/record-library/library`
-- Import inbox: `/mnt/ssd4tb/partial/record-library/stage`
+- Import inbox/staging: keep on the writable destination media disk, for
+  example `/mnt/redhdd/workspace/wantlist-stage`
 - Watch directory: `/mnt/ssd4tb/partial/record-library/inbox`
 - TV root: `/mnt/redhdd/tv`
 - Film root: `/mnt/redhdd/film`

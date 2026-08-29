@@ -1,8 +1,28 @@
+resource "proxmox_virtual_environment_download_file" "nixos_minimal_iso_luna" {
+  count    = var.enable_kite_vm ? 1 : 0
+  provider = proxmox.luna
+
+  content_type = "iso"
+  datastore_id = var.proxmox_iso_datastore_id
+  node_name    = var.luna_proxmox_node_name
+  overwrite    = false
+  url          = "https://channels.nixos.org/nixos-25.11/latest-nixos-minimal-x86_64-linux.iso"
+  file_name    = "nixos-25.11-minimal-x86_64-linux.iso"
+
+  lifecycle {
+    precondition {
+      condition     = var.LUNA_PROXMOXENDPOINT != null && var.LUNA_PROXMOXTOKEN != null
+      error_message = "Set LUNA_PROXMOXENDPOINT and LUNA_PROXMOXTOKEN before enabling kite on standalone luna."
+    }
+  }
+}
+
 resource "proxmox_virtual_environment_vm" "kite" {
-  count = var.enable_kite_vm ? 1 : 0
+  count    = var.enable_kite_vm ? 1 : 0
+  provider = proxmox.luna
 
   name        = var.kite_vm_name
-  description = "NixOS media VM for Jellyfin and Navidrome on luna."
+  description = "NixOS media VM for Jellyfin, Navidrome, and Wantlist on standalone luna."
   node_name   = var.luna_proxmox_node_name
   tags        = ["nixos", "media", "luna"]
 
@@ -40,26 +60,8 @@ resource "proxmox_virtual_environment_vm" "kite" {
     serial       = "kite-root"
   }
 
-  disk {
-    datastore_id = var.luna_vm_datastore_id
-    interface    = "scsi1"
-    size         = var.kite_jellyfin_disk_size
-    discard      = "on"
-    iothread     = true
-    serial       = "kite-jellyfin"
-  }
-
-  disk {
-    datastore_id = var.luna_vm_datastore_id
-    interface    = "scsi2"
-    size         = var.kite_navidrome_disk_size
-    discard      = "on"
-    iothread     = true
-    serial       = "kite-navidrome"
-  }
-
   cdrom {
-    file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso.id
+    file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso_luna[0].id
     interface = "ide2"
   }
 
@@ -69,5 +71,10 @@ resource "proxmox_virtual_environment_vm" "kite" {
 
   lifecycle {
     prevent_destroy = true
+
+    precondition {
+      condition     = var.LUNA_PROXMOXENDPOINT != null && var.LUNA_PROXMOXTOKEN != null
+      error_message = "Set LUNA_PROXMOXENDPOINT and LUNA_PROXMOXTOKEN before enabling kite on standalone luna."
+    }
   }
 }

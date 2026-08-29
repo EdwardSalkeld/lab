@@ -34,24 +34,6 @@
     ];
   };
 
-  fileSystems."/var/lib/jellyfin" = {
-    device = "/dev/disk/by-label/jellyfin";
-    fsType = "ext4";
-    options = [
-      "nofail"
-      "x-systemd.device-timeout=1s"
-    ];
-  };
-
-  fileSystems."/var/lib/navidrome" = {
-    device = "/dev/disk/by-label/navidrome";
-    fsType = "ext4";
-    options = [
-      "nofail"
-      "x-systemd.device-timeout=1s"
-    ];
-  };
-
   fileSystems."/media" = {
     device = "/dev/disk/by-label/media";
     fsType = "ext4";
