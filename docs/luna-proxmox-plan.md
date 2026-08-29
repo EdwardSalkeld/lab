@@ -7,7 +7,8 @@ hanging firmware POST. The intended role is a second Proxmox host. The external
 HDDs temporarily attached to `sol` for Jellyfin recovery will probably move to
 `luna` once the host is installed and stable.
 
-The first planned guest is `kite`, a NixOS VM for Jellyfin and Navidrome.
+The first planned guest is `kite`, a NixOS VM for Jellyfin, Navidrome, and
+Wantlist.
 
 ## Hardware Assumption
 
@@ -37,6 +38,7 @@ luna
     NixOS VM
     Jellyfin
     Navidrome
+    Wantlist
     external media mounted read-only
 ```
 
@@ -117,6 +119,9 @@ For Jellyfin, direct access to the media filesystem is simplest. If the Apple TV
 is the only client and the server is LAN-only, operational simplicity matters
 more than a perfect storage design.
 
+Wantlist needs a writable view of the TV/film/workspace paths for torrent
+imports. Jellyfin can keep a read-only view of the same media tree.
+
 ## Migration From Temporary Jellyfin
 
 Current temporary service:
@@ -144,6 +149,61 @@ rsync -aHAX --numeric-ids /mnt/blink-ssd4tb/docker-volumes/docker_jfcache/ root@
 The exact paths may change once the final NixOS service layout is tested. Treat
 this as the reminder to copy the state, not as the final cutover command.
 
+## Wantlist On Kite
+
+Wantlist should move to `kite` with Jellyfin and Navidrome. The temporary
+recovery service is Docker Compose in CT `57096`, but the preferred permanent
+shape under NixOS is native systemd services rather than Docker:
+
+- `wantlist-migrate.service`: one-shot Alembic migration before app startup.
+- `wantlist-api.service`: FastAPI/Uvicorn API serving the SPA on port 8000.
+- `wantlist-worker.service`: scheduler/import worker.
+- `wantlist.target`: groups the migration, API, and worker.
+
+Likely Nix inputs and packaging work:
+
+- Add `untitled-music-project` or a renamed Wantlist repo as a flake input.
+- Build the backend with `uv2nix`, `pyproject.nix`, or a local Python
+  application derivation.
+- Build the frontend with the repo's `package-lock.json`, then provide the
+  built SPA directory to the API through `WANTLIST_STATIC_DIR`.
+- Keep the Postgres database on `partridge` unless there is a later reason to
+  move it.
+
+Runtime state and paths:
+
+- Beets config/library root: `/mnt/ssd4tb/partial/record-library`
+- Music library: `/mnt/ssd4tb/partial/record-library/library`
+- Import inbox: `/mnt/ssd4tb/partial/record-library/stage`
+- Watch directory: `/mnt/ssd4tb/partial/record-library/inbox`
+- TV root: `/mnt/redhdd/tv`
+- Film root: `/mnt/redhdd/film`
+- Workspace root: `/mnt/redhdd/workspace`
+
+Secrets should not remain in a copied `.env` file once Wantlist is Nix-managed.
+Move these into `sops-nix` for `kite`:
+
+- `WANTLIST_DATABASE_URL`
+- Spotify client ID/secret/redirect URI
+- Transmission RPC URL/user/password
+- Transmission SSH host/user/key path
+- Optional notification webhook
+
+The UCC/seedbox SSH private key should become a managed secret file with tight
+permissions, mounted or written at a stable path used by
+`WANTLIST_TRANSMISSION_SSH_KEY`.
+
+Open implementation questions:
+
+- Whether to keep the API on plain LAN HTTP port 8000 or put it behind a
+  Traefik/Caddy route on `kite`.
+- Whether Wantlist should run as root for media imports, or as a dedicated user
+  with group write access to the media directories.
+- Whether torrent import destinations should be writable inside the VM via disk
+  passthrough, a host bind/LXC-style design, or a network filesystem.
+- Whether the app source repo should keep the current name or be renamed before
+  becoming a long-lived flake input.
+
 ## Open Questions
 
 - What static IP should `luna` use?
@@ -153,3 +213,5 @@ this as the reminder to copy the state, not as the final cutover command.
 - Should Jellyfin stay native NixOS, or should it keep using the recovered
   Docker volume layout for a lower-risk first cutover?
 - Should Navidrome share the same music tree at `/music`, or get a curated copy?
+- Should Wantlist stay on LAN-only HTTP, or should `wantlist.b.alcachofa.faith`
+  move to `kite` with TLS?

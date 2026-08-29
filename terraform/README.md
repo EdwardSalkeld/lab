@@ -77,7 +77,7 @@ has a real NixOS install with `qemu-guest-agent` running.
 ## Kite VM
 
 `luna` is planned as the second Proxmox host. The first planned guest is
-`kite`, a NixOS VM for Jellyfin and Navidrome.
+`kite`, a NixOS VM for Jellyfin, Navidrome, and Wantlist.
 
 The VM resource is disabled by default:
 
@@ -93,10 +93,12 @@ After Proxmox is installed on `luna` and the provider can reach the node, set
 - Navidrome state disk: 16 GiB
 - CPU: 4 cores
 - memory: 8192 MiB
+- exposed service ports in the NixOS config: 4533, 8000, 8096
 
 The guest config is exposed as `.#kite`. See
 [../docs/luna-proxmox-plan.md](../docs/luna-proxmox-plan.md) before enabling
-the VM; external media disk passthrough is intentionally still a manual decision.
+the VM; external media disk passthrough and Wantlist packaging are intentionally
+still manual decisions.
 
 ## Disposable Debian VM Reference
 

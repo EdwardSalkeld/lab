@@ -11,6 +11,7 @@
     trustedInterfaces = [ "tailscale0" ];
     allowedTCPPorts = [
       4533
+      8000
       8096
     ];
   };
