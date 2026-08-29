@@ -44,12 +44,12 @@ in
         ];
       }
       {
-        # wantlist (music want-list app) on blink. 
+        # Temporary Wantlist replacement host.
         job_name = "wantlist";
-        scheme = "https";
+        scheme = "http";
         metrics_path = "/metrics";
         static_configs = [
-          { targets = [ "wantlist.b.alcachofa.faith:443" ]; }
+          { targets = [ "10.4.1.20:8000" ]; }
         ];
       }
       {
@@ -58,7 +58,6 @@ in
         static_configs = [
           {
             targets = [
-              "blink.int.alcachofa.faith:8083"
               "fourth.int.alcachofa.faith:8080"
               "falcon.ts.alcachofa.faith:8080"
             ];
@@ -71,7 +70,6 @@ in
           {
             targets = [
               "fourth.int.alcachofa.faith:9100"
-              "blink.int.alcachofa.faith:9100"
               "sol.int.alcachofa.faith:9100"
               "falcon.ts.alcachofa.faith:9100"
               "magpie.int.alcachofa.faith:9100"
