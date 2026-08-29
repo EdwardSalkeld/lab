@@ -99,7 +99,13 @@ expected by the old Wantlist Compose deployment:
 
 ```text
 mp4: /mnt/blink-ssd4tb/partial/record-library,mp=/mnt/ssd4tb/partial/record-library
-mp5: /mnt/blink-redhdd,mp=/mnt/redhdd,ro=1
+mp5: /mnt/blink-redhdd,mp=/mnt/redhdd
+```
+
+The same red HDD remains mounted read-only at `/media` for Jellyfin:
+
+```text
+mp2: /mnt/blink-redhdd,mp=/media,ro=1
 ```
 
 The restored checkout lives at:
@@ -176,9 +182,8 @@ This setup is deliberately temporary:
 - Only one Jellyfin instance may use the recovered config directory at a time.
 - Wantlist is running from a copied root-state backup in `/root/recovery`, not
   from a repo-managed checkout.
-- `/mnt/redhdd` is mounted read-only in the CT. Wantlist can run and read media,
-  but any workflow that imports into TV/film/workspace may need a deliberate
-  switch to a writable mount.
+- `/mnt/redhdd` is writable in the CT for Wantlist import workflows. Jellyfin's
+  `/media` view of the same disk remains read-only.
 - The recovery Compose override exposes Wantlist over plain HTTP on port 8000;
   the old Traefik HTTPS route has not been restored.
 
