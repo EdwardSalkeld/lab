@@ -86,8 +86,11 @@ into the containers.
    swap:      swap
    ```
 
-5. Boot the new install, get Wi-Fi/networking working, clone this repo, and use
-   the branch or `main` revision containing `.#blink`.
+5. Before the first reboot into the installed system, restore `/etc/ssh` from
+   the backup. The preserved ED25519 host key decrypts the declarative LaGarza
+   NetworkManager profile, so Wi-Fi reconnects automatically. Then boot the
+   new install, clone this repo, and use the branch or `main` revision
+   containing `.#blink`.
 
    Preserving SSH host keys and Tailscale machine identity is useful but not a
    blocker. If restoration is awkward, accept new SSH host keys and rejoin
