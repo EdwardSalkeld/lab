@@ -8,6 +8,11 @@
 #
 # The config JSON (chatting-config.nix) references these by env-var name, so this
 # is the last piece of chatting config that lived outside Nix.
+#
+# openrouter_api_key is read by goose, not by chatting itself, so it has no
+# counterpart in chatting-config.nix. sops-nix fails activation if a referenced
+# key is missing from the encrypted file, so it must be present there before this
+# lands.
 
 {
   sops.defaultSopsFile = ./secrets/chatting.json;
@@ -18,6 +23,7 @@
     "chatting/smtp_password".key = "smtp_password";
     "chatting/telegram_bot_token".key = "telegram_bot_token";
     "chatting/memory_secret_passphrase".key = "memory_secret_passphrase";
+    "chatting/openrouter_api_key".key = "openrouter_api_key";
   };
 
   sops.templates."chatting-handler.env" = {
@@ -37,6 +43,7 @@
     mode = "0400";
     content = ''
       BILLY_MEMORY_SECRET_PASSPHRASE=${config.sops.placeholder."chatting/memory_secret_passphrase"}
+      OPENROUTER_API_KEY=${config.sops.placeholder."chatting/openrouter_api_key"}
     '';
   };
 }
