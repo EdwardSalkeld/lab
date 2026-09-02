@@ -100,11 +100,11 @@
     "octopus-dl": {
       "flake": false,
       "locked": {
-        "lastModified": 1787775910,
-        "narHash": "sha256-8xLzKVAf8ZKb0b6wi9LDwccMNN7p98ljYV7TztYdsJo=",
+        "lastModified": 1788343236,
+        "narHash": "sha256-kB+PtqQ4aI/RCgyVCtCT4kUDt13vytskJBgmE/NOU/M=",
         "owner": "EdwardSalkeld",
         "repo": "octopus-dl",
-        "rev": "8a5a3bebc912ecfc6aa7a7c158c992bce318a674",
+        "rev": "3576b37a0e129fad46311ad81a1863083dd3d653",
         "type": "github"
       },
       "original": {
