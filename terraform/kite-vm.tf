@@ -27,7 +27,7 @@ resource "proxmox_virtual_environment_vm" "kite" {
   tags        = ["nixos", "media", "luna"]
 
   bios          = "ovmf"
-  boot_order    = ["scsi0"]
+  boot_order    = ["ide2", "scsi0"]
   on_boot       = true
   scsi_hardware = "virtio-scsi-single"
   # Installer-stage VMs cannot service Proxmox guest-agent reboot requests.
@@ -58,6 +58,33 @@ resource "proxmox_virtual_environment_vm" "kite" {
     discard      = "on"
     iothread     = true
     serial       = "kite-root"
+  }
+
+  disk {
+    datastore_id = var.luna_vm_datastore_id
+    interface    = "scsi1"
+    size         = var.kite_jellyfin_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "kite-jellyfin"
+  }
+
+  disk {
+    datastore_id = var.luna_vm_datastore_id
+    interface    = "scsi2"
+    size         = var.kite_navidrome_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "kite-navidrome"
+  }
+
+  disk {
+    datastore_id = var.luna_vm_datastore_id
+    interface    = "scsi3"
+    size         = var.kite_wantlist_disk_size
+    discard      = "on"
+    iothread     = true
+    serial       = "kite-wantlist"
   }
 
   cdrom {

@@ -89,7 +89,10 @@ After Proxmox is installed on `luna` and its API token exists, set
 `LUNA_PROXMOXENDPOINT`, `LUNA_PROXMOXTOKEN`, and `enable_kite_vm = true` to
 create `kite` through the standalone luna Proxmox API:
 
-- VM disk: 64 GiB root disk for the OS and service metadata
+- root disk: 24 GiB
+- Jellyfin metadata/cache disk: 32 GiB
+- Navidrome metadata/cache disk: 8 GiB
+- Wantlist app-state disk: 8 GiB
 - CPU: 4 cores
 - memory: 8192 MiB
 - exposed service ports in the NixOS config: 4533, 8000, 8096

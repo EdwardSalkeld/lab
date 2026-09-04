@@ -164,7 +164,25 @@ variable "kite_vm_memory" {
 }
 
 variable "kite_root_disk_size" {
-  description = "Root disk size for kite in GiB. Media remains on external disks mounted into the guest."
+  description = "Root disk size for kite in GiB"
   type        = number
-  default     = 64
+  default     = 24
+}
+
+variable "kite_jellyfin_disk_size" {
+  description = "Jellyfin metadata/cache disk size for kite in GiB. Media remains on external disks."
+  type        = number
+  default     = 32
+}
+
+variable "kite_navidrome_disk_size" {
+  description = "Navidrome metadata/cache disk size for kite in GiB. Music remains on external disks."
+  type        = number
+  default     = 8
+}
+
+variable "kite_wantlist_disk_size" {
+  description = "Wantlist application state disk size for kite in GiB. Import staging and media remain on external disks."
+  type        = number
+  default     = 8
 }

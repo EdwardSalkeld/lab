@@ -40,12 +40,15 @@
     after = [
       "media.mount"
       "music.mount"
+      "var-lib-jellyfin.mount"
     ];
     wants = [
       "media.mount"
       "music.mount"
+      "var-lib-jellyfin.mount"
     ];
     unitConfig.ConditionPathIsMountPoint = [
+      "/var/lib/jellyfin"
       "/media"
       "/music"
     ];
@@ -54,11 +57,16 @@
   systemd.services.navidrome = {
     after = [
       "music.mount"
+      "var-lib-navidrome.mount"
     ];
     wants = [
       "music.mount"
+      "var-lib-navidrome.mount"
     ];
-    unitConfig.ConditionPathIsMountPoint = [ "/music" ];
+    unitConfig.ConditionPathIsMountPoint = [
+      "/var/lib/navidrome"
+      "/music"
+    ];
   };
 
   environment.systemPackages = with pkgs; [

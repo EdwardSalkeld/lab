@@ -99,8 +99,11 @@ through `sol`.
 11. During install, label VM filesystems to match the checked-in hardware file:
 
    ```text
-   /boot  BOOT
-   /      nixos
+   /boot              BOOT
+   /                  nixos
+   /var/lib/jellyfin  jellyfin
+   /var/lib/navidrome navidrome
+   /var/lib/wantlist  wantlist
    ```
 
 12. Switch the VM to the repo config:
