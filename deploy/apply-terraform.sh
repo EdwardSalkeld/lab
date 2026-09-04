@@ -8,5 +8,8 @@ set -euo pipefail
 
 : "${TF_TOKEN_app_terraform_io:?TFC token missing — set it in creds/lab.env}"
 
+exec 8>"../lab-terraform.lock"
+flock -w 1800 8
+
 terraform -chdir=terraform init -input=false
 terraform -chdir=terraform apply -input=false -auto-approve

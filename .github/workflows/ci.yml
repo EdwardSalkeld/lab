@@ -51,6 +51,50 @@ jobs:
           github_token: ${{ github.token }}
           working_directory: terraform
 
+  terraform-plan:
+    name: terraform-plan
+    needs:
+      - changes
+      - terraform
+    if: needs.changes.outputs.terraform == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: fourth.ts.alcachofa.faith
+
+      - name: install ssh key
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "${{ secrets.FOURTH_DEPLOY_SSH_KEY }}" > ~/.ssh/deploy
+          chmod 0600 ~/.ssh/deploy
+
+      - name: trigger terraform plan on the orchestrator
+        run: |
+          set +e
+          output="$(ssh \
+            -i ~/.ssh/deploy \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            deploy@fourth.ts.alcachofa.faith \
+            plan-terraform \
+              "${{ github.event.pull_request.number }}" \
+              "${{ github.event.pull_request.head.sha }}" 2>&1)"
+          rc=$?
+          set -e
+
+          printf '%s\n' "$output"
+          if [[ "$rc" -ne 0 && "$output" == *"no deploy/plan-terraform.sh"* ]]; then
+            echo "::notice::fourth does not have deploy/plan-terraform.sh yet; this PR installs it for future PRs"
+            exit 0
+          fi
+
+          exit "$rc"
+
   nix:
     name: nix
     needs: changes
