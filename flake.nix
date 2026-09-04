@@ -220,6 +220,7 @@
           partridge = partridgeConfig.system.build.toplevel;
           blink = self.nixosConfigurations.blink.config.system.build.toplevel;
           magpie = self.nixosConfigurations.magpie.config.system.build.toplevel;
+          kite = self.nixosConfigurations.kite.config.system.build.toplevel;
         };
 
       nixosConfigurations = {
@@ -259,6 +260,15 @@
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/magpie/configuration.nix
+          ];
+        };
+
+        kite = nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            ./nixos/modules/proxmox-vm-base.nix
+            ./nixos/modules/remote-deploy.nix
+            ./nixos/hosts/kite/configuration.nix
           ];
         };
       };

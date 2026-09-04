@@ -7,6 +7,7 @@ Active resources:
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
+- `proxmox_virtual_environment_vm.kite` when `enable_kite_vm = true`
 
 ## Quick Ops
 
@@ -72,6 +73,35 @@ The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
+
+## Kite VM
+
+`luna` is planned as the second Proxmox host. The first planned guest is
+`kite`, a NixOS VM for Jellyfin, Navidrome, and Wantlist.
+
+The VM resource is disabled by default:
+
+```hcl
+enable_kite_vm = false
+```
+
+After Proxmox is installed on `luna` and its API token exists, set
+`LUNA_PROXMOXENDPOINT`, `LUNA_PROXMOXTOKEN`, and `enable_kite_vm = true` to
+create `kite` through the standalone luna Proxmox API:
+
+- root disk: 24 GiB
+- Jellyfin metadata/cache disk: 32 GiB
+- Navidrome metadata/cache disk: 8 GiB
+- Wantlist app-state disk: 8 GiB
+- CPU: 4 cores
+- memory: 8192 MiB
+- exposed service ports in the NixOS config: 4533, 8000, 8096
+
+The guest config is exposed as `.#kite`. See
+[../docs/luna-proxmox-plan.md](../docs/luna-proxmox-plan.md) before enabling
+the VM. External multi-TB media disks stay outside Terraform-managed VM disks;
+they should be mounted or passed through separately once the luna disk layout is
+known.
 
 ## Disposable Debian VM Reference
 
