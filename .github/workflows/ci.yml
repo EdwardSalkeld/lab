@@ -172,6 +172,14 @@ jobs:
             # fall back to building from source if a substitute still fails.
             http2 = false
             fallback = true
+      - name: restore Kite Nix store cache
+        if: matrix.host == 'kite'
+        uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-kite-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-kite-${{ runner.os }}-
+          # PRs consume the cache but do not populate the shared main cache.
+          save: false
       - name: build ${{ matrix.host }}
         run: nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel -o /tmp/pr-system
       - name: build main ${{ matrix.host }}
