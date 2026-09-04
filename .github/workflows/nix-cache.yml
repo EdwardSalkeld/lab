@@ -1,0 +1,46 @@
+name: warm Nix cache
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/nix-cache.yml'
+      - 'flake.lock'
+      - 'flake.nix'
+      - 'nixos/modules/**'
+      - 'nixos/hosts/kite/**'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  kite:
+    name: warm Kite Nix store cache
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v5
+      - name: install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            http2 = false
+            fallback = true
+      - name: restore and save Kite Nix store cache
+        uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-kite-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-kite-${{ runner.os }}-
+          gc-max-store-size-linux: 4G
+          purge: true
+          purge-prefixes: nix-kite-${{ runner.os }}-
+          purge-last-accessed: P14D
+          purge-primary-key: never
+      - name: build Kite
+        run: nix build .#nixosConfigurations.kite.config.system.build.toplevel -o /tmp/kite-system
+      - name: report Kite closure size
+        run: nix path-info -Sh /tmp/kite-system
