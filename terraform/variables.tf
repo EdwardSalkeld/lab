@@ -130,7 +130,7 @@ variable "magpie_ci_disk_size" {
 variable "enable_kite_vm" {
   description = "Create the kite NixOS media VM on the luna Proxmox node"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "luna_proxmox_node_name" {

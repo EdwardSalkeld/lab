@@ -51,16 +51,14 @@ Prepared in this branch:
 - Terraform resource `proxmox_virtual_environment_vm.kite`
 - Terraform provider alias `proxmox.luna`
 - Luna-local NixOS ISO download resource
-- Feature flag `enable_kite_vm`, defaulting to `false`
+- Feature flag `enable_kite_vm`, defaulting to `true`
 - NixOS host `.#nixosConfigurations.kite`
 - NixOS check `.#checks.x86_64-linux.kite`
 
-The Terraform resources are disabled by default because `luna` does not exist
-yet. A normal Terraform plan should remain a no-op for Luna until
-`enable_kite_vm = true` is set. Before enabling it, configure
-`LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` so Terraform talks directly to
-the standalone luna Proxmox API rather than trying to reach a node named `luna`
-through `sol`.
+The Terraform resources are enabled now that `luna` exists. Before deploying,
+configure `LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` so Terraform talks
+directly to the standalone luna Proxmox API rather than trying to reach a node
+named `luna` through `sol`.
 
 ## Install Plan
 
@@ -87,7 +85,7 @@ through `sol`.
 
 7. Decide whether the external disks are passed through to the VM or mounted on
    the Proxmox host and exposed through a different mechanism.
-8. Enable `kite` Terraform only after the host is ready:
+8. Confirm `kite` Terraform is enabled:
 
    ```hcl
    LUNA_PROXMOXENDPOINT = "https://luna:8006/"
