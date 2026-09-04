@@ -216,17 +216,13 @@
 
               touch "$out"
             '';
-
-          partridge = partridgeConfig.system.build.toplevel;
-          blink = self.nixosConfigurations.blink.config.system.build.toplevel;
-          magpie = self.nixosConfigurations.magpie.config.system.build.toplevel;
-          kite = self.nixosConfigurations.kite.config.system.build.toplevel;
         };
 
       nixosConfigurations = {
         blink = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
+            sops-nix.nixosModules.sops
             ./nixos/hosts/blink/configuration.nix
           ];
         };

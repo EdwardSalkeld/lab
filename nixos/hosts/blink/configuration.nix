@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   houseComposeDir = "/home/edward/develop/house/blink/docker";
@@ -164,6 +169,39 @@ in
   networking.hostName = "blink";
   networking.networkmanager.enable = true;
   networking.modemmanager.enable = false;
+  networking.networkmanager.ensureProfiles = {
+    environmentFiles = [ config.sops.secrets."networkmanager/lagarza".path ];
+    profiles.LaGarza = {
+      connection = {
+        id = "LaGarza";
+        type = "wifi";
+        interface-name = "wlo1";
+        autoconnect = true;
+      };
+      wifi = {
+        mode = "infrastructure";
+        ssid = "LaGarza";
+      };
+      wifi-security = {
+        key-mgmt = "wpa-psk";
+        psk = "$LAGARZA_PSK";
+      };
+      ipv4.method = "auto";
+      ipv6.method = "auto";
+    };
+  };
+
+  # This is the existing Blink host key, not a newly generated one. Restore
+  # /etc/ssh from the pre-reinstall backup before the first reboot: sops-nix
+  # uses it to decrypt the Wi-Fi PSK and NetworkManager then reconnects.
+  sops = {
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    secrets."networkmanager/lagarza" = {
+      sopsFile = ./secrets/networkmanager.yaml;
+      format = "yaml";
+      key = "data";
+    };
+  };
 
   networking.firewall = {
     enable = true;
@@ -242,6 +280,11 @@ in
   ];
 
   systemd.services = {
+    NetworkManager-ensure-profiles = {
+      after = [ "sops-nix.service" ];
+      requires = [ "sops-nix.service" ];
+    };
+
     blink-house-compose = composeService {
       description = "Blink house Docker Compose services";
       directory = houseComposeDir;

@@ -1,8 +1,18 @@
-{ ... }:
+{ pkgs, ... }:
 
 let
   prometheusDomain = "prometheus.int.alcachofa.faith";
   prometheusPort = 9090;
+  blackboxConfig = pkgs.writeText "blackbox-exporter.yml" ''
+    modules:
+      http_2xx:
+        prober: http
+        timeout: 10s
+        http:
+          preferred_ip_protocol: ip4
+          valid_http_versions: [ "HTTP/1.1", "HTTP/2.0" ]
+          follow_redirects: true
+  '';
 in
 {
   fileSystems."/var/lib/prometheus" = {
@@ -11,6 +21,12 @@ in
   };
 
   alcachofa.partridge.reverseProxy.routes.${prometheusDomain}.port = prometheusPort;
+
+  services.prometheus.exporters.blackbox = {
+    enable = true;
+    listenAddress = "127.0.0.1";
+    configFile = blackboxConfig;
+  };
 
   services.prometheus = {
     enable = true;
@@ -44,12 +60,42 @@ in
         ];
       }
       {
-        # wantlist (music want-list app) on blink. 
+        # Public HTTP(S) availability checks.  The target URL is retained as
+        # `instance` so alerts name the affected site rather than the exporter.
+        job_name = "http-probe";
+        metrics_path = "/probe";
+        params.module = [ "http_2xx" ];
+        static_configs = [
+          {
+            targets = [
+              "https://rumandpopcorn.com"
+              "https://salkeld.net"
+              "https://liff.salkeld.net"
+            ];
+          }
+        ];
+        relabel_configs = [
+          {
+            source_labels = [ "__address__" ];
+            target_label = "__param_target";
+          }
+          {
+            source_labels = [ "__param_target" ];
+            target_label = "instance";
+          }
+          {
+            target_label = "__address__";
+            replacement = "127.0.0.1:9115";
+          }
+        ];
+      }
+      {
+        # Temporary Wantlist replacement host.
         job_name = "wantlist";
-        scheme = "https";
+        scheme = "http";
         metrics_path = "/metrics";
         static_configs = [
-          { targets = [ "wantlist.b.alcachofa.faith:443" ]; }
+          { targets = [ "10.4.1.20:8000" ]; }
         ];
       }
       {
@@ -58,7 +104,6 @@ in
         static_configs = [
           {
             targets = [
-              "blink.int.alcachofa.faith:8083"
               "fourth.int.alcachofa.faith:8080"
               "falcon.ts.alcachofa.faith:8080"
             ];
@@ -71,7 +116,6 @@ in
           {
             targets = [
               "fourth.int.alcachofa.faith:9100"
-              "blink.int.alcachofa.faith:9100"
               "sol.int.alcachofa.faith:9100"
               "falcon.ts.alcachofa.faith:9100"
               "magpie.int.alcachofa.faith:9100"
