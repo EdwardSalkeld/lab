@@ -26,13 +26,16 @@ resource "proxmox_virtual_environment_vm" "kite" {
   node_name   = var.luna_proxmox_node_name
   tags        = ["nixos", "media", "luna"]
 
-  bios          = "ovmf"
-  boot_order    = ["ide2", "scsi0"]
-  on_boot       = true
-  scsi_hardware = "virtio-scsi-single"
-  # Installer-stage VMs cannot service Proxmox guest-agent reboot requests.
+  bios                = "ovmf"
+  boot_order          = ["scsi0"]
+  on_boot             = true
+  scsi_hardware       = "virtio-scsi-single"
   reboot_after_update = false
   started             = true
+
+  agent {
+    enabled = true
+  }
 
   cpu {
     cores = var.kite_vm_cores
@@ -88,7 +91,7 @@ resource "proxmox_virtual_environment_vm" "kite" {
   }
 
   cdrom {
-    file_id   = proxmox_virtual_environment_download_file.nixos_minimal_iso_luna[0].id
+    file_id   = "none"
     interface = "ide2"
   }
 
