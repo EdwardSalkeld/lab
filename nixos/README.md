@@ -195,6 +195,15 @@ On pushes to `main`, the `deploy` workflow joins Tailscale as `tag:ci`, SSHes
 to `deploy@fourth.ts.alcachofa.faith`, and asks the orchestrator to run
 `apply-terraform` followed by `nix-switch`.
 
+On pull requests that touch Terraform, CI uses the same route to ask fourth to
+run `plan-terraform <pr-number> <head-sha>`. Fourth fetches that PR ref into a
+temporary directory, sources `/var/lib/deploy/creds/lab.env` through the deploy
+dispatcher, and runs `terraform plan` locally against the private Proxmox APIs
+while keeping Terraform state in Terraform Cloud.
+
+Terraform plans and applies take a shared lock on fourth so a PR plan cannot run
+through the local Terraform checkout at the same time as a main-branch apply.
+
 Required GitHub Actions secrets:
 
 - `TS_OAUTH_CLIENT_ID`: Tailscale OAuth client ID with `auth_keys` scope
