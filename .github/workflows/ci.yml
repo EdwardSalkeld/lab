@@ -10,6 +10,7 @@ jobs:
     outputs:
       terraform: ${{ steps.filter.outputs.terraform }}
       nix: ${{ steps.filter.outputs.nix }}
+      nix_hosts: ${{ steps.nix-hosts.outputs.hosts }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -28,6 +29,39 @@ jobs:
               - 'flake.nix'
               - 'nixos/**'
               - 'tools/**'
+            nix_shared:
+              - '.github/workflows/**'
+              - '.sops.yaml'
+              - 'flake.lock'
+              - 'flake.nix'
+              - 'nixos/modules/**'
+              - 'tools/**'
+            nix_blink:
+              - 'nixos/hosts/blink/**'
+            nix_kite:
+              - 'nixos/hosts/kite/**'
+            nix_magpie:
+              - 'nixos/hosts/magpie/**'
+            nix_partridge:
+              - 'nixos/hosts/partridge/**'
+      - name: select NixOS hosts
+        id: nix-hosts
+        run: |
+          hosts=()
+          if [[ "${{ steps.filter.outputs.nix_shared }}" == "true" ]]; then
+            hosts=(blink kite magpie partridge)
+          else
+            [[ "${{ steps.filter.outputs.nix_blink }}" == "true" ]] && hosts+=(blink)
+            [[ "${{ steps.filter.outputs.nix_kite }}" == "true" ]] && hosts+=(kite)
+            [[ "${{ steps.filter.outputs.nix_magpie }}" == "true" ]] && hosts+=(magpie)
+            [[ "${{ steps.filter.outputs.nix_partridge }}" == "true" ]] && hosts+=(partridge)
+          fi
+
+          if [[ "${#hosts[@]}" -eq 0 ]]; then
+            echo 'hosts=[]' >> "$GITHUB_OUTPUT"
+          else
+            printf '%s\n' "${hosts[@]}" | jq -R . | jq -cs 'unique' | sed 's/^/hosts=/' >> "$GITHUB_OUTPUT"
+          fi
 
   terraform:
     name: terraform
@@ -95,9 +129,10 @@ jobs:
 
           exit "$rc"
 
-  nix:
-    name: nix
+  nix_checks:
+    name: nix-checks
     needs: changes
+    if: needs.changes.outputs.nix == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -114,12 +149,73 @@ jobs:
             fallback = true
       - name: flake check
         run: nix flake check --no-update-lock-file
-      - name: build partridge
-        run: nix build .#nixosConfigurations.partridge.config.system.build.toplevel -o /tmp/pr-system
-      - name: build main partridge
+
+  nixos_build:
+    name: nixos-build (${{ matrix.host }})
+    needs: changes
+    if: needs.changes.outputs.nix == 'true' && needs.changes.outputs.nix_hosts != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.changes.outputs.nix_hosts) }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            # cache.nixos.org intermittently corrupts zstd NARs over HTTP/2
+            # ("Stream error in the HTTP/2 framing layer"); force HTTP/1.1 and
+            # fall back to building from source if a substitute still fails.
+            http2 = false
+            fallback = true
+      - name: build ${{ matrix.host }}
+        run: nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel -o /tmp/pr-system
+      - name: build main ${{ matrix.host }}
         run: |
           git fetch origin main
           git worktree add /tmp/main-worktree origin/main
-          nix build /tmp/main-worktree#nixosConfigurations.partridge.config.system.build.toplevel -o /tmp/main-system
-      - name: partridge closure diff
+          nix build /tmp/main-worktree#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel -o /tmp/main-system
+      - name: ${{ matrix.host }} closure diff
         run: nix store diff-closures /tmp/main-system /tmp/pr-system
+
+  nix:
+    name: nix
+    needs:
+      - changes
+      - nix_checks
+      - nixos_build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: verify Nix jobs
+        run: |
+          if [[ "${{ needs.changes.result }}" != "success" ]]; then
+            echo "changes result: ${{ needs.changes.result }}" >&2
+            exit 1
+          fi
+
+          if [[ "${{ needs.changes.outputs.nix }}" != "true" ]]; then
+            echo "No Nix changes."
+            exit 0
+          fi
+
+          nix_checks="${{ needs.nix_checks.result }}"
+          nixos_build="${{ needs.nixos_build.result }}"
+
+          if [[ "$nix_checks" != "success" ]]; then
+            echo "nix-checks result: $nix_checks" >&2
+            exit 1
+          fi
+
+          case "$nixos_build" in
+            success | skipped)
+              ;;
+            *)
+              echo "nixos-build result: $nixos_build" >&2
+              exit 1
+              ;;
+          esac
