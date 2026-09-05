@@ -36,6 +36,10 @@
     };
   };
 
+  systemd.tmpfiles.rules = [
+    "d /var/lib/jellyfin/cache 0750 jellyfin jellyfin -"
+  ];
+
   systemd.services.jellyfin = {
     after = [
       "media.mount"
@@ -75,6 +79,7 @@
     htop
     rsync
     smartmontools
+    sqlite
     tree
     vim
   ];

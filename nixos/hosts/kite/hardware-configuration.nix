@@ -45,6 +45,14 @@
     ];
   };
 
+  # Jellyfin's native unit uses /var/cache/jellyfin. Keep its cache and
+  # transcodes on the dedicated state disk rather than the OS root.
+  fileSystems."/var/cache/jellyfin" = {
+    device = "/var/lib/jellyfin/cache";
+    fsType = "none";
+    options = [ "bind" ];
+  };
+
   fileSystems."/var/lib/navidrome" = {
     device = "/dev/disk/by-label/navidrome";
     fsType = "ext4";
@@ -64,7 +72,7 @@
   };
 
   fileSystems."/media" = {
-    device = "/dev/disk/by-label/media";
+    device = "/dev/disk/by-uuid/a1666c44-85b1-406a-8f25-8e1a67f8a4dc";
     fsType = "ext4";
     options = [
       "nofail"
@@ -74,7 +82,7 @@
   };
 
   fileSystems."/music" = {
-    device = "/dev/disk/by-label/music";
+    device = "/dev/disk/by-uuid/836b5915-74d0-4801-a2f3-aa32f54730db";
     fsType = "ext4";
     options = [
       "nofail"
