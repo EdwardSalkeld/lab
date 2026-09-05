@@ -40,6 +40,12 @@
     "d /var/lib/jellyfin/cache 0750 jellyfin jellyfin -"
   ];
 
+  users.groups.media = {
+    gid = 1001;
+  };
+
+  users.users.jellyfin.extraGroups = [ "media" ];
+
   systemd.services.jellyfin = {
     after = [
       "media.mount"
