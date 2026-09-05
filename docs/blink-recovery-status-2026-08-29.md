@@ -1,5 +1,8 @@
 # Blink Recovery Status - 2026-08-29
 
+> The current migration sequence from this temporary recovery setup is recorded
+> in [kite-media-migration.md](kite-media-migration.md).
+
 ## Summary
 
 The planned Blink NixOS reinstall is paused. The original Blink boot SSD causes
