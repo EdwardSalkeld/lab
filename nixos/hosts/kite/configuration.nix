@@ -32,7 +32,7 @@
     settings = {
       Address = "0.0.0.0";
       Port = 4533;
-      MusicFolder = "/music/partial/record-library/library";
+      MusicFolder = "/data/partial/record-library/library";
     };
   };
 
@@ -63,22 +63,23 @@
 
   systemd.services.navidrome = {
     after = [
-      "music.mount"
+      "data.mount"
       "var-lib-navidrome.mount"
     ];
     wants = [
-      "music.mount"
+      "data.mount"
       "var-lib-navidrome.mount"
     ];
     unitConfig.ConditionPathIsMountPoint = [
       "/var/lib/navidrome"
-      "/music"
+      "/data"
     ];
   };
 
   environment.systemPackages = with pkgs; [
     curl
     git
+    ghostty.terminfo
     htop
     rsync
     smartmontools

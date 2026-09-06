@@ -81,7 +81,7 @@
     ];
   };
 
-  fileSystems."/music" = {
+  fileSystems."/data" = {
     device = "/dev/disk/by-uuid/836b5915-74d0-4801-a2f3-aa32f54730db";
     fsType = "ext4";
     options = [
