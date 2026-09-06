@@ -431,6 +431,103 @@ let
     notification_settings.receiver = alertsContactPointName;
     isPaused = false;
   };
+  # A unit can be cleanly stopped without entering the failed state, so keep
+  # the two media services covered explicitly as well as by the generic
+  # failed-unit rule above.
+  kiteMediaServicesAlert = {
+    uid = "kite-media-services-inactive";
+    title = "Kite media service inactive";
+    condition = "C";
+    data = [
+      {
+        refId = "A";
+        datasourceUid = prometheusDatasourceUid;
+        queryType = "";
+        relativeTimeRange = {
+          from = 600;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "prometheus";
+            uid = prometheusDatasourceUid;
+          };
+          editorMode = "code";
+          expr = ''node_systemd_unit_state{instance="kite.int.alcachofa.faith:9100",name=~"jellyfin.service|navidrome.service",state="active"}'';
+          instant = true;
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "A";
+        };
+      }
+      {
+        refId = "B";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "A";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          reducer = "last";
+          refId = "B";
+          type = "reduce";
+        };
+      }
+      {
+        refId = "C";
+        datasourceUid = "__expr__";
+        queryType = "";
+        relativeTimeRange = {
+          from = 0;
+          to = 0;
+        };
+        model = {
+          conditions = [
+            {
+              evaluator = {
+                params = [ 1 ];
+                type = "lt";
+              };
+              operator.type = "and";
+              query.params = [ "C" ];
+              reducer.type = "last";
+              type = "query";
+            }
+          ];
+          datasource = {
+            type = "__expr__";
+            uid = "__expr__";
+          };
+          expression = "B";
+          intervalMs = 1000;
+          maxDataPoints = 43200;
+          refId = "C";
+          type = "threshold";
+        };
+      }
+    ];
+    noDataState = "Alerting";
+    execErrState = "Error";
+    for = "5m";
+    annotations = {
+      summary = "{{ $labels.name }} is inactive on Kite";
+      description = "Kite media service {{ $labels.name }} has not been active for 5m. Check systemctl status {{ $labels.name }} on kite.";
+    };
+    labels = {
+      service = "kite-media";
+      severity = "critical";
+    };
+    notification_settings.receiver = alertsContactPointName;
+    isPaused = false;
+  };
   # wantlist pauses ingest/reconcile/plays when its Spotify refresh token is missing or
   # expired (§8c re-auth). The app always exports wantlist_spotify_connected (1 connected,
   # 0 reconnect-needed), so alert when it reads 0. NoData is left OK: a full wantlist outage
@@ -629,7 +726,7 @@ let
       execErrState = "Error";
       inherit for;
       annotations = {
-        __dashboardUid__ = "ops-backups-blink-fourth";
+        __dashboardUid__ = "ops-backups-kite-fourth";
         __panelId__ = toString panelId;
         inherit description summary;
       };
@@ -654,23 +751,23 @@ let
   ];
   rsyncErrorAlert = mkLokiLogCountAlert {
     uid = "fourth-rsync-errors";
-    title = "Rsync errors or failures";
+    title = "Kite to Fourth rsync errors or failures";
     expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "${rsyncErrorPatterns}" [5m]))'';
     threshold = 0;
     for = "2m";
-    summary = "Rsync errors in fourth data sync log";
-    description = "/host/edward/data-sync.log on fourth has matched rsync error/failure patterns for 2m. Check the backup log for transfer failures, permissions issues, space exhaustion, or disconnects.";
+    summary = "Kite to Fourth rsync errors";
+    description = "/host/edward/data-sync.log on fourth has matched Kite to Fourth rsync error/failure patterns for 2m. Check the backup log for transfer failures, permissions issues, space exhaustion, or disconnects.";
     severity = "critical";
     panelId = 3;
   };
   rsyncDeleteVolumeAlert = mkLokiLogCountAlert {
     uid = "fourth-rsync-delete-volume";
-    title = "Rsync delete volume";
+    title = "Kite to Fourth rsync delete volume";
     expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "\\*deleting " [5m]))'';
     threshold = 5;
     for = "2m";
-    summary = "Rsync delete burst on fourth";
-    description = "/host/edward/data-sync.log on fourth has logged more than 5 delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
+    summary = "Kite to Fourth rsync delete burst";
+    description = "/host/edward/data-sync.log on fourth has logged more than 5 Kite to Fourth delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
     severity = "warning";
     panelId = 2;
   };
@@ -758,10 +855,10 @@ let
     execErrState = "Error";
     for = "5m";
     annotations = {
-      __dashboardUid__ = "ops-backups-blink-fourth";
+      __dashboardUid__ = "ops-backups-kite-fourth";
       __panelId__ = "4";
-      summary = "Rsync log recency is low on fourth";
-      description = "/host/edward/data-sync.log on fourth has fewer than 3 log entries across the last 36h for 5m, which suggests the sync may not be running.";
+      summary = "Kite to Fourth rsync log recency is low";
+      description = "/host/edward/data-sync.log on fourth has fewer than 3 Kite to Fourth log entries across the last 36h for 5m, which suggests the sync may not be running.";
     };
     labels = {
       service = "rsync";
@@ -1097,6 +1194,15 @@ in
           interval = "1m";
           rules = [
             systemdUnitFailedAlert
+          ];
+        }
+        {
+          orgId = 1;
+          name = "Kite Media Services";
+          folder = "Ops";
+          interval = "1m";
+          rules = [
+            kiteMediaServicesAlert
           ];
         }
         {
