@@ -120,6 +120,7 @@ in
               "falcon.ts.alcachofa.faith:9100"
               "magpie.int.alcachofa.faith:9100"
               "partridge.int.alcachofa.faith:9100"
+              "kite.int.alcachofa.faith:9100"
             ];
           }
         ];

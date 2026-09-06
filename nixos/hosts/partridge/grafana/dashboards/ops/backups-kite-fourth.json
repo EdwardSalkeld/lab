@@ -233,8 +233,8 @@
   "timeRangeUpdatedDuringEditOrView": false,
   "timepicker": {},
   "timezone": "browser",
-  "title": "Backups (Blink->Fourth)",
-  "uid": "ops-backups-blink-fourth",
+  "title": "Backups (Kite->Fourth)",
+  "uid": "ops-backups-kite-fourth",
   "version": 1,
   "weekStart": ""
 }
