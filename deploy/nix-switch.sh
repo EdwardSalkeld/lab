@@ -5,7 +5,7 @@
 # descriptive only. One failing host does not stop the others.
 set -euo pipefail
 
-HOSTS=(partridge magpie)
+HOSTS=(partridge magpie kite)
 KEY="${ONWARD_SSH_KEY:?dispatcher must set ONWARD_SSH_KEY}"
 
 rc=0

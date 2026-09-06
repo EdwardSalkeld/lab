@@ -50,6 +50,13 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAbd34g7lWe3qsntjGhdgLVFSSdh9BvrFDTqlNADdZvD edward@fourth"
   ];
 
+  alcachofa.remoteDeploy.postSwitchHealthchecks = [
+    "jellyfin.service"
+    "navidrome.service"
+    "tailscaled.service"
+    "qemu-guest-agent.service"
+  ];
+
   systemd.services.jellyfin = {
     after = [
       "media.mount"
