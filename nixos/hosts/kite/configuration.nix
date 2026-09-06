@@ -46,6 +46,10 @@
 
   users.users.jellyfin.extraGroups = [ "media" ];
 
+  users.users.edward.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAbd34g7lWe3qsntjGhdgLVFSSdh9BvrFDTqlNADdZvD edward@fourth"
+  ];
+
   systemd.services.jellyfin = {
     after = [
       "media.mount"
