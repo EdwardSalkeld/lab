@@ -44,6 +44,27 @@
     gid = 1001;
   };
 
+  # GID 1000 is the historical group ownership recorded on migrated data.
+  users.groups.data = {
+    gid = 1000;
+  };
+
+  # The migrated /data filesystem records Edward's historical UID (1000).
+  # Keep that identity on Kite so Fourth's unprivileged backup account can
+  # read the existing data without relaxing filesystem permissions.
+  users.users.edward = {
+    uid = 1000;
+    extraGroups = [
+      "data"
+      "jellyfin"
+      "media"
+    ];
+  };
+
+  # `billy` is inherited from the shared VM base but is not used on Kite.
+  # Move it away from the UID preserved on the migrated data disk.
+  users.users.billy.uid = 1002;
+
   users.users.jellyfin.extraGroups = [ "media" ];
 
   users.users.edward.openssh.authorizedKeys.keys = [

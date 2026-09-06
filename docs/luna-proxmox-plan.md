@@ -47,6 +47,12 @@ The migrated Jellyfin and Navidrome state is live and both services have
 survived a cold reboot. The temporary recovery CT on Sol (`57096`) remains
 stopped as a rollback reference. Wantlist has not yet moved to Kite.
 
+### Follow-up
+
+- Fix ownership of `/data/full/docker/grafana/csv` so the Fourth backup account
+  (`edward`) can traverse it. Until then, the Kite-to-Fourth rsync reports that
+  path as unreadable.
+
 ## Hardware Assumption
 
 Ordered class:
