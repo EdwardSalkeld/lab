@@ -11,6 +11,42 @@ host is installed and stable.
 The first planned guest is `kite`, a NixOS VM for Jellyfin, Navidrome, and
 Wantlist.
 
+## Current Deployment (2026-09-06)
+
+`luna` is now an independent Proxmox VE host at `10.4.1.33`; it is not a
+cluster member of `sol`. `kite` is running at `10.4.1.82` with four cores and
+8 GiB RAM. Terraform owns its root and application-state disks:
+
+| Guest disk | Purpose | Size |
+| --- | --- | --- |
+| `scsi0` | NixOS root | 24 GiB |
+| `scsi1` | Jellyfin state and cache | 32 GiB |
+| `scsi2` | Navidrome state | 8 GiB |
+| `scsi3` | Reserved Wantlist state | 8 GiB |
+
+The two multi-terabyte disks are intentionally **not** Terraform resources.
+They are raw host-device attachments on Luna, excluded from Proxmox backups:
+
+| Guest disk | Luna device | Filesystem UUID | Kite mount | Access |
+| --- | --- | --- | --- | --- |
+| `scsi4` | `/dev/disk/by-id/wwn-0x50014ee21389c2e6` | `836b5915-74d0-4801-a2f3-aa32f54730db` | `/data` | read-only |
+| `scsi5` | `/dev/disk/by-uuid/a1666c44-85b1-406a-8f25-8e1a67f8a4dc` | `a1666c44-85b1-406a-8f25-8e1a67f8a4dc` | `/media` | read-only |
+
+The `scsi5` attachment uses its UUID rather than the original USB `by-id`
+name because that name contains a colon, which the Proxmox Terraform provider
+cannot parse. Terraform plans must remain no-ops with these raw attachments in
+place; do not model multi-TB media as Terraform VM disks.
+
+Kite's NixOS configuration mounts the state disks and both physical disks at
+boot. Jellyfin uses `/media` only, with a dedicated cache bind-mounted from
+its state disk. Navidrome uses only
+`/data/partial/record-library/library`; it must not scan all of `/data`.
+Jellyfin has been removed from the former music library through its UI.
+
+The migrated Jellyfin and Navidrome state is live and both services have
+survived a cold reboot. The temporary recovery CT on Sol (`57096`) remains
+stopped as a rollback reference. Wantlist has not yet moved to Kite.
+
 ## Hardware Assumption
 
 Ordered class:
@@ -112,27 +148,17 @@ named `luna` through `sol`.
 
 ## Media Disk Decision
 
-This is deliberately not final yet. The right answer depends on what Luna sees
-once the disks are attached.
+The first-cut decision is whole-disk passthrough to Kite. This keeps the media
+services simple and isolates all filesystem access in the guest.
 
-Options:
-
-- Pass whole USB disks through to `kite`.
-- Mount disks on the Proxmox host and run media services in an LXC instead.
-- Keep media services on a VM and use a host export, accepting the extra moving
-  parts.
-
-For Jellyfin, direct access to the media filesystem is simplest. If the Apple TV
-is the only client and the server is LAN-only, operational simplicity matters
-more than a perfect storage design.
-
-Wantlist needs a writable view of the TV/film/workspace paths for torrent
-imports. Jellyfin can keep a read-only view of the same media tree. These are
-multi-TB external disks; Terraform should not model them as Proxmox VM disks.
+Jellyfin and Navidrome receive read-only mounts. When Wantlist moves, it needs
+a narrowly scoped writable import and destination design; do not make these
+service mounts broadly writable as a shortcut. These are multi-TB external
+disks, so Terraform must not model them as Proxmox VM disks.
 
 ## Migration From Temporary Jellyfin
 
-Current temporary service:
+Former temporary service:
 
 - Host: `sol`
 - CT: `57096`
@@ -142,9 +168,8 @@ Current temporary service:
 - Media: `/mnt/blink-redhdd`
 - Music: `/mnt/blink-ssd4tb/partial/record-library/library`
 
-Before starting Jellyfin on `kite`, stop the temporary CT or at least stop
-the Docker container inside it. Only one Jellyfin instance should use the
-recovered config at a time.
+The CT was stopped before Jellyfin started on Kite. Keep it stopped: only one
+Jellyfin instance may use the recovered config at a time.
 
 Suggested migration flow:
 
@@ -215,12 +240,7 @@ Open implementation questions:
 
 ## Open Questions
 
-- What static IP should `luna` use?
-- Should `kite` take over Blink's old `10.4.1.20`, or should that address
-  stay reserved for a future revived Blink?
-- Are the external media disks going to be passed through to the VM directly?
-- Should Jellyfin stay native NixOS, or should it keep using the recovered
-  Docker volume layout for a lower-risk first cutover?
-- Should Navidrome share the same music tree at `/music`, or get a curated copy?
-- Should Wantlist stay on LAN-only HTTP, or should `wantlist.b.alcachofa.faith`
-  move to `kite` with TLS?
+- Whether Wantlist should stay on LAN-only HTTP, or move behind a TLS route on
+  Kite.
+- The least-privilege writable media path for Wantlist imports and final
+  destinations.

@@ -6,7 +6,7 @@ host="${1:?usage: nix-gc.sh <host>}"
 key="${ONWARD_SSH_KEY:?dispatcher must set ONWARD_SSH_KEY}"
 
 case "$host" in
-  magpie | partridge) ;;
+  kite | magpie | partridge) ;;
   *)
     echo "unsupported host: $host" >&2
     exit 2
