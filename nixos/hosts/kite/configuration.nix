@@ -49,18 +49,15 @@
   systemd.services.jellyfin = {
     after = [
       "media.mount"
-      "music.mount"
       "var-lib-jellyfin.mount"
     ];
     wants = [
       "media.mount"
-      "music.mount"
       "var-lib-jellyfin.mount"
     ];
     unitConfig.ConditionPathIsMountPoint = [
       "/var/lib/jellyfin"
       "/media"
-      "/music"
     ];
   };
 
