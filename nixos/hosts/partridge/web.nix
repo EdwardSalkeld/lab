@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
   partridgeInternalDomain = "partridge.int.alcachofa.faith";
@@ -52,6 +52,19 @@ let
   '';
 in
 {
+  sops.secrets."acme/cloudflare_dns_api_token" = {
+    sopsFile = ./secrets/acme-cloudflare.yaml;
+    key = "cloudflare_dns_api_token";
+    mode = "0400";
+  };
+
+  sops.templates."acme-cloudflare.env" = {
+    mode = "0400";
+    content = ''
+      CF_DNS_API_TOKEN=${config.sops.placeholder."acme/cloudflare_dns_api_token"}
+    '';
+  };
+
   networking.firewall.allowedTCPPorts = [
     80
     443
@@ -61,7 +74,7 @@ in
     acceptTerms = true;
     certs.${partridgeInternalDomain} = {
       dnsProvider = "cloudflare";
-      environmentFile = "/var/lib/secrets/acme-cloudflare.env";
+      environmentFile = config.sops.templates."acme-cloudflare.env".path;
       extraDomainNames = [ partridgeTailnetDomain ];
       group = "nginx";
     };
