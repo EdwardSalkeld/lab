@@ -3,6 +3,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./wantlist.nix
     ./web.nix
   ];
 

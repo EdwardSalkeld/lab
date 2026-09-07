@@ -122,7 +122,8 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "octopus-dl": "octopus-dl",
-        "sops-nix": "sops-nix"
+        "sops-nix": "sops-nix",
+        "wantlist": "wantlist"
       }
     },
     "sops-nix": {
@@ -143,6 +144,22 @@
         "owner": "Mic92",
         "repo": "sops-nix",
         "type": "github"
+      }
+    },
+    "wantlist": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788640401,
+        "narHash": "sha256-POgmt1hGIl8lhyPVoxtrE8tfXOgr50aBOhL8XwThcU8=",
+        "ref": "refs/heads/main",
+        "rev": "cc65648b96669d8955b76c6fd2e7db0e61beeff1",
+        "revCount": 268,
+        "type": "git",
+        "url": "ssh://git@github.com/EdwardSalkeld/untitled-music-project"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/EdwardSalkeld/untitled-music-project"
       }
     }
   },

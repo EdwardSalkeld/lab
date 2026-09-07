@@ -28,6 +28,10 @@
       url = "github:EdwardSalkeld/chatting";
       flake = false;
     };
+    wantlist = {
+      url = "git+ssh://git@github.com/EdwardSalkeld/untitled-music-project";
+      flake = false;
+    };
     # bbmb is release-pinned; change the ref to move it.
     bbmb = {
       url = "github:EdwardSalkeld/bbmb/v7";
@@ -35,12 +39,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, chatting, bbmb, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, chatting, wantlist, bbmb, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       pkgsUnstable = import nixpkgs-unstable { inherit system; };
       chattingSrc = chatting;
+      wantlistSrc = wantlist;
       bbmbSrc = bbmb;
       chattingHandler = pkgs.buildGoModule {
         pname = "chatting-handler";
@@ -58,6 +63,42 @@
         text = ''
           export PYTHONPATH=${chattingSrc}''${PYTHONPATH:+:$PYTHONPATH}
           exec python -m app.main_worker "$@"
+        '';
+      };
+      wantlistPython = pkgs.python312.withPackages (ps: [
+        ps.alembic
+        ps.apscheduler
+        ps.beets
+        ps.fastapi
+        ps.httpx
+        ps.psycopg
+        ps.pydantic-settings
+        ps.sqlalchemy
+        ps.uvicorn
+      ]);
+      wantlistRuntime = pkgs.writeShellApplication {
+        name = "wantlist";
+        runtimeInputs = [
+          wantlistPython
+          pkgs.openssh
+          pkgs.rsync
+        ];
+        text = ''
+          export PYTHONPATH=${wantlistSrc}/backend/src''${PYTHONPATH:+:$PYTHONPATH}
+          exec python "$@"
+        '';
+      };
+      wantlistFrontend = pkgs.buildNpmPackage {
+        pname = "wantlist-frontend";
+        version = "0.1.0";
+        src = wantlistSrc + "/frontend";
+        npmDepsHash = "sha256-nQwHvZAByd5Eg7Fe/p8nujBL2AcJnGtYserYw7k3MaE=";
+        npmBuildScript = "build";
+        installPhase = ''
+          runHook preInstall
+          mkdir -p "$out"
+          cp -r dist "$out/"
+          runHook postInstall
         '';
       };
       bbmbServer = pkgs.buildGo126Module {
@@ -132,6 +173,8 @@
         chatting-handler = chattingHandler;
         chatting-runtime = chattingRuntime;
         chatting-worker = chattingWorker;
+        wantlist-runtime = wantlistRuntime;
+        wantlist-frontend = wantlistFrontend;
         octopus-dl = octopusDl;
         linear-export = linearExport;
         exercise-tracker = exerciseTracker;
@@ -262,7 +305,12 @@
 
         kite = nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs.tailscalePackage = pkgsUnstable.tailscale;
+          specialArgs = {
+            tailscalePackage = pkgsUnstable.tailscale;
+            wantlistFrontend = wantlistFrontend;
+            wantlistPackage = wantlistRuntime;
+            wantlistSrc = wantlistSrc;
+          };
           modules = [
             sops-nix.nixosModules.sops
             ./nixos/modules/proxmox-vm-base.nix
