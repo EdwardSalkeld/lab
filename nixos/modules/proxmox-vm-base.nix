@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, pkgs, tailscalePackage ? pkgs.tailscale, ... }:
 
 {
   nix.settings.experimental-features = [
@@ -15,6 +15,7 @@
   services.openssh.enable = true;
   services.qemuGuest.enable = true;
   services.fstrim.enable = true;
+  services.tailscale.package = tailscalePackage;
 
   services.prometheus.exporters.node = {
     enable = true;
@@ -60,6 +61,7 @@
     curl
     git
     htop
+    jq
     lazygit
     nettools
     ripgrep

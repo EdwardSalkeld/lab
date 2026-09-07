@@ -235,6 +235,7 @@
             linearExportPackage = linearExport;
             exerciseTrackerPackage = exerciseTracker;
             grafanaPackage = pkgsUnstable.grafana;
+            tailscalePackage = pkgsUnstable.tailscale;
           };
           modules = [
             sops-nix.nixosModules.sops
@@ -249,6 +250,7 @@
           specialArgs = {
             chattingRuntimePackage = chattingRuntime;
             codexPackage = pkgsUnstable.codex;
+            tailscalePackage = pkgsUnstable.tailscale;
           };
           modules = [
             sops-nix.nixosModules.sops
@@ -260,6 +262,7 @@
 
         kite = nixpkgs.lib.nixosSystem {
           inherit system;
+          specialArgs.tailscalePackage = pkgsUnstable.tailscale;
           modules = [
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
