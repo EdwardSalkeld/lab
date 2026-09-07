@@ -264,6 +264,7 @@
           inherit system;
           specialArgs.tailscalePackage = pkgsUnstable.tailscale;
           modules = [
+            sops-nix.nixosModules.sops
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/kite/configuration.nix

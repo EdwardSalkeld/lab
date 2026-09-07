@@ -3,19 +3,11 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./web.nix
   ];
 
   networking.hostName = "kite";
   networking.networkmanager.enable = true;
-  networking.firewall = {
-    trustedInterfaces = [ "tailscale0" ];
-    allowedTCPPorts = [
-      4533
-      8000
-      8096
-    ];
-  };
-
   services.tailscale = {
     enable = true;
     openFirewall = true;
@@ -23,14 +15,12 @@
 
   services.jellyfin = {
     enable = true;
-    openFirewall = true;
   };
 
   services.navidrome = {
     enable = true;
-    openFirewall = true;
     settings = {
-      Address = "0.0.0.0";
+      Address = "127.0.0.1";
       Port = 4533;
       MusicFolder = "/data/partial/record-library/library";
     };
