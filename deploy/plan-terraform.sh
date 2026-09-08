@@ -41,8 +41,11 @@ git archive "$head_sha" | tar -x -C "$plan_dir"
 cd "$plan_dir"
 terraform -chdir=terraform init -input=false
 
+plan_file="$plan_dir/terraform.plan"
+plan_json="$plan_dir/terraform-plan.json"
+
 set +e
-terraform -chdir=terraform plan -input=false -no-color -detailed-exitcode
+terraform -chdir=terraform plan -input=false -no-color -refresh=false -out="$plan_file" -detailed-exitcode
 rc=$?
 set -e
 
@@ -51,6 +54,8 @@ case "$rc" in
     echo "Terraform plan completed: no changes."
     ;;
   2)
+    terraform -chdir=terraform show -json "$plan_file" >"$plan_json"
+    bash deploy/assert-safe-terraform-plan.sh "$plan_json"
     echo "Terraform plan completed: changes present."
     exit 0
     ;;
