@@ -24,8 +24,8 @@ cluster member of `sol`. `kite` is running at `10.4.1.82` with four cores and
 | `scsi2` | Navidrome state | 8 GiB |
 | `scsi3` | Reserved Wantlist state | 8 GiB |
 
-The two multi-terabyte disks are intentionally **not** Terraform resources.
-They are raw host-device attachments on Luna, excluded from Proxmox backups:
+Terraform manages the two multi-terabyte disks as raw host-device attachments
+on Luna. They remain excluded from Proxmox backups:
 
 | Guest disk | Luna device | Filesystem UUID | Kite mount | Access |
 | --- | --- | --- | --- | --- |
@@ -33,9 +33,9 @@ They are raw host-device attachments on Luna, excluded from Proxmox backups:
 | `scsi5` | `/dev/disk/by-uuid/a1666c44-85b1-406a-8f25-8e1a67f8a4dc` | `a1666c44-85b1-406a-8f25-8e1a67f8a4dc` | `/media` | read-only |
 
 The `scsi5` attachment uses its UUID rather than the original USB `by-id`
-name because that name contains a colon, which the Proxmox Terraform provider
-cannot parse. Terraform plans must remain no-ops with these raw attachments in
-place; do not model multi-TB media as Terraform VM disks.
+name because that name contains a colon. The raw device paths are Terraform
+variables and the guest mount UUIDs remain in Kite's NixOS hardware
+configuration. Do not model these multi-TB disks as Proxmox-managed volumes.
 
 Kite's NixOS configuration mounts the state disks and both physical disks at
 boot. Jellyfin uses `/media` only, with a dedicated cache bind-mounted from
