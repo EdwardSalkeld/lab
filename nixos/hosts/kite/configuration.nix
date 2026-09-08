@@ -53,7 +53,10 @@
 
   # `billy` is inherited from the shared VM base but is not used on Kite.
   # Move it away from the UID preserved on the migrated data disk.
-  users.users.billy.uid = 1002;
+  users.users.billy = {
+    uid = 1002;
+    extraGroups = [ "wheel" ];
+  };
 
   users.users.jellyfin.extraGroups = [ "media" ];
 
