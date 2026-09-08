@@ -30,7 +30,6 @@
     };
     media-collection-manager = {
       url = "github:brokensbone/media-collection-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     # bbmb is release-pinned; change the ref to move it.
     bbmb = {
