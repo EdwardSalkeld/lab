@@ -22,6 +22,7 @@ let
       WANTLIST_TV_ROOT = cfg.tvRoot;
       WANTLIST_FILM_ROOT = cfg.filmRoot;
       WANTLIST_WORKSPACE_ROOT = cfg.workspaceRoot;
+      WANTLIST_WATCHDIR_PATH = cfg.importInbox;
     };
     serviceConfig = {
       EnvironmentFile = config.sops.templates."wantlist.env".path;
@@ -88,12 +89,94 @@ in
       group = "data";
       mode = "0400";
     };
+    sops.secrets = {
+      "wantlist/spotify_client_id" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "spotify_client_id";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/spotify_client_secret" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "spotify_client_secret";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/spotify_redirect_uri" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "spotify_redirect_uri";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/transmission_rpc_url" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "transmission_rpc_url";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/transmission_user" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "transmission_user";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/transmission_password" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "transmission_password";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/transmission_ssh_host" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "transmission_ssh_host";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/transmission_ssh_user" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "transmission_ssh_user";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/transmission_ssh_key" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "transmission_ssh_key";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+      "wantlist/notification_webhook_url" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "notification_webhook_url";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
+    };
     sops.templates."wantlist.env" = {
       owner = "edward";
       group = "data";
       mode = "0400";
       content = ''
         WANTLIST_DATABASE_URL=${config.sops.placeholder."wantlist/database_url"}
+        WANTLIST_SPOTIFY_CLIENT_ID=${config.sops.placeholder."wantlist/spotify_client_id"}
+        WANTLIST_SPOTIFY_CLIENT_SECRET=${config.sops.placeholder."wantlist/spotify_client_secret"}
+        WANTLIST_SPOTIFY_REDIRECT_URI=${config.sops.placeholder."wantlist/spotify_redirect_uri"}
+        WANTLIST_TRANSMISSION_RPC_URL=${config.sops.placeholder."wantlist/transmission_rpc_url"}
+        WANTLIST_TRANSMISSION_USER=${config.sops.placeholder."wantlist/transmission_user"}
+        WANTLIST_TRANSMISSION_PASSWORD=${config.sops.placeholder."wantlist/transmission_password"}
+        WANTLIST_TRANSMISSION_SSH_HOST=${config.sops.placeholder."wantlist/transmission_ssh_host"}
+        WANTLIST_TRANSMISSION_SSH_USER=${config.sops.placeholder."wantlist/transmission_ssh_user"}
+        WANTLIST_TRANSMISSION_SSH_KEY=${config.sops.secrets."wantlist/transmission_ssh_key".path}
+        WANTLIST_NOTIFICATION_WEBHOOK_URL=${config.sops.placeholder."wantlist/notification_webhook_url"}
       '';
     };
 
