@@ -76,7 +76,6 @@
     fsType = "ext4";
     options = [
       "nofail"
-      "ro"
       "x-systemd.device-timeout=1s"
     ];
   };
@@ -86,7 +85,6 @@
     fsType = "ext4";
     options = [
       "nofail"
-      "ro"
       "x-systemd.device-timeout=1s"
     ];
   };

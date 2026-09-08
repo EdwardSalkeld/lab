@@ -65,6 +65,26 @@
         "type": "github"
       }
     },
+    "media-collection-manager": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788895229,
+        "narHash": "sha256-XITPWPx8k4UBeD1+P65fAjTaEJJKAUlJVZqTZtWdsME=",
+        "owner": "brokensbone",
+        "repo": "media-collection-manager",
+        "rev": "c1bdccfa62370e25aee606eaf9cf316de312ab16",
+        "type": "github"
+      },
+      "original": {
+        "owner": "brokensbone",
+        "repo": "media-collection-manager",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1782847189,
@@ -119,6 +139,7 @@
         "chatting": "chatting",
         "exercise-tracker": "exercise-tracker",
         "linear-export": "linear-export",
+        "media-collection-manager": "media-collection-manager",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "octopus-dl": "octopus-dl",

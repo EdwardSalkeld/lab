@@ -28,6 +28,10 @@
       url = "github:EdwardSalkeld/chatting";
       flake = false;
     };
+    media-collection-manager = {
+      url = "github:brokensbone/media-collection-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # bbmb is release-pinned; change the ref to move it.
     bbmb = {
       url = "github:EdwardSalkeld/bbmb/v7";
@@ -35,12 +39,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, chatting, bbmb, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, chatting, media-collection-manager, bbmb, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       pkgsUnstable = import nixpkgs-unstable { inherit system; };
       chattingSrc = chatting;
+      mediaCollectionManagerPackages = media-collection-manager.packages.${system};
       bbmbSrc = bbmb;
       chattingHandler = pkgs.buildGoModule {
         pname = "chatting-handler";
@@ -262,7 +267,10 @@
 
         kite = nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs.tailscalePackage = pkgsUnstable.tailscale;
+          specialArgs = {
+            inherit mediaCollectionManagerPackages;
+            tailscalePackage = pkgsUnstable.tailscale;
+          };
           modules = [
             sops-nix.nixosModules.sops
             ./nixos/modules/proxmox-vm-base.nix

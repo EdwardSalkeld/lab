@@ -617,7 +617,7 @@ let
     for = "10m";
     annotations = {
       summary = "wantlist is disconnected from Spotify";
-      description = "wantlist_spotify_connected is 0 — the Spotify refresh token is missing or expired, so ingest/reconcile/plays are paused until you reconnect at https://wantlist.b.alcachofa.faith/.";
+      description = "wantlist_spotify_connected is 0 — the Spotify refresh token is missing or expired, so ingest/reconcile/plays are paused until you reconnect at https://wantlist.alcachofa.faith/.";
     };
     labels = {
       service = "wantlist";
