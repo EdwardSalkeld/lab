@@ -121,6 +121,10 @@ resource "proxmox_virtual_environment_vm" "kite" {
 
   lifecycle {
     prevent_destroy = true
+    # scsi4 and scsi5 are raw host devices attached by Proxmox's literal-root
+    # path mechanism. The API-token Terraform provider cannot manage those
+    # paths and must not infer that they should be detached.
+    ignore_changes = [disk]
 
     precondition {
       condition     = var.LUNA_PROXMOXENDPOINT != null && var.LUNA_PROXMOXTOKEN != null
