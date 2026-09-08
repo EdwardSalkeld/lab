@@ -71,26 +71,6 @@ resource "proxmox_virtual_environment_vm" "kite" {
     serial       = "kite-wantlist"
   }
 
-  # Raw external disks are deliberately excluded from Proxmox backups. The
-  # guest mounts them by filesystem UUID in its NixOS configuration.
-  disk {
-    datastore_id      = ""
-    path_in_datastore = var.kite_data_disk_path
-    file_format       = "raw"
-    interface         = "scsi4"
-    backup            = false
-    replicate         = false
-  }
-
-  disk {
-    datastore_id      = ""
-    path_in_datastore = var.kite_media_disk_path
-    file_format       = "raw"
-    interface         = "scsi5"
-    backup            = false
-    replicate         = false
-  }
-
   cdrom {
     file_id   = "none"
     interface = "ide2"
@@ -102,9 +82,12 @@ resource "proxmox_virtual_environment_vm" "kite" {
 
   lifecycle {
     prevent_destroy = true
-    # scsi4 and scsi5 are raw host devices attached by Proxmox's literal-root
-    # path mechanism. The API-token Terraform provider cannot manage those
-    # paths and must not infer that they should be detached.
+    # scsi4 and scsi5 are manually attached raw host devices. Proxmox permits
+    # arbitrary host paths only for literal root@pam, not Terraform's API
+    # token, so their documented recreation is outside Terraform.
+    #
+    # The provider treats otherwise unmodelled disks as removable, so retain
+    # this guard to prevent plans from detaching the two external disks.
     ignore_changes = [disk]
 
     precondition {

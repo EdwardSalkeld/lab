@@ -14,7 +14,7 @@ Wantlist.
 ## Current Deployment (2026-09-06)
 
 `luna` is now an independent Proxmox VE host at `10.4.1.33`; it is not a
-cluster member of `sol`. `kite` is running at `10.4.1.82` with four cores and
+cluster member of `sol`. `kite` is running at `10.4.1.34` with four cores and
 8 GiB RAM. Terraform owns its root and application-state disks:
 
 | Guest disk | Purpose | Size |
@@ -24,8 +24,8 @@ cluster member of `sol`. `kite` is running at `10.4.1.82` with four cores and
 | `scsi2` | Navidrome state | 8 GiB |
 | `scsi3` | Reserved Wantlist state | 8 GiB |
 
-Terraform manages the two multi-terabyte disks as raw host-device attachments
-on Luna. They remain excluded from Proxmox backups:
+The two multi-terabyte disks are manual raw host-device attachments on Luna,
+excluded from Proxmox backups:
 
 | Guest disk | Luna device | Filesystem UUID | Kite mount | Access |
 | --- | --- | --- | --- | --- |
@@ -33,9 +33,58 @@ on Luna. They remain excluded from Proxmox backups:
 | `scsi5` | `/dev/disk/by-uuid/a1666c44-85b1-406a-8f25-8e1a67f8a4dc` | `a1666c44-85b1-406a-8f25-8e1a67f8a4dc` | `/media` | read-only |
 
 The `scsi5` attachment uses its UUID rather than the original USB `by-id`
-name because that name contains a colon. The raw device paths are Terraform
-variables and the guest mount UUIDs remain in Kite's NixOS hardware
-configuration. Do not model these multi-TB disks as Proxmox-managed volumes.
+name because that name contains a colon. Proxmox only permits arbitrary host
+paths through literal `root@pam`, so Terraform's API token cannot manage these
+attachments. Terraform deliberately ignores Kite disk changes so it cannot
+detach them. Do not model multi-TB media as Terraform VM disks.
+
+### Raw Disk Recreate Runbook
+
+Use this only on Luna's console or an SSH session as `root`, after Terraform
+has created Kite's normal VM disks. The commands assume Kite remains VMID
+`41183`; substitute the new VMID if Kite is recreated.
+
+1. Confirm the host sees the intended devices. Do not substitute `/dev/sdX`
+   names, which are not stable across reconnects:
+
+   ```sh
+   ls -l /dev/disk/by-id/wwn-0x50014ee21389c2e6
+   ls -l /dev/disk/by-uuid/a1666c44-85b1-406a-8f25-8e1a67f8a4dc
+   ```
+
+2. Stop Kite before changing its hardware:
+
+   ```sh
+   qm shutdown 41183
+   qm status 41183
+   ```
+
+3. Attach the data and media disks. `backup=0` is required so Proxmox does not
+   attempt to back up these multi-terabyte physical disks:
+
+   ```sh
+   qm set 41183 --scsi4 /dev/disk/by-id/wwn-0x50014ee21389c2e6,backup=0
+   qm set 41183 --scsi5 /dev/disk/by-uuid/a1666c44-85b1-406a-8f25-8e1a67f8a4dc,backup=0
+   ```
+
+4. Verify the exact configuration, then start Kite:
+
+   ```sh
+   qm config 41183 | grep -E '^(scsi4|scsi5):'
+   qm start 41183
+   ```
+
+5. From Kite, verify both filesystems and mounts before starting media
+   services:
+
+   ```sh
+   lsblk -f
+   findmnt /data /media
+   ```
+
+To detach a disk, stop Kite and use `qm set 41183 --delete scsi4` or
+`qm set 41183 --delete scsi5`. Never remove a disk from the Proxmox UI while
+Kite is running.
 
 Kite's NixOS configuration mounts the state disks and both physical disks at
 boot. Jellyfin uses `/media` only, with a dedicated cache bind-mounted from
@@ -92,7 +141,6 @@ Prepared in this branch:
 
 - Terraform resource `proxmox_virtual_environment_vm.kite`
 - Terraform provider alias `proxmox.luna`
-- Luna-local NixOS ISO download resource
 - Feature flag `enable_kite_vm`, defaulting to `true`
 - NixOS host `.#nixosConfigurations.kite`
 - NixOS check `.#checks.x86_64-linux.kite`
