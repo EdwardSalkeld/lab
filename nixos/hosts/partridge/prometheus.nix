@@ -119,6 +119,7 @@ in
             targets = [
               "fourth.int.alcachofa.faith:9100"
               "sol.int.alcachofa.faith:9100"
+              "luna.int.alcachofa.faith:9100"
               "falcon.ts.alcachofa.faith:9100"
               "magpie.int.alcachofa.faith:9100"
               "partridge.int.alcachofa.faith:9100"
@@ -137,7 +138,12 @@ in
         job_name = "pve";
         metrics_path = "/pve";
         static_configs = [
-          { targets = [ "sol.int.alcachofa.faith:9221" ]; }
+          {
+            targets = [
+              "sol.int.alcachofa.faith:9221"
+              "luna.int.alcachofa.faith:9221"
+            ];
+          }
         ];
       }
       {
