@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ./web.nix
+    ./wantlist.nix
   ];
 
   networking.hostName = "kite";
@@ -25,6 +26,8 @@
       MusicFolder = "/data/partial/record-library/library";
     };
   };
+
+  alcachofa.kite.wantlist.enable = true;
 
   systemd.tmpfiles.rules = [
     "d /var/lib/jellyfin/cache 0750 jellyfin jellyfin -"
@@ -67,6 +70,8 @@
   alcachofa.remoteDeploy.postSwitchHealthchecks = [
     "jellyfin.service"
     "navidrome.service"
+    "wantlist-api.service"
+    "wantlist-worker.service"
     "tailscaled.service"
     "qemu-guest-agent.service"
   ];

@@ -3,6 +3,7 @@
 let
   jellyfinDomain = "jellyfin.alcachofa.faith";
   navidromeDomain = "navidrome.alcachofa.faith";
+  wantlistDomain = "wantlist.alcachofa.faith";
 in
 {
   sops = {
@@ -38,7 +39,10 @@ in
     certs.${jellyfinDomain} = {
       dnsProvider = "cloudflare";
       environmentFile = config.sops.templates."acme-cloudflare.env".path;
-      extraDomainNames = [ navidromeDomain ];
+      extraDomainNames = [
+        navidromeDomain
+        wantlistDomain
+      ];
       group = "nginx";
     };
   };
@@ -64,6 +68,12 @@ in
         forceSSL = true;
         useACMEHost = jellyfinDomain;
         locations."/".proxyPass = "http://127.0.0.1:4533";
+      };
+
+      ${wantlistDomain} = {
+        forceSSL = true;
+        useACMEHost = jellyfinDomain;
+        locations."/".proxyPass = "http://127.0.0.1:8000";
       };
     };
   };

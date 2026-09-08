@@ -89,17 +89,14 @@ in
           }
         ];
       }
-      # Wantlist's temporary post-Blink endpoint is retired. Keep this job here
-      # for the Kite cutover, but do not scrape it (or fire target-down alerts)
-      # until the replacement metrics endpoint is ready.
-      /* {
+      {
         job_name = "wantlist";
-        scheme = "http";
+        scheme = "https";
         metrics_path = "/metrics";
         static_configs = [
-          { targets = [ "10.4.1.20:8000" ]; }
+          { targets = [ "wantlist.alcachofa.faith" ]; }
         ];
-      } */
+      }
       {
         job_name = "cadvisor";
         scrape_interval = "5s";

@@ -65,18 +65,36 @@
         "type": "github"
       }
     },
+    "media-collection-manager": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1788897899,
+        "narHash": "sha256-ovcGlnRrTs3+gPnzHgPWPsbOc1viuBiStRHuJkZ/B3I=",
+        "owner": "brokensbone",
+        "repo": "media-collection-manager",
+        "rev": "dc8a50876c95e171ff030a3da4641d1730bc60f3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "brokensbone",
+        "repo": "media-collection-manager",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1782847189,
-        "narHash": "sha256-twXPFqFsrrY5r28Zh7Homgcp2gUMBgQ6WDS98Q/3xFI=",
+        "lastModified": 1788752844,
+        "narHash": "sha256-VaWGJ6+cIYN2erfSecbRV+4ljI185Ty2wUrXyvQbgOw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b6018f87da91d19d0ab4cf979885689b469cdd41",
+        "rev": "dc5d91f840324650bac8c379428c7037a416959a",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-25.11",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -93,6 +111,22 @@
       "original": {
         "owner": "NixOS",
         "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1782847189,
+        "narHash": "sha256-twXPFqFsrrY5r28Zh7Homgcp2gUMBgQ6WDS98Q/3xFI=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b6018f87da91d19d0ab4cf979885689b469cdd41",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-25.11",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -119,7 +153,8 @@
         "chatting": "chatting",
         "exercise-tracker": "exercise-tracker",
         "linear-export": "linear-export",
-        "nixpkgs": "nixpkgs",
+        "media-collection-manager": "media-collection-manager",
+        "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "octopus-dl": "octopus-dl",
         "sops-nix": "sops-nix"
