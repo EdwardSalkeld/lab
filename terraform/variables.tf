@@ -186,15 +186,3 @@ variable "kite_wantlist_disk_size" {
   type        = number
   default     = 8
 }
-
-variable "kite_data_disk_path" {
-  description = "Stable Luna block-device path for Kite's external data disk"
-  type        = string
-  default     = "/dev/disk/by-id/wwn-0x50014ee21389c2e6"
-}
-
-variable "kite_media_disk_path" {
-  description = "Stable Luna block-device path for Kite's external media disk"
-  type        = string
-  default     = "/dev/disk/by-uuid/a1666c44-85b1-406a-8f25-8e1a67f8a4dc"
-}
