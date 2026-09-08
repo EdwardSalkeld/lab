@@ -72,11 +72,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788895229,
-        "narHash": "sha256-XITPWPx8k4UBeD1+P65fAjTaEJJKAUlJVZqTZtWdsME=",
+        "lastModified": 1788897899,
+        "narHash": "sha256-ovcGlnRrTs3+gPnzHgPWPsbOc1viuBiStRHuJkZ/B3I=",
         "owner": "brokensbone",
         "repo": "media-collection-manager",
-        "rev": "c1bdccfa62370e25aee606eaf9cf316de312ab16",
+        "rev": "dc8a50876c95e171ff030a3da4641d1730bc60f3",
         "type": "github"
       },
       "original": {
