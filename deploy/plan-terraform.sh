@@ -41,8 +41,8 @@ git archive "$head_sha" | tar -x -C "$plan_dir"
 cd "$plan_dir"
 terraform -chdir=terraform init -input=false
 
-plan_file="$plan_dir/terraform.plan"
-plan_json="$plan_dir/terraform-plan.json"
+plan_file="$PWD/terraform.plan"
+plan_json="$PWD/terraform-plan.json"
 
 set +e
 terraform -chdir=terraform plan -input=false -no-color -refresh=false -out="$plan_file" -detailed-exitcode
