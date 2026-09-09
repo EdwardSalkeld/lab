@@ -15,8 +15,12 @@
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
 
   # Magpie's small root disk fills quickly with Nix build/store churn from the
-  # worker. Keep the shared 14-day retention policy, but collect daily.
-  nix.gc.dates = "daily";
+  # worker. Remove every unreachable store path at the daily run rather than
+  # retaining it for 14 days; only live generations and paths remain.
+  nix.gc = {
+    dates = "daily";
+    options = "-d";
+  };
 
   # LAN access to the chatting services: bbmb broker metrics (9877), message
   # handler metrics (9464), and the worker activity UI (9465). No auth on these,

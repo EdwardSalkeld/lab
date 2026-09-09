@@ -26,7 +26,7 @@
   nix.gc = {
     automatic = true;
     dates = lib.mkDefault "weekly";
-    options = "--delete-older-than 14d";
+    options = lib.mkDefault "--delete-older-than 14d";
   };
 
   users.users.edward = {
