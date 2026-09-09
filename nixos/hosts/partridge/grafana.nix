@@ -645,7 +645,7 @@ let
     for = "10m";
     annotations = {
       summary = "MCM is disconnected from Spotify";
-      description = "mcm_spotify_connected is 0 — the Spotify refresh token is missing or expired, so ingest/reconcile/plays are paused until you reconnect at https://wantlist.alcachofa.faith/.";
+      description = "mcm_spotify_connected is 0 — the Spotify refresh token is missing or expired, so ingest/reconcile/plays are paused until you reconnect at https://mcm.alcachofa.faith/.";
     };
     labels = {
       service = "mcm";
