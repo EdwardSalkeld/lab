@@ -22,6 +22,38 @@
     options = "-d";
   };
 
+  # The worker can create several GiB of dead build outputs between daily GC
+  # runs. Check frequently, but only collect when root has crossed the
+  # high-water mark, preserving useful build cache while retaining about 6 GiB
+  # of headroom on the 24 GiB root filesystem.
+  systemd.services.nix-gc-on-root-pressure = {
+    description = "Collect unreachable Nix paths when Magpie root is under pressure";
+    path = with pkgs; [ coreutils gawk nix ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      root_usage="$(df -P / | awk 'NR == 2 { sub(/%$/, "", $5); print $5 }')"
+
+      if [ "$root_usage" -lt 75 ]; then
+        echo "root usage is ''${root_usage}%; below the 75% Nix GC threshold"
+        exit 0
+      fi
+
+      echo "root usage is ''${root_usage}%; collecting unreachable Nix paths"
+      nix-collect-garbage -d
+    '';
+  };
+
+  systemd.timers.nix-gc-on-root-pressure = {
+    description = "Check Magpie root usage for Nix GC pressure collection";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*:0/15";
+      Persistent = true;
+      RandomizedDelaySec = "2m";
+      Unit = "nix-gc-on-root-pressure.service";
+    };
+  };
+
   # LAN access to the chatting services: bbmb broker metrics (9877), message
   # handler metrics (9464), and the worker activity UI (9465). No auth on these,
   # so they rely on being LAN-only. Node exporter (9100) is opened separately by
