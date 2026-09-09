@@ -2,12 +2,18 @@
 
 Home infrastructure learning lab for Proxmox + NixOS.
 
-Current managed paths:
+## Current Topology
 
-- `partridge`: repo-managed NixOS VM
-- `magpie`: repo-managed NixOS host being repurposed for `chatting`
-- `luna`: standalone Proxmox host running `kite`
-- `kite`: repo-managed NixOS media VM
+Proxmox hosts:
+
+- `sol`: primary Proxmox host
+- `luna`: standalone Proxmox host
+
+Repo-managed NixOS VMs:
+
+- `partridge` on `sol`: monitoring, Grafana, Loki, and PostgreSQL
+- `magpie` on `sol`: chatting services and Forgejo runner
+- `kite` on `luna`: Jellyfin, Navidrome, and Wantlist
 
 There is no standing disposable Debian cloud-image VM on `main` right now. The
 July 2026 `wren` exercise was torn down completely; the next disposable VM
