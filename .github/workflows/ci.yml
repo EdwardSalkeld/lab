@@ -36,8 +36,6 @@ jobs:
               - 'flake.nix'
               - 'nixos/modules/**'
               - 'tools/**'
-            nix_blink:
-              - 'nixos/hosts/blink/**'
             nix_kite:
               - 'nixos/hosts/kite/**'
             nix_magpie:
@@ -49,9 +47,8 @@ jobs:
         run: |
           hosts=()
           if [[ "${{ steps.filter.outputs.nix_shared }}" == "true" ]]; then
-            hosts=(blink kite magpie partridge)
+            hosts=(kite magpie partridge)
           else
-            [[ "${{ steps.filter.outputs.nix_blink }}" == "true" ]] && hosts+=(blink)
             [[ "${{ steps.filter.outputs.nix_kite }}" == "true" ]] && hosts+=(kite)
             [[ "${{ steps.filter.outputs.nix_magpie }}" == "true" ]] && hosts+=(magpie)
             [[ "${{ steps.filter.outputs.nix_partridge }}" == "true" ]] && hosts+=(partridge)

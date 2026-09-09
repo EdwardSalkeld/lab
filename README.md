@@ -4,9 +4,10 @@ Home infrastructure learning lab for Proxmox + NixOS.
 
 Current managed paths:
 
-- `blink`: bare-metal server, adopted into repo-managed NixOS
 - `partridge`: repo-managed NixOS VM
 - `magpie`: repo-managed NixOS host being repurposed for `chatting`
+- `luna`: standalone Proxmox host running `kite`
+- `kite`: repo-managed NixOS media VM
 
 There is no standing disposable Debian cloud-image VM on `main` right now. The
 July 2026 `wren` exercise was torn down completely; the next disposable VM

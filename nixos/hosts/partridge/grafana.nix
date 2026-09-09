@@ -627,9 +627,8 @@ let
     isPaused = false;
   };
   # Real, persistent filesystems only: ext4 excludes tmpfs/ramfs/fuse/vfat;
-  # /nix/store is dropped because it mirrors / on NixOS hosts; the two ext2tb
-  # disks on blink are intentionally kept near-full and would alert constantly.
-  diskFsSelector = ''{fstype="ext4", mountpoint!~"/nix/store|/mnt/ext2tb/1|/mnt/ext2tb/3"}'';
+  # /nix/store is dropped because it mirrors / on NixOS hosts.
+  diskFsSelector = ''{fstype="ext4", mountpoint!~"/nix/store"}'';
   mkLokiLogCountAlert =
     {
       uid,

@@ -4,9 +4,9 @@ This directory is the start of the repo-owned NixOS configuration.
 
 Current targets:
 
-- `blink`: bare-metal server, initially adopted with Docker Compose workloads.
 - `partridge`: the first repo-managed NixOS VM.
 - `magpie`: repo-managed NixOS host for the chatting split runtime.
+- `kite`: repo-managed NixOS media VM for Jellyfin, Navidrome, and Wantlist.
 
 ## Installing Packages
 
@@ -49,22 +49,6 @@ nix profile install nixpkgs#htop
 
 Prefer `environment.systemPackages` for lab infrastructure so the machine can
 be recreated from the repo.
-
-## Deploying `blink`
-
-`blink` is a bare-metal host. Its first repo-owned config lives in
-`nixos/hosts/blink/` and intentionally keeps Docker Compose as the workload
-boundary for cutover.
-
-Before reinstalling the root disk, migrate kept Docker named volumes to the
-persistent data disk:
-
-```sh
-sudo ./scripts/blink-migrate-docker-volumes.sh
-```
-
-See `nixos/hosts/blink/README.md` and
-`docs/blink-nixos-adoption-plan.md` for the full cutover notes.
 
 ## Deploying `partridge`
 
@@ -243,9 +227,7 @@ After Terraform adds the disk, format it once before switching the NixOS config:
 sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi4
 ```
 
-The scrape config mirrors Blink's Prometheus targets where those targets are
-addressable from Partridge. Blink's cAdvisor target is scraped through
-`blink.int.alcachofa.faith:8083`, which is exposed by the house Docker stack.
+The scrape config covers the active lab hosts and their exported metrics.
 
 Example Prometheus scrape config:
 
@@ -309,9 +291,8 @@ https://grafana.alcachofa.faith
 Grafana uses the local PostgreSQL service for storage. Its Prometheus and Loki
 datasources are provisioned with the same UIDs as Blink's old Grafana
 datasources, so imported dashboards can keep their datasource references.
-Prometheus points at the local Partridge Prometheus; Loki points at Blink's
-existing Loki on `blink.int.alcachofa.faith:3100`. Dashboards themselves are
-managed through Grafana's UI rather than Nix provisioning.
+Prometheus and Loki both point at local Partridge services. Dashboards
+themselves are managed through Grafana's UI rather than Nix provisioning.
 
 Grafana also has a provisioned `scheduler-postgres` datasource for Octopus
 usage data in Partridge's local `scheduler` database. Apply the schema after
