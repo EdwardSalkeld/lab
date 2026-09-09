@@ -94,7 +94,7 @@ in
         scheme = "https";
         metrics_path = "/metrics";
         static_configs = [
-          { targets = [ "wantlist.alcachofa.faith" ]; }
+          { targets = [ "mcm.alcachofa.faith" ]; }
         ];
       }
       {
