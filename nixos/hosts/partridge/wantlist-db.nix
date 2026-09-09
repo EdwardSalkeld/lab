@@ -9,8 +9,8 @@ let
   psql = "${config.services.postgresql.package}/bin/psql";
 in
 {
-  # Database for the wantlist music app. The app runs in Docker on blink and connects here over
-  # the LAN; only its Postgres lives on partridge. Postgres already listens on all interfaces
+  # Database for Wantlist on Kite. The app connects here over the LAN; only its
+  # Postgres lives on Partridge. Postgres already listens on all interfaces
   # (see scheduler-db.nix) — this adds the login role, its LAN-only pg_hba rule and a password.
   # The role OWNS its database so the app can run its own Alembic migrations. Password is
   # generated on-host (like scheduler-db); read it off partridge for the app's .env:
