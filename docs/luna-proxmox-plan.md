@@ -1,5 +1,9 @@
 # Luna Proxmox Plan
 
+> The Proxmox and Kite installation stages below are complete. The authoritative
+> numbered runbook for the remaining external-disk and service migration is
+> [kite-media-migration.md](kite-media-migration.md).
+
 ## Summary
 
 `luna` is the replacement mini PC ordered after Blink's boot SSD started
