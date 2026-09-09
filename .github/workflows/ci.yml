@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: detect relevant changes
         id: filter
         uses: dorny/paths-filter@v4
@@ -32,10 +34,11 @@ jobs:
             nix_shared:
               - '.github/workflows/**'
               - '.sops.yaml'
-              - 'flake.lock'
               - 'flake.nix'
               - 'nixos/modules/**'
               - 'tools/**'
+            nix_lock:
+              - 'flake.lock'
             nix_kite:
               - 'nixos/hosts/kite/**'
             nix_magpie:
@@ -52,6 +55,57 @@ jobs:
             [[ "${{ steps.filter.outputs.nix_kite }}" == "true" ]] && hosts+=(kite)
             [[ "${{ steps.filter.outputs.nix_magpie }}" == "true" ]] && hosts+=(magpie)
             [[ "${{ steps.filter.outputs.nix_partridge }}" == "true" ]] && hosts+=(partridge)
+
+            if [[ "${{ steps.filter.outputs.nix_lock }}" == "true" ]]; then
+              base_lock="$(mktemp)"
+              git show "${{ github.event.pull_request.base.sha }}:flake.lock" > "$base_lock"
+
+              changed_inputs="$({
+                jq -r --slurpfile base "$base_lock" '
+                  . as $head
+                  | $base[0] as $base
+                  | (($base.nodes.root.inputs // {}) | keys) as $baseInputs
+                  | (($head.nodes.root.inputs // {}) | keys) as $headInputs
+                  | (($baseInputs + $headInputs) | unique[]) as $input
+                  | ($base.nodes.root.inputs[$input] // null) as $baseNode
+                  | ($head.nodes.root.inputs[$input] // null) as $headNode
+                  | select(
+                      $baseNode != $headNode
+                      or ($base.nodes[$baseNode] != $head.nodes[$headNode])
+                    )
+                  | $input
+                ' flake.lock
+              } | sort -u)"
+              rm -f "$base_lock"
+
+              # A lock change which cannot be attributed to a known host input
+              # is shared by default. This keeps the narrow cases fast without
+              # allowing an indirect dependency change to skip a needed build.
+              shared_lock_change=false
+              while IFS= read -r input; do
+                case "$input" in
+                  media-collection-manager)
+                    hosts+=(kite)
+                    ;;
+                  bbmb | chatting)
+                    hosts+=(magpie)
+                    ;;
+                  exercise-tracker | linear-export | octopus-dl)
+                    hosts+=(partridge)
+                    ;;
+                  nixpkgs | nixpkgs-unstable | sops-nix | "")
+                    shared_lock_change=true
+                    ;;
+                  *)
+                    shared_lock_change=true
+                    ;;
+                esac
+              done <<< "$changed_inputs"
+
+              if [[ "$shared_lock_change" == "true" ]]; then
+                hosts=(kite magpie partridge)
+              fi
+            fi
           fi
 
           if [[ "${#hosts[@]}" -eq 0 ]]; then
