@@ -93,7 +93,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "wantlist_spotify_connected",
+          "expr": "mcm_spotify_connected",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -165,7 +165,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "wantlist_spotify_reauth_days_remaining",
+          "expr": "mcm_spotify_reauth_days_remaining",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -229,7 +229,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "wantlist_albums{state=\"wanted\"}",
+          "expr": "mcm_albums{state=\"wanted\"}",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -297,7 +297,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "wantlist_albums_missing_art",
+          "expr": "mcm_albums_missing_art",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -368,7 +368,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "100 * sum(wantlist_albums_resolution{state=\"resolved\"}) / clamp_min(sum(wantlist_albums_resolution), 1)",
+          "expr": "100 * sum(mcm_albums_resolution{state=\"resolved\"}) / clamp_min(sum(mcm_albums_resolution), 1)",
           "instant": true,
           "legendFormat": "resolved",
           "range": false,
@@ -462,7 +462,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "wantlist_albums_resolution",
+          "expr": "mcm_albums_resolution",
           "legendFormat": "{{state}}",
           "range": true,
           "refId": "A"
@@ -555,7 +555,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "wantlist_albums",
+          "expr": "mcm_albums",
           "legendFormat": "{{state}}",
           "range": true,
           "refId": "A"
@@ -627,7 +627,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "time() - (wantlist_job_last_success_timestamp > 0)",
+          "expr": "time() - (mcm_job_last_success_timestamp > 0)",
           "instant": true,
           "legendFormat": "{{exported_job}}",
           "range": false,
@@ -722,7 +722,7 @@
             "uid": "fdp9rmnopl3wgf"
           },
           "editorMode": "code",
-          "expr": "increase(wantlist_job_errors_total[1h])",
+          "expr": "increase(mcm_job_errors_total[1h])",
           "legendFormat": "{{exported_job}}",
           "range": true,
           "refId": "A"
@@ -735,7 +735,7 @@
   "refresh": "1m",
   "schemaVersion": 39,
   "tags": [
-    "wantlist",
+    "mcm",
     "music"
   ],
   "templating": {
@@ -747,8 +747,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "wantlist",
-  "uid": "music-wantlist",
+  "title": "mcm",
+  "uid": "music-mcm",
   "version": 1,
   "weekStart": ""
 }

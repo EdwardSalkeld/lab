@@ -77,7 +77,7 @@ has a real NixOS install with `qemu-guest-agent` running.
 ## Kite VM
 
 `luna` is planned as the second Proxmox host. The first planned guest is
-`kite`, a NixOS VM for Jellyfin, Navidrome, and Wantlist.
+`kite`, a NixOS VM for Jellyfin, Navidrome, and MCM.
 
 The VM resource is enabled once Luna credentials are available:
 
@@ -92,7 +92,7 @@ standalone luna Proxmox API:
 - root disk: 24 GiB
 - Jellyfin metadata/cache disk: 32 GiB
 - Navidrome metadata/cache disk: 8 GiB
-- Wantlist app-state disk: 8 GiB
+- MCM app-state disk: 8 GiB
 - CPU: 4 cores
 - memory: 8192 MiB
 - exposed service ports in the NixOS config: 4533, 8000, 8096

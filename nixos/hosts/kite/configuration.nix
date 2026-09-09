@@ -4,7 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ./web.nix
-    ./wantlist.nix
+    ./mcm.nix
   ];
 
   networking.hostName = "kite";
@@ -27,7 +27,7 @@
     };
   };
 
-  alcachofa.kite.wantlist.enable = true;
+  alcachofa.kite.mcm.enable = true;
 
   systemd.tmpfiles.rules = [
     "d /var/lib/jellyfin/cache 0750 jellyfin jellyfin -"
@@ -70,8 +70,8 @@
   alcachofa.remoteDeploy.postSwitchHealthchecks = [
     "jellyfin.service"
     "navidrome.service"
-    "wantlist-api.service"
-    "wantlist-worker.service"
+    "mcm-api.service"
+    "mcm-worker.service"
     "tailscaled.service"
     "qemu-guest-agent.service"
   ];

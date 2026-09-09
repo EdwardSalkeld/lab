@@ -6,7 +6,7 @@ Current targets:
 
 - `partridge`: the first repo-managed NixOS VM.
 - `magpie`: repo-managed NixOS host for the chatting split runtime.
-- `kite`: repo-managed NixOS media VM for Jellyfin, Navidrome, and Wantlist.
+- `kite`: repo-managed NixOS media VM for Jellyfin, Navidrome, and MCM.
 
 ## Installing Packages
 
