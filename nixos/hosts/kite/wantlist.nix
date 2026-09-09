@@ -17,6 +17,7 @@ let
     environment = {
       BEETSDIR = cfg.beetsDir;
       HOME = "/var/lib/wantlist";
+      WANTLIST_BEETS_DIRECTORY = cfg.musicDir;
       WANTLIST_IMPORT_INBOX_PATH = cfg.importInbox;
       WANTLIST_MUSIC_DIR = cfg.musicDir;
       WANTLIST_TV_ROOT = cfg.tvRoot;
