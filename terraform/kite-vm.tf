@@ -3,7 +3,7 @@ resource "proxmox_virtual_environment_vm" "kite" {
   provider = proxmox.luna
 
   name        = var.kite_vm_name
-  description = "NixOS media VM for Jellyfin, Navidrome, and Wantlist on standalone luna."
+  description = "NixOS media VM for Jellyfin, Navidrome, and MCM on standalone luna."
   node_name   = var.luna_proxmox_node_name
   tags        = ["nixos", "media", "luna"]
 

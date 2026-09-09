@@ -90,7 +90,7 @@ in
         ];
       }
       {
-        job_name = "wantlist";
+        job_name = "mcm";
         scheme = "https";
         metrics_path = "/metrics";
         static_configs = [

@@ -1,7 +1,9 @@
 { config, lib, mediaCollectionManagerPackages, ... }:
 
 let
-  cfg = config.alcachofa.kite.wantlist;
+  cfg = config.alcachofa.kite.mcm;
+  # Keep the existing Wantlist-named state and SOPS entries in place. Renaming
+  # these would require moving persistent data and re-encrypting credentials.
   common = {
     after = [
       "data.mount"
@@ -17,16 +19,16 @@ let
     environment = {
       BEETSDIR = cfg.beetsDir;
       HOME = "/var/lib/wantlist";
-      WANTLIST_BEETS_DIRECTORY = cfg.musicDir;
-      WANTLIST_IMPORT_INBOX_PATH = cfg.importInbox;
-      WANTLIST_MUSIC_DIR = cfg.musicDir;
-      WANTLIST_TV_ROOT = cfg.tvRoot;
-      WANTLIST_FILM_ROOT = cfg.filmRoot;
-      WANTLIST_WORKSPACE_ROOT = cfg.workspaceRoot;
-      WANTLIST_WATCHDIR_PATH = cfg.importInbox;
+      MCM_BEETS_DIRECTORY = cfg.musicDir;
+      MCM_IMPORT_INBOX_PATH = cfg.importInbox;
+      MCM_MUSIC_DIR = cfg.musicDir;
+      MCM_TV_ROOT = cfg.tvRoot;
+      MCM_FILM_ROOT = cfg.filmRoot;
+      MCM_WORKSPACE_ROOT = cfg.workspaceRoot;
+      MCM_WATCHDIR_PATH = cfg.importInbox;
     };
     serviceConfig = {
-      EnvironmentFile = config.sops.templates."wantlist.env".path;
+      EnvironmentFile = config.sops.templates."mcm.env".path;
       User = "edward";
       Group = "data";
       SupplementaryGroups = [ "media" ];
@@ -48,7 +50,7 @@ let
   };
 in
 {
-  options.alcachofa.kite.wantlist = {
+  options.alcachofa.kite.mcm = {
     enable = lib.mkEnableOption "Media Collection Manager services";
 
     beetsDir = lib.mkOption {
@@ -162,22 +164,22 @@ in
         mode = "0400";
       };
     };
-    sops.templates."wantlist.env" = {
+    sops.templates."mcm.env" = {
       owner = "edward";
       group = "data";
       mode = "0400";
       content = ''
-        WANTLIST_DATABASE_URL=${config.sops.placeholder."wantlist/database_url"}
-        WANTLIST_SPOTIFY_CLIENT_ID=${config.sops.placeholder."wantlist/spotify_client_id"}
-        WANTLIST_SPOTIFY_CLIENT_SECRET=${config.sops.placeholder."wantlist/spotify_client_secret"}
-        WANTLIST_SPOTIFY_REDIRECT_URI=${config.sops.placeholder."wantlist/spotify_redirect_uri"}
-        WANTLIST_TRANSMISSION_RPC_URL=${config.sops.placeholder."wantlist/transmission_rpc_url"}
-        WANTLIST_TRANSMISSION_USER=${config.sops.placeholder."wantlist/transmission_user"}
-        WANTLIST_TRANSMISSION_PASSWORD=${config.sops.placeholder."wantlist/transmission_password"}
-        WANTLIST_TRANSMISSION_SSH_HOST=${config.sops.placeholder."wantlist/transmission_ssh_host"}
-        WANTLIST_TRANSMISSION_SSH_USER=${config.sops.placeholder."wantlist/transmission_ssh_user"}
-        WANTLIST_TRANSMISSION_SSH_KEY=${config.sops.secrets."wantlist/transmission_ssh_key".path}
-        WANTLIST_NOTIFICATION_WEBHOOK_URL=${config.sops.placeholder."wantlist/notification_webhook_url"}
+        MCM_DATABASE_URL=${config.sops.placeholder."wantlist/database_url"}
+        MCM_SPOTIFY_CLIENT_ID=${config.sops.placeholder."wantlist/spotify_client_id"}
+        MCM_SPOTIFY_CLIENT_SECRET=${config.sops.placeholder."wantlist/spotify_client_secret"}
+        MCM_SPOTIFY_REDIRECT_URI=${config.sops.placeholder."wantlist/spotify_redirect_uri"}
+        MCM_TRANSMISSION_RPC_URL=${config.sops.placeholder."wantlist/transmission_rpc_url"}
+        MCM_TRANSMISSION_USER=${config.sops.placeholder."wantlist/transmission_user"}
+        MCM_TRANSMISSION_PASSWORD=${config.sops.placeholder."wantlist/transmission_password"}
+        MCM_TRANSMISSION_SSH_HOST=${config.sops.placeholder."wantlist/transmission_ssh_host"}
+        MCM_TRANSMISSION_SSH_USER=${config.sops.placeholder."wantlist/transmission_ssh_user"}
+        MCM_TRANSMISSION_SSH_KEY=${config.sops.secrets."wantlist/transmission_ssh_key".path}
+        MCM_NOTIFICATION_WEBHOOK_URL=${config.sops.placeholder."wantlist/notification_webhook_url"}
       '';
     };
 
@@ -185,46 +187,46 @@ in
       "d /var/lib/wantlist 0750 edward data -"
     ];
 
-    systemd.services.wantlist-migrate = common // {
+    systemd.services.mcm-migrate = common // {
       description = "Apply Media Collection Manager database migrations";
       before = [
-        "wantlist-api.service"
-        "wantlist-worker.service"
+        "mcm-api.service"
+        "mcm-worker.service"
       ];
       serviceConfig = common.serviceConfig // {
         Type = "oneshot";
         RemainAfterExit = true;
       };
       script = ''
-        exec ${mediaCollectionManagerPackages.wantlist-migrate}/bin/wantlist-migrate upgrade head
+        exec ${mediaCollectionManagerPackages.mcm-migrate}/bin/mcm-migrate upgrade head
       '';
     };
 
-    systemd.services.wantlist-api = common // {
+    systemd.services.mcm-api = common // {
       description = "Media Collection Manager API and frontend";
-      after = common.after ++ [ "wantlist-migrate.service" ];
-      requires = [ "wantlist-migrate.service" ];
+      after = common.after ++ [ "mcm-migrate.service" ];
+      requires = [ "mcm-migrate.service" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = common.serviceConfig // {
         Restart = "on-failure";
         RestartSec = "5s";
       };
       script = ''
-        exec ${mediaCollectionManagerPackages.wantlist-api}/bin/wantlist-api
+        exec ${mediaCollectionManagerPackages.mcm-api}/bin/mcm-api
       '';
     };
 
-    systemd.services.wantlist-worker = common // {
+    systemd.services.mcm-worker = common // {
       description = "Media Collection Manager worker";
-      after = common.after ++ [ "wantlist-migrate.service" ];
-      requires = [ "wantlist-migrate.service" ];
+      after = common.after ++ [ "mcm-migrate.service" ];
+      requires = [ "mcm-migrate.service" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = common.serviceConfig // {
         Restart = "on-failure";
         RestartSec = "5s";
       };
       script = ''
-        exec ${mediaCollectionManagerPackages.wantlist-worker}/bin/wantlist-worker
+        exec ${mediaCollectionManagerPackages.mcm-worker}/bin/mcm-worker
       '';
     };
   };

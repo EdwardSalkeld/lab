@@ -182,7 +182,7 @@ variable "kite_navidrome_disk_size" {
 }
 
 variable "kite_wantlist_disk_size" {
-  description = "Wantlist application state disk size for kite in GiB. Import staging and media remain on external disks."
+  description = "MCM application state disk size for kite in GiB. Import staging and media remain on external disks."
   type        = number
   default     = 8
 }

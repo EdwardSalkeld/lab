@@ -13,7 +13,7 @@ Repo-managed NixOS VMs:
 
 - `partridge` on `sol`: monitoring, Grafana, Loki, and PostgreSQL
 - `magpie` on `sol`: chatting services and Forgejo runner
-- `kite` on `luna`: Jellyfin, Navidrome, and Wantlist
+- `kite` on `luna`: Jellyfin, Navidrome, and MCM
 
 There is no standing disposable Debian cloud-image VM on `main` right now. The
 July 2026 `wren` exercise was torn down completely; the next disposable VM

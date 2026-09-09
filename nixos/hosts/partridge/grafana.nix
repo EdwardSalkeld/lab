@@ -528,13 +528,13 @@ let
     notification_settings.receiver = alertsContactPointName;
     isPaused = false;
   };
-  # wantlist pauses ingest/reconcile/plays when its Spotify refresh token is missing or
-  # expired (§8c re-auth). The app always exports wantlist_spotify_connected (1 connected,
-  # 0 reconnect-needed), so alert when it reads 0. NoData is left OK: a full wantlist outage
+  # MCM pauses ingest/reconcile/plays when its Spotify refresh token is missing or
+  # expired (§8c re-auth). The app always exports mcm_spotify_connected (1 connected,
+  # 0 reconnect-needed), so alert when it reads 0. NoData is left OK: a full MCM outage
   # drops the series and is already covered by the target-down alert.
-  wantlistSpotifyDisconnectedAlert = {
-    uid = "wantlist-spotify-disconnected";
-    title = "wantlist Spotify disconnected";
+  mcmSpotifyDisconnectedAlert = {
+    uid = "mcm-spotify-disconnected";
+    title = "MCM Spotify disconnected";
     condition = "C";
     data = [
       {
@@ -551,7 +551,7 @@ let
             uid = prometheusDatasourceUid;
           };
           editorMode = "code";
-          expr = "wantlist_spotify_connected";
+          expr = "mcm_spotify_connected";
           instant = true;
           intervalMs = 1000;
           maxDataPoints = 43200;
@@ -616,11 +616,11 @@ let
     execErrState = "Error";
     for = "10m";
     annotations = {
-      summary = "wantlist is disconnected from Spotify";
-      description = "wantlist_spotify_connected is 0 — the Spotify refresh token is missing or expired, so ingest/reconcile/plays are paused until you reconnect at https://wantlist.alcachofa.faith/.";
+      summary = "MCM is disconnected from Spotify";
+      description = "mcm_spotify_connected is 0 — the Spotify refresh token is missing or expired, so ingest/reconcile/plays are paused until you reconnect at https://wantlist.alcachofa.faith/.";
     };
     labels = {
-      service = "wantlist";
+      service = "mcm";
       severity = "warning";
     };
     notification_settings.receiver = alertsContactPointName;
@@ -1237,11 +1237,11 @@ in
         }
         {
           orgId = 1;
-          name = "Wantlist";
+          name = "MCM";
           folder = "Ops";
           interval = "5m";
           rules = [
-            wantlistSpotifyDisconnectedAlert
+            mcmSpotifyDisconnectedAlert
           ];
         }
         {

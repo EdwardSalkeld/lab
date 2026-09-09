@@ -9,7 +9,9 @@ let
   psql = "${config.services.postgresql.package}/bin/psql";
 in
 {
-  # Database for Wantlist on Kite. The app connects here over the LAN; only its
+  # Database for MCM on Kite. Its existing database, role, and password file
+  # retain their historical Wantlist names to avoid a data/credential migration.
+  # The app connects here over the LAN; only its
   # Postgres lives on Partridge. Postgres already listens on all interfaces
   # (see scheduler-db.nix) — this adds the login role, its LAN-only pg_hba rule and a password.
   # The role OWNS its database so the app can run its own Alembic migrations. Password is
@@ -24,7 +26,7 @@ in
   ];
 
   # LAN-facing only, not the tailnet: open 5432 on the LAN interface (mirrors postgres-readonly)
-  # and restrict this role to the LAN subnet at the pg_hba layer. Postgres rejects any wantlist
+  # and restrict this role to the LAN subnet at the pg_hba layer. Postgres rejects any MCM
   # connection without a matching rule, so tailnet clients can't reach this database even though
   # tailscale0 is a trusted interface. Appended after the base rules in scheduler-db.nix.
   networking.firewall.interfaces.${lanInterface}.allowedTCPPorts = [ 5432 ];
@@ -32,7 +34,7 @@ in
     host ${dbName} ${role} ${lanCidr} scram-sha-256
   '';
 
-  system.activationScripts.wantlistDbPassword.text = ''
+  system.activationScripts.mcmDbPassword.text = ''
     install -d -m 0700 -o postgres -g postgres /var/lib/postgresql
     if [ ! -s ${passwordFile} ]; then
       umask 077
@@ -42,8 +44,8 @@ in
     chmod 0400 ${passwordFile}
   '';
 
-  systemd.services.wantlist-db-setup = {
-    description = "Configure the wantlist database role password";
+  systemd.services.mcm-db-setup = {
+    description = "Configure the MCM database role password";
     after = [
       "postgresql.service"
       "postgresql-setup.service"
