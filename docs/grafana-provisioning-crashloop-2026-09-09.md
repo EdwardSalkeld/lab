@@ -10,7 +10,7 @@ loss and is now protected against the same trigger on future starts.
 ## Impact
 
 - Grafana was unavailable while it restarted.
-- The failure notifier produced repeated Telegram alerts.
+- The failure notifier produced hundreds of repeated Telegram alerts.
 - Prometheus, Loki, PostgreSQL, and the configured alert rules were not lost or
   corrupted.
 
@@ -40,6 +40,13 @@ The MCM rule update made this pre-existing data-dependent defect visible. Two
 older UI-created folders (`BackupMonitoring` and `Test`) still had
 `grafana.app/createdBy` and/or `grafana.app/updatedBy` set to the UI user.
 
+## Why the notification volume was so high
+
+`grafana.service` used systemd's default 100 ms restart delay and had no start
+limit. Its `OnFailure` notifier ran after every failed attempt, with no
+notification cooldown. The result was a failure alert roughly every three
+seconds until the service was manually stopped.
+
 Upstream report: <https://github.com/grafana/grafana/issues/128708>.
 
 ## Resolution and prevention
@@ -51,6 +58,11 @@ that runs before every Grafana start. It only changes folder records whose
 `createdBy` or `updatedBy` provenance begins with `user:`. That makes the
 workaround durable if a folder is edited in Grafana's UI before an upstream
 Grafana release fixes the defect.
+
+The PR also changes Grafana's restart policy to wait 15 seconds between
+attempts and stop after three failures within five minutes. The failure
+notifier now records a timestamp under `/var/lib` and sends at most one
+Telegram message every 15 minutes.
 
 ## Follow-up
 
