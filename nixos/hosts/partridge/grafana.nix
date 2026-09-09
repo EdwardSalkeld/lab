@@ -26,6 +26,34 @@ let
       --data-urlencode "disable_web_page_preview=true" \
       "https://api.telegram.org/bot''${GRAFANA_TELEGRAM_BOT_TOKEN}/sendMessage"
   '';
+  # Grafana 13 can crash-loop during file-based alert provisioning when a
+  # unified-storage folder retains UI user provenance. Normalize it before
+  # startup until https://github.com/grafana/grafana/issues/128708 is fixed.
+  grafanaFolderProvenanceRepair = pkgs.writeShellScript "grafana-folder-provenance-repair" ''
+    set -euo pipefail
+
+    exec ${config.services.postgresql.package}/bin/psql \
+      --dbname=grafana \
+      --set=ON_ERROR_STOP=1 \
+      --quiet \
+      --command="
+        UPDATE resource
+        SET value = jsonb_set(
+          jsonb_set(
+            value::jsonb,
+            '{metadata,annotations,grafana.app/createdBy}',
+            to_jsonb('provisioning:'::text)
+          ),
+          '{metadata,annotations,grafana.app/updatedBy}',
+          to_jsonb('provisioning:'::text)
+        )::text
+        WHERE \"group\" = 'folder.grafana.app'
+          AND (
+            value::jsonb #>> '{metadata,annotations,grafana.app/createdBy}' LIKE 'user:%'
+            OR value::jsonb #>> '{metadata,annotations,grafana.app/updatedBy}' LIKE 'user:%'
+          );
+      "
+  '';
   # Grafana's default Telegram message dumps the firing value, every label and
   # the raw annotation list. Our rules already carry a tidy summary/description,
   # so render just those two lines plus the Source/Silence links. Email keeps
@@ -991,6 +1019,20 @@ in
 
   systemd.services.grafana.serviceConfig.EnvironmentFile =
     config.sops.templates."grafana-alerting.env".path;
+  systemd.services.grafana-folder-provenance-repair = {
+    description = "Normalize Grafana unified-folder provenance before startup";
+    before = [ "grafana.service" ];
+    after = [ "postgresql.service" ];
+    requires = [ "postgresql.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "postgres";
+      Group = "postgres";
+      ExecStart = grafanaFolderProvenanceRepair;
+    };
+  };
+  systemd.services.grafana.requires = [ "grafana-folder-provenance-repair.service" ];
+  systemd.services.grafana.after = [ "grafana-folder-provenance-repair.service" ];
   systemd.services.grafana.onFailure = [ "grafana-failure-notify.service" ];
   systemd.services.grafana-failure-notify = {
     description = "Notify Telegram when Grafana fails";
