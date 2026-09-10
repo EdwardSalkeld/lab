@@ -1007,6 +1007,13 @@ in
     group = "grafana";
     mode = "0400";
   };
+  sops.secrets."grafana/secret_key" = {
+    sopsFile = ./secrets/grafana-security.yaml;
+    key = "secret_key";
+    owner = "grafana";
+    group = "grafana";
+    mode = "0400";
+  };
   sops.templates."grafana-alerting.env" = {
     owner = "grafana";
     group = "grafana";
@@ -1067,9 +1074,7 @@ in
         root_url = "https://${grafanaDomain}/";
       };
 
-      # NixOS 26.05 no longer supplies a default. Keep Grafana's previous
-      # default so existing database-encrypted data remains readable.
-      security.secret_key = "SW2YcwTIb9zpOOhoPsMm";
+      security.secret_key = "$__file{${config.sops.secrets."grafana/secret_key".path}}";
 
       database = {
         type = "postgres";

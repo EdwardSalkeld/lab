@@ -67,8 +67,6 @@ in
     };
   };
 
-  # Promtail was removed in NixOS 26.05. Preserve the same journal stream,
-  # labels, and Loki endpoint with its supported successor, Grafana Alloy.
   services.alloy = {
     enable = true;
     extraFlags = [
