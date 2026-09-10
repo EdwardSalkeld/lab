@@ -1067,6 +1067,10 @@ in
         root_url = "https://${grafanaDomain}/";
       };
 
+      # NixOS 26.05 no longer supplies a default. Keep Grafana's previous
+      # default so existing database-encrypted data remains readable.
+      security.secret_key = "SW2YcwTIb9zpOOhoPsMm";
+
       database = {
         type = "postgres";
         host = "/run/postgresql";

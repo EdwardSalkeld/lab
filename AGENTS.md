@@ -11,7 +11,7 @@ on Proxmox-managed NixOS VMs.
 - Active Terraform root: `terraform/`
 - Proxmox node: `sol`
 - Repo-managed VM: `partridge`
-- Installer ISO: `nixos-25.11-minimal-x86_64-linux.iso`
+- Installer ISO: `nixos-26.05-minimal-x86_64-linux.iso`
 
 The first stage is intentionally manual: Terraform creates a blank VM and
 attaches the NixOS minimal ISO. NixOS should be installed from the Proxmox
