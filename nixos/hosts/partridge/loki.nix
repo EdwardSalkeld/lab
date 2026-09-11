@@ -67,50 +67,47 @@ in
     };
   };
 
-  services.promtail = {
+  # Promtail was removed in NixOS 26.05 after reaching upstream EOL. Alloy
+  # keeps the journal labels and filtering used by the existing Loki alerts.
+  services.alloy = {
     enable = true;
-    configuration = {
-      server = {
-        http_listen_address = "127.0.0.1";
-        http_listen_port = 9080;
-        grpc_listen_port = 0;
-      };
-
-      clients = [
-        { url = "http://127.0.0.1:${toString lokiPort}/loki/api/v1/push"; }
-      ];
-
-      scrape_configs = [
-        {
-          job_name = "partridge-systemd-journal";
-          journal = {
-            max_age = "24h";
-            labels = {
-              host = "partridge";
-              source = "journal";
-            };
-          };
-          relabel_configs = [
-            {
-              source_labels = [ "__journal__systemd_unit" ];
-              regex = "exercise-tracker-hevy-sync.service";
-              action = "keep";
-            }
-            {
-              source_labels = [ "__journal__systemd_unit" ];
-              target_label = "systemd_unit";
-            }
-            {
-              source_labels = [ "__journal_priority_keyword" ];
-              target_label = "level";
-            }
-          ];
-        }
-      ];
-    };
+    extraFlags = [ "--server.http.listen-addr=127.0.0.1:9080" "--disable-reporting" ];
   };
 
-  systemd.services.promtail = {
+  environment.etc."alloy/partridge-journal.alloy".text = ''
+    loki.relabel "partridge_journal" {
+      forward_to = []
+
+      rule {
+        source_labels = ["__journal__systemd_unit"]
+        target_label  = "systemd_unit"
+      }
+
+      rule {
+        source_labels = ["__journal_priority_keyword"]
+        target_label  = "level"
+      }
+    }
+
+    loki.source.journal "partridge" {
+      forward_to    = [loki.write.partridge.receiver]
+      relabel_rules = loki.relabel.partridge_journal.rules
+      matches       = "_SYSTEMD_UNIT=exercise-tracker-hevy-sync.service"
+      max_age       = "24h"
+      labels = {
+        host   = "partridge",
+        source = "journal",
+      }
+    }
+
+    loki.write "partridge" {
+      endpoint {
+        url = "http://127.0.0.1:${toString lokiPort}/loki/api/v1/push"
+      }
+    }
+  '';
+
+  systemd.services.alloy = {
     after = [ "loki.service" ];
     wants = [ "loki.service" ];
   };

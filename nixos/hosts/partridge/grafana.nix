@@ -1060,6 +1060,10 @@ in
     package = grafanaPackage;
 
     settings = {
+      # Preserve Grafana's historical default during the 26.05 migration so
+      # existing encrypted database values remain readable.
+      security.secret_key = "SW2YcwTIb9zpOOhoPsMm";
+
       server = {
         domain = grafanaDomain;
         http_addr = "127.0.0.1";
