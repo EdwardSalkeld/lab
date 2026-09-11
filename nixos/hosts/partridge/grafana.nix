@@ -1026,6 +1026,13 @@ in
     group = "grafana";
     mode = "0400";
   };
+  sops.secrets."grafana/secret_key" = {
+    sopsFile = ./secrets/grafana-security.yaml;
+    key = "secret_key";
+    owner = "grafana";
+    group = "grafana";
+    mode = "0400";
+  };
   sops.templates."grafana-alerting.env" = {
     owner = "grafana";
     group = "grafana";
@@ -1092,6 +1099,8 @@ in
         http_port = grafanaPort;
         root_url = "https://${grafanaDomain}/";
       };
+
+      security.secret_key = "$__file{${config.sops.secrets."grafana/secret_key".path}}";
 
       database = {
         type = "postgres";
