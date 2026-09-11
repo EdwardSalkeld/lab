@@ -1045,6 +1045,10 @@ in
       GRAFANA_SMTP_PASSWORD=${config.sops.placeholder."grafana/smtp_password"}
       GRAFANA_TELEGRAM_BOT_TOKEN=${config.sops.placeholder."grafana/telegram_bot_token"}
     '';
+    # Both secrets reach Grafana only through this file, and its path does not
+    # change when the values do, so rotating either would otherwise leave
+    # Grafana running on the old credentials.
+    restartUnits = [ "grafana.service" ];
   };
 
   systemd.services.grafana.serviceConfig.EnvironmentFile =
