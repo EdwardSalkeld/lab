@@ -1032,6 +1032,10 @@ in
     owner = "grafana";
     group = "grafana";
     mode = "0400";
+    # The secret's path never changes, so a rotated key would otherwise sit on
+    # disk while Grafana kept using the old one from memory until something
+    # restarted it.
+    restartUnits = [ "grafana.service" ];
   };
   sops.templates."grafana-alerting.env" = {
     owner = "grafana";
