@@ -109,7 +109,6 @@
   environment.systemPackages = with pkgs; [
     curl
     git
-    ghostty.terminfo
     htop
     rsync
     smartmontools
