@@ -36,7 +36,7 @@ in
     # is mounted on the dedicated magpie-ci disk (hardware-configuration.nix) so
     # CI image/layer churn can never fill magpie's 24 GB OS root.
     virtualisation.docker.enable = true;
-    # 25.11's default docker (28.x) is flagged unmaintained/EOL, which fails
+    # 26.05's default docker package is flagged unmaintained/EOL, which fails
     # evaluation; pin the maintained line instead of whitelisting a stale one.
     virtualisation.docker.package = pkgs.docker_29;
 

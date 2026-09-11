@@ -3,8 +3,8 @@ resource "proxmox_virtual_environment_download_file" "nixos_minimal_iso" {
   datastore_id = var.proxmox_iso_datastore_id
   node_name    = var.proxmox_node_name
 
-  url       = "https://channels.nixos.org/nixos-25.11/latest-nixos-minimal-x86_64-linux.iso"
-  file_name = "nixos-25.11-minimal-x86_64-linux.iso"
+  url       = "https://channels.nixos.org/nixos-26.05/latest-nixos-minimal-x86_64-linux.iso"
+  file_name = "nixos-26.05-minimal-x86_64-linux.iso"
 
   overwrite_unmanaged = true
   upload_timeout      = 1800

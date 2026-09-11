@@ -116,8 +116,7 @@ in
       pkgs.bubblewrap
       pkgs.cacert
       # The worker runs `codex exec` as its agent (worker.json codex_command).
-      # Codex is a static musl binary, so it needs no nix-ld here. Sourced from
-      # nixpkgs-unstable because 25.11 pins a release too old for gpt-5.4.
+      # Codex is a static musl binary, so it needs no nix-ld here.
       codexPackage
       pkgs.curl
       pkgs.gh
