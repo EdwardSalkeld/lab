@@ -57,6 +57,12 @@
 
   security.sudo.wheelNeedsPassword = false;
 
+  # Without a terminfo entry for the client's TERM, readline cannot read the
+  # terminal's auto_right_margin capability and falls back to horizontally
+  # scrolling the input line instead of wrapping it. Ship the full database so
+  # this does not have to be fixed per host for each new terminal emulator.
+  environment.enableAllTerminfo = true;
+
   environment.systemPackages = with pkgs; [
     curl
     git
