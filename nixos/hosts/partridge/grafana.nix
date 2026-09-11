@@ -10,6 +10,23 @@ let
     set -euo pipefail
 
     unit="''${1:?usage: grafana-failure-notify <systemd-unit>}"
+    state_dir=/var/lib/grafana-failure-notify
+    cooldown_seconds=900
+    exec 9>"$state_dir/lock"
+    ${pkgs.util-linux}/bin/flock 9
+
+    now_epoch="$(${pkgs.coreutils}/bin/date +%s)"
+    last_notified=0
+    if [ -r "$state_dir/last-notified" ]; then
+      read -r last_notified < "$state_dir/last-notified" || true
+    fi
+    if ! [[ "$last_notified" =~ ^[0-9]+$ ]]; then
+      last_notified=0
+    fi
+    if (( now_epoch - last_notified < cooldown_seconds )); then
+      exit 0
+    fi
+
     host="$("/run/current-system/sw/bin/hostname" -s)"
     now="$("/run/current-system/sw/bin/date" -u +"%Y-%m-%d %H:%M:%S UTC")"
     result="$("/run/current-system/sw/bin/systemctl" show "$unit" --property=Result --value 2>/dev/null || true)"
@@ -17,7 +34,7 @@ let
     sub_state="$("/run/current-system/sw/bin/systemctl" show "$unit" --property=SubState --value 2>/dev/null || true)"
     text="Grafana failed on $host at $now. unit=$unit active=$active_state sub=$sub_state result=''${result:-unknown}. Check journalctl -u $unit -n 80 --no-pager."
 
-    exec ${pkgs.curl}/bin/curl \
+    ${pkgs.curl}/bin/curl \
       --fail \
       --silent \
       --show-error \
@@ -25,6 +42,8 @@ let
       --data-urlencode "text=$text" \
       --data-urlencode "disable_web_page_preview=true" \
       "https://api.telegram.org/bot''${GRAFANA_TELEGRAM_BOT_TOKEN}/sendMessage"
+
+    printf '%s\n' "$now_epoch" > "$state_dir/last-notified"
   '';
   # Grafana 13 can crash-loop during file-based alert provisioning when a
   # unified-storage folder retains UI user provenance. Normalize it before
@@ -1040,13 +1059,20 @@ in
   };
   systemd.services.grafana.requires = [ "grafana-folder-provenance-repair.service" ];
   systemd.services.grafana.after = [ "grafana-folder-provenance-repair.service" ];
+  systemd.services.grafana.unitConfig = {
+    StartLimitIntervalSec = "5min";
+    StartLimitBurst = 3;
+  };
+  systemd.services.grafana.serviceConfig.RestartSec = "15s";
   systemd.services.grafana.onFailure = [ "grafana-failure-notify.service" ];
   systemd.services.grafana-failure-notify = {
-    description = "Notify Telegram when Grafana fails";
+    description = "Notify Telegram when Grafana fails (15 minute cooldown)";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     serviceConfig = {
       Type = "oneshot";
+      StateDirectory = "grafana-failure-notify";
+      StateDirectoryMode = "0700";
       EnvironmentFile = config.sops.templates."grafana-alerting.env".path;
       ExecStart = "${grafanaFailureNotify} grafana.service";
     };
