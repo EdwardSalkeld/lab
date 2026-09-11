@@ -2,8 +2,8 @@
   description = "Home lab NixOS configurations";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    # The Codex CLI moves fast; the pinned 25.11 channel only has an old
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    # The Codex CLI moves fast; the pinned 26.05 channel only has an old
     # release that the current backend rejects (gpt-5.4 needs a newer CLI), so
     # the chatting worker takes Codex from unstable.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
