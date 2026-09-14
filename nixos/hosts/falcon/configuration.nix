@@ -18,7 +18,13 @@
     interfaces.eth0 = {
       ipv6.addresses = [{ address = "2a01:4f8:c17:d035::1"; prefixLength = 64; }];
     };
-    firewall.allowedTCPPorts = [ 22 80 443 9100 ];
+    firewall = {
+      # HTTP is retained for ACME HTTP-01 validation and the HTTPS redirect.
+      allowedTCPPorts = [ 22 80 443 ];
+      # Prometheus runs on Partridge over the tailnet; never expose host
+      # metrics on Falcon's public interface.
+      interfaces.tailscale0.allowedTCPPorts = [ 9100 ];
+    };
   };
 
   services.openssh.enable = true;
@@ -36,7 +42,7 @@
   services.prometheus.exporters.node = {
     enable = true;
     enabledCollectors = [ "systemd" ];
-    openFirewall = true;
+    openFirewall = false;
   };
 
   users.users.edward = {
