@@ -8,15 +8,14 @@
 
   networking = {
     hostName = "falcon";
-    useDHCP = false;
+    # Hetzner Cloud assigns and routes the Primary IPv4 over DHCP. Keeping
+    # this dynamic lets a reassigned Primary IP work without a host change.
+    useDHCP = true;
     defaultGateway6 = {
       address = "fe80::1";
       interface = "eth0";
     };
     interfaces.eth0 = {
-      # Hetzner Cloud assigns and routes the Primary IPv4 over DHCP. Keeping
-      # this dynamic lets a reassigned Primary IP work without a host change.
-      useDHCP = true;
       ipv6.addresses = [{ address = "2a01:4f8:c17:d035::1"; prefixLength = 64; }];
     };
     firewall.allowedTCPPorts = [ 22 80 443 9100 ];
