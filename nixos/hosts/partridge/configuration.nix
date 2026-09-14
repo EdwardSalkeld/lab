@@ -28,7 +28,14 @@
   services.tailscale = {
     enable = true;
     openFirewall = true;
+    # Make the home LAN reachable to tailnet devices when the route is later
+    # approved in the tailnet policy. Advertise /23 rather than the LAN's /24:
+    # a client already on 10.4.1.0/24 keeps its more-specific direct LAN route.
+    extraUpFlags = [ "--advertise-routes=10.4.0.0/23" ];
   };
+
+  # A subnet router must be able to forward packets from tailscale0 to the LAN.
+  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
   fileSystems."/srv/code" = {
     device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1";
