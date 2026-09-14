@@ -13,7 +13,7 @@ jobs:
       nix_hosts: ${{ steps.nix-hosts.outputs.hosts }}
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: detect relevant changes
@@ -124,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: setup terraform
         uses: hashicorp/setup-terraform@v4
       - name: terraform fmt
@@ -190,7 +190,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: install nix
         uses: cachix/install-nix-action@v31
         with:
@@ -215,7 +215,7 @@ jobs:
         host: ${{ fromJSON(needs.changes.outputs.nix_hosts) }}
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: install nix
         uses: cachix/install-nix-action@v31
         with:
