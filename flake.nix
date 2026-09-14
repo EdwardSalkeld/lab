@@ -235,6 +235,7 @@
           };
           modules = [
             sops-nix.nixosModules.sops
+            ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/partridge/configuration.nix
@@ -250,6 +251,7 @@
           };
           modules = [
             sops-nix.nixosModules.sops
+            ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/magpie/configuration.nix
@@ -264,6 +266,7 @@
           };
           modules = [
             sops-nix.nixosModules.sops
+            ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/kite/configuration.nix
