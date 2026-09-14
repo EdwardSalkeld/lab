@@ -3,16 +3,16 @@
     "bbmb": {
       "flake": false,
       "locked": {
-        "lastModified": 1775468671,
-        "narHash": "sha256-1VfvHN+7QpBGTRn2/r32y49+YvmMeaLk/6TgNQvvDPs=",
+        "lastModified": 1788132670,
+        "narHash": "sha256-J8vWsTWrZVysXMDmwd1RQXazekm920DfUDJ985cxkCs=",
         "owner": "EdwardSalkeld",
         "repo": "bbmb",
-        "rev": "70040bbfefcb25ab141aeac01703452eea95fc22",
+        "rev": "50f59c9986316e8a5b85dd3b0a4e5a8ec3592fca",
         "type": "github"
       },
       "original": {
         "owner": "EdwardSalkeld",
-        "ref": "v7",
+        "ref": "v8",
         "repo": "bbmb",
         "type": "github"
       }
