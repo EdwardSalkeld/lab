@@ -6,12 +6,12 @@
 set -euo pipefail
 
 # Every target is fully qualified so the loop has no host-specific addressing
-# logic. Falcon is outside the LAN, hence its MagicDNS name.
+# logic. Falcon's Tailnet address is published through our managed DNS.
 HOSTS=(
   partridge.int.alcachofa.faith
   magpie.int.alcachofa.faith
   kite.int.alcachofa.faith
-  falcon.tailb35748.ts.net
+  falcon.ts.alcachofa.faith
 )
 KEY="${ONWARD_SSH_KEY:?dispatcher must set ONWARD_SSH_KEY}"
 
