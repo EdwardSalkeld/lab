@@ -100,4 +100,52 @@ in
       Persistent = true;
     };
   };
+
+  # FreshRSS's supported automatic export writes a portable SQLite database
+  # for every user and prunes old exports itself. The application keeps this
+  # opt-in setting in its persistent config, so enforce only that narrow
+  # backup stanza without replacing the restored configuration.
+  systemd.services.freshrss-sqlite-backup = {
+    description = "FreshRSS SQLite backup";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    environment.DATA_PATH = dataDir;
+    script = ''
+      config_file=${dataDir}/config.php
+      ${pkgs.php}/bin/php -r '
+        $path = $argv[1];
+        $config = require $path;
+        $desired = ["enabled" => true, "retention" => 8];
+        if (($config["auto_sqlite_export"] ?? null) !== $desired) {
+          $config["auto_sqlite_export"] = $desired;
+          $temporary = "$path.tmp";
+          file_put_contents($temporary, "<?php\nreturn " . var_export($config, true) . ";\n");
+          rename($temporary, $path);
+        }
+      ' "$config_file"
+      ${pkgs.freshrss}/cli/export-sqlite-auto.php
+      ${pkgs.findutils}/bin/find ${dataDir}/users -path '*/sqlite-backups/*.sqlite' \
+        -type f -exec ${pkgs.coreutils}/bin/chmod 0600 {} +
+    '';
+    serviceConfig = {
+      Type = "oneshot";
+      User = "freshrss";
+      Group = "freshrss";
+      WorkingDirectory = pkgs.freshrss;
+      UMask = "0077";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectHome = true;
+      ProtectSystem = "strict";
+      ReadWritePaths = [ dataDir ];
+    };
+  };
+
+  systemd.timers.freshrss-sqlite-backup = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Sun *-*-* 03:15:00";
+      Persistent = true;
+    };
+  };
 }
