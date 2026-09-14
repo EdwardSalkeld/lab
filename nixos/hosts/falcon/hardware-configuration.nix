@@ -4,8 +4,13 @@
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
 
   boot.initrd.availableKernelModules = [ "ahci" "virtio_pci" "virtio_blk" "virtio_scsi" "sd_mod" ];
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # The Hetzner Rescue environment is booted in legacy BIOS mode. Keep the
+  # installed system compatible with that firmware rather than installing an
+  # EFI-only bootloader.
+  boot.loader.grub = {
+    enable = true;
+    device = "/dev/sda";
+  };
 
   fileSystems."/" = {
     # Assigned during the Rescue installation. Labels survive disk-device
@@ -14,9 +19,4 @@
     fsType = "ext4";
   };
 
-  fileSystems."/boot/efi" = {
-    device = "/dev/disk/by-label/NIXOS_EFI";
-    fsType = "vfat";
-    options = [ "umask=0077" ];
-  };
 }

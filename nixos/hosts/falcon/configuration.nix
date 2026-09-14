@@ -1,7 +1,10 @@
 { lib, pkgs, tailscalePackage ? pkgs.tailscale, ... }:
 
 {
-  imports = [ ./hardware-configuration.nix ];
+  imports = [
+    ./hardware-configuration.nix
+    ./freshrss.nix
+  ];
 
   networking = {
     hostName = "falcon";
@@ -18,7 +21,7 @@
       ipv4.addresses = [{ address = "91.99.120.43"; prefixLength = 32; }];
       ipv6.addresses = [{ address = "2a01:4f8:c17:d035::1"; prefixLength = 64; }];
     };
-    firewall.allowedTCPPorts = [ 22 443 9100 ];
+    firewall.allowedTCPPorts = [ 22 80 443 9100 ];
   };
 
   services.openssh.enable = true;
@@ -33,8 +36,6 @@
     "net.ipv6.conf.all.forwarding" = 1;
   };
 
-  virtualisation.docker.enable = true;
-  virtualisation.docker.enableOnBoot = true;
   services.prometheus.exporters.node = {
     enable = true;
     enabledCollectors = [ "systemd" ];
@@ -43,7 +44,7 @@
 
   users.users.edward = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "docker" ];
+    extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD edward@m1"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzhdCoWE/CiY3laW9R/I5UEhQs7krz8ur8OOg7su5MJ edward@m2"
@@ -61,7 +62,7 @@
     dates = "weekly";
     options = "--delete-older-than 14d";
   };
-  environment.systemPackages = with pkgs; [ curl docker-compose git htop jq ripgrep vim wget ];
+  environment.systemPackages = with pkgs; [ curl git htop jq ripgrep vim wget ];
 
   system.stateVersion = "26.05";
 }

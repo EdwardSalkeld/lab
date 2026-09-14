@@ -104,7 +104,6 @@ in
           {
             targets = [
               "fourth.int.alcachofa.faith:8080"
-              "falcon.ts.alcachofa.faith:8080"
             ];
           }
         ];
