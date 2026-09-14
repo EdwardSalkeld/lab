@@ -1,4 +1,5 @@
 keys:
+  - &edward_m1 "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD"
   - &edward_mac "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzhdCoWE/CiY3laW9R/I5UEhQs7krz8ur8OOg7su5MJ"
   - &partridge "age1p46dg990257vmdzxjutu5ujgjep2wax6z5tapgthkp6kelptu9cs80zc99"
   - &magpie "age162pm4ssrw8ngrk6zdkztuvc4ez4mzt8jwnvk2wn7jnkye9393ujs8rkgsg"
@@ -11,20 +12,24 @@ creation_rules:
   - path_regex: nixos/hosts/partridge/secrets/.*\.yaml$
     key_groups:
       - age:
+          - *edward_m1
           - *edward_mac
           - *partridge
   - path_regex: nixos/hosts/magpie/secrets/.*\.(ya?ml|json)$
     key_groups:
       - age:
+          - *edward_m1
           - *edward_mac
           - *magpie
   - path_regex: nixos/hosts/kite/secrets/.*\.yaml$
     key_groups:
       - age:
+          - *edward_m1
           - *edward_mac
           - *kite
   - path_regex: nixos/hosts/blink/secrets/.*\.yaml$
     key_groups:
       - age:
+          - *edward_m1
           - *edward_mac
           - *blink
