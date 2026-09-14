@@ -5,14 +5,21 @@
 # descriptive only. One failing host does not stop the others.
 set -euo pipefail
 
-HOSTS=(partridge magpie kite)
+# Every target is fully qualified so the loop has no host-specific addressing
+# logic. Falcon's Tailnet address is published through our managed DNS.
+HOSTS=(
+  partridge.int.alcachofa.faith
+  magpie.int.alcachofa.faith
+  kite.int.alcachofa.faith
+  falcon.ts.alcachofa.faith
+)
 KEY="${ONWARD_SSH_KEY:?dispatcher must set ONWARD_SSH_KEY}"
 
 rc=0
 for h in "${HOSTS[@]}"; do
   echo "==> nixos-rebuild on ${h}"
   if ssh -i "${KEY}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
-       "root@${h}.int.alcachofa.faith" lab-switch; then
+       "root@${h}" lab-switch; then
     echo "    ${h} ok"
   else
     echo "    ${h} FAILED" >&2

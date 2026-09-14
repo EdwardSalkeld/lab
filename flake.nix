@@ -274,6 +274,7 @@
           inherit system;
           specialArgs.tailscalePackage = pkgsUnstable.tailscale;
           modules = [
+            ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/falcon/configuration.nix
           ];
         };

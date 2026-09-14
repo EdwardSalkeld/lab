@@ -45,6 +45,14 @@
     openFirewall = false;
   };
 
+  alcachofa.remoteDeploy.postSwitchHealthchecks = [
+    "nginx.service"
+    "phpfpm-freshrss.service"
+    "freshrss-updater.timer"
+    "tailscaled.service"
+    "prometheus-node-exporter.service"
+  ];
+
   users.users.edward = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
