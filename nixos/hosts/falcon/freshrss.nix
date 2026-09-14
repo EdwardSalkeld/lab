@@ -3,6 +3,7 @@
 let
   domain = "freshrss-docker.falcon.alcachofa.faith";
   dataDir = "/var/lib/freshrss";
+  backupDir = "/var/backups/freshrss";
 in
 {
   # FreshRSS state is restored from the pre-NixOS archive. Do not use the
@@ -19,6 +20,12 @@ in
     user = "freshrss";
     group = "freshrss";
     mode = "0770";
+  };
+
+  systemd.tmpfiles.settings."10-freshrss"."${backupDir}".d = {
+    user = "freshrss";
+    group = "freshrss";
+    mode = "0750";
   };
 
   security.acme = {
@@ -102,9 +109,13 @@ in
   };
 
   # FreshRSS's supported automatic export writes a portable SQLite database
-  # for every user and prunes old exports itself. The application keeps this
-  # opt-in setting in its persistent config, so enforce only that narrow
-  # backup stanza without replacing the restored configuration.
+  # for every user and prunes old exports itself. Pair it with an archive of
+  # the remaining persistent state: config, user metadata, extensions and
+  # assets. Cache is rebuildable, and a live copy of db.sqlite is deliberately
+  # excluded in favour of the consistent export made immediately beforehand.
+  #
+  # A restore therefore needs the matching SQLite export and state archive.
+  # Both remain on local disk until off-host retention is decided.
   systemd.services.freshrss-sqlite-backup = {
     description = "FreshRSS SQLite backup";
     after = [ "network-online.target" ];
@@ -126,6 +137,23 @@ in
       ${pkgs.freshrss}/cli/export-sqlite-auto.php
       ${pkgs.findutils}/bin/find ${dataDir}/users -path '*/sqlite-backups/*.sqlite' \
         -type f -exec ${pkgs.coreutils}/bin/chmod 0600 {} +
+
+      timestamp=$(${pkgs.coreutils}/bin/date --utc +%Y%m%dT%H%M%SZ)
+      temporary_archive=${backupDir}/.state-$timestamp.tar.gz.tmp
+      archive=${backupDir}/state-$timestamp.tar.gz
+      ${pkgs.gnutar}/bin/tar --create --gzip --file "$temporary_archive" \
+        --exclude='./cache' \
+        --exclude='./users/*/db.sqlite*' \
+        --exclude='./users/*/sqlite-backups' \
+        --directory=${dataDir} .
+      ${pkgs.coreutils}/bin/chmod 0600 "$temporary_archive"
+      ${pkgs.coreutils}/bin/mv "$temporary_archive" "$archive"
+      ${pkgs.findutils}/bin/find ${backupDir} -maxdepth 1 -type f \
+        -name 'state-*.tar.gz' -printf '%T@ %p\\n' \
+        | ${pkgs.coreutils}/bin/sort -nr \
+        | ${pkgs.coreutils}/bin/tail -n +9 \
+        | ${pkgs.findutils}/bin/cut -d' ' -f2- \
+        | ${pkgs.findutils}/bin/xargs --no-run-if-empty ${pkgs.coreutils}/bin/rm -f
     '';
     serviceConfig = {
       Type = "oneshot";
@@ -137,7 +165,7 @@ in
       PrivateTmp = true;
       ProtectHome = true;
       ProtectSystem = "strict";
-      ReadWritePaths = [ dataDir ];
+      ReadWritePaths = [ dataDir backupDir ];
     };
   };
 
