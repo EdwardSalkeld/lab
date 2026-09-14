@@ -41,6 +41,8 @@ jobs:
               - 'flake.lock'
             nix_kite:
               - 'nixos/hosts/kite/**'
+            nix_falcon:
+              - 'nixos/hosts/falcon/**'
             nix_magpie:
               - 'nixos/hosts/magpie/**'
             nix_partridge:
@@ -50,8 +52,9 @@ jobs:
         run: |
           hosts=()
           if [[ "${{ steps.filter.outputs.nix_shared }}" == "true" ]]; then
-            hosts=(kite magpie partridge)
+            hosts=(falcon kite magpie partridge)
           else
+            [[ "${{ steps.filter.outputs.nix_falcon }}" == "true" ]] && hosts+=(falcon)
             [[ "${{ steps.filter.outputs.nix_kite }}" == "true" ]] && hosts+=(kite)
             [[ "${{ steps.filter.outputs.nix_magpie }}" == "true" ]] && hosts+=(magpie)
             [[ "${{ steps.filter.outputs.nix_partridge }}" == "true" ]] && hosts+=(partridge)
@@ -103,7 +106,7 @@ jobs:
               done <<< "$changed_inputs"
 
               if [[ "$shared_lock_change" == "true" ]]; then
-                hosts=(kite magpie partridge)
+                hosts=(falcon kite magpie partridge)
               fi
             fi
           fi
