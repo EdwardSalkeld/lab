@@ -5,26 +5,24 @@
 # descriptive only. One failing host does not stop the others.
 set -euo pipefail
 
-# Falcon is outside the LAN, so use its stable MagicDNS name rather than the
-# LAN-only internal zone used by the Proxmox VMs.
-HOSTS=(partridge magpie kite falcon.tailb35748.ts.net)
+# Every target is fully qualified so the loop has no host-specific addressing
+# logic. Falcon is outside the LAN, hence its MagicDNS name.
+HOSTS=(
+  partridge.int.alcachofa.faith
+  magpie.int.alcachofa.faith
+  kite.int.alcachofa.faith
+  falcon.tailb35748.ts.net
+)
 KEY="${ONWARD_SSH_KEY:?dispatcher must set ONWARD_SSH_KEY}"
 
 rc=0
 for h in "${HOSTS[@]}"; do
-  if [ "${h}" = "falcon.tailb35748.ts.net" ]; then
-    target="${h}"
-    label="falcon"
-  else
-    target="${h}.int.alcachofa.faith"
-    label="${h}"
-  fi
-  echo "==> nixos-rebuild on ${label}"
+  echo "==> nixos-rebuild on ${h}"
   if ssh -i "${KEY}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
-       "root@${target}" lab-switch; then
-    echo "    ${label} ok"
+       "root@${h}" lab-switch; then
+    echo "    ${h} ok"
   else
-    echo "    ${label} FAILED" >&2
+    echo "    ${h} FAILED" >&2
     rc=1
   fi
 done
