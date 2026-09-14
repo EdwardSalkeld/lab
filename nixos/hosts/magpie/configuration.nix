@@ -13,6 +13,7 @@
   networking.hostName = "magpie";
   networking.networkmanager.enable = true;
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
+  alcachofa.journalToLoki.enable = true;
 
   # Magpie's small root disk fills quickly with Nix build/store churn from the
   # worker. Remove every unreachable store path at the daily run rather than
