@@ -1,8 +1,12 @@
 keys:
   - &edward_m1 "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGW8YuC9dt9wq2LptMHCfrg8n5l0nGUAd227vWCbqKUD"
   - &edward_mac "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzhdCoWE/CiY3laW9R/I5UEhQs7krz8ur8OOg7su5MJ"
+  # Host entries are the ssh-to-age converted form of each machine's SSH host
+  # key, because that is the identity sops-nix loads during activation. The raw
+  # ssh-ed25519 public key of the same host is a different age recipient and
+  # will not decrypt what was encrypted to this one.
   - &partridge "age1p46dg990257vmdzxjutu5ujgjep2wax6z5tapgthkp6kelptu9cs80zc99"
-  - &magpie "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGn6vKFtYlici8ot7g//6IsKyGPNxk+TN0FaIxYOmfCr"
+  - &magpie "age162pm4ssrw8ngrk6zdkztuvc4ez4mzt8jwnvk2wn7jnkye9393ujs8rkgsg"
   - &kite "age13h3555r6v4tmxfnlusj05qw9wvdjkpxtz0w923kyz6w45czpjgmsh9dj83"
   # Derived from Blink's existing SSH host ED25519 key. Preserve that key
   # during the reinstall before the first NixOS reboot.
