@@ -269,6 +269,14 @@
             ./nixos/hosts/kite/configuration.nix
           ];
         };
+
+        falcon = nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs.tailscalePackage = pkgsUnstable.tailscale;
+          modules = [
+            ./nixos/hosts/falcon/configuration.nix
+          ];
+        };
       };
     };
 }
