@@ -33,7 +33,7 @@
     };
     # bbmb is release-pinned; change the ref to move it.
     bbmb = {
-      url = "github:EdwardSalkeld/bbmb/v7";
+      url = "github:EdwardSalkeld/bbmb/v8";
       flake = false;
     };
   };
