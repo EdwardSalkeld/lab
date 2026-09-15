@@ -193,6 +193,7 @@ let
   prometheusDatasourceUid = "fdp9rmnopl3wgf";
   lokiDatasourceUid = "ce6j6e2q9rapsa";
   fourthRsyncLogSelector = ''{host="fourth", source="file", filename="/host/edward/data-sync.log"}'';
+  fourthBackblazeLogSelector = ''{host="fourth", source="docker", container_name="/docker-backup-1"}'';
   # Single rule over up; Grafana fans it out into one alert instance per scrape
   # target, labelled by `instance`/`job`. up == 0 means the scrape failed (host,
   # exporter or service down) while the series still exists; NoData covers the
@@ -676,17 +677,24 @@ let
   # Real, persistent filesystems only: ext4 excludes tmpfs/ramfs/fuse/vfat;
   # /nix/store is dropped because it mirrors / on NixOS hosts.
   diskFsSelector = ''{fstype="ext4", mountpoint!~"/nix/store"}'';
-  mkLokiLogCountAlert =
+  mkLokiThresholdAlert =
     {
       uid,
       title,
       expr,
-      threshold,
+      threshold ? 0,
+      evaluator ? {
+        params = [ threshold ];
+        type = "gt";
+      },
       for,
       summary,
       description,
       severity,
       panelId,
+      dashboardUid ? "ops-backups-kite-fourth",
+      service ? "rsync",
+      noDataState ? "OK",
     }:
     {
       inherit uid title;
@@ -746,10 +754,7 @@ let
           model = {
             conditions = [
               {
-                evaluator = {
-                  params = [ threshold ];
-                  type = "gt";
-                };
+                inherit evaluator;
                 operator.type = "and";
                 query.params = [ "C" ];
                 reducer.type = "last";
@@ -768,16 +773,16 @@ let
           };
         }
       ];
-      noDataState = "OK";
+      inherit noDataState;
       execErrState = "Error";
       inherit for;
       annotations = {
-        __dashboardUid__ = "ops-backups-kite-fourth";
+        __dashboardUid__ = dashboardUid;
         __panelId__ = toString panelId;
         inherit description summary;
       };
       labels = {
-        service = "rsync";
+        service = service;
         host = "fourth";
         severity = severity;
       };
@@ -795,7 +800,7 @@ let
     "(?i)code 23"
     "(?i)code 24"
   ];
-  rsyncErrorAlert = mkLokiLogCountAlert {
+  rsyncErrorAlert = mkLokiThresholdAlert {
     uid = "fourth-rsync-errors";
     title = "Kite to Fourth rsync errors or failures";
     expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "${rsyncErrorPatterns}" [5m]))'';
@@ -806,7 +811,7 @@ let
     severity = "critical";
     panelId = 3;
   };
-  rsyncDeleteVolumeAlert = mkLokiLogCountAlert {
+  rsyncDeleteVolumeAlert = mkLokiThresholdAlert {
     uid = "fourth-rsync-delete-volume";
     title = "Kite to Fourth rsync delete volume";
     expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "\\*deleting " [5m]))'';
@@ -816,6 +821,36 @@ let
     description = "/host/edward/data-sync.log on fourth has logged more than 5 Kite to Fourth delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
     severity = "warning";
     panelId = 2;
+  };
+  backblazeCompletionAlert = mkLokiThresholdAlert {
+    uid = "fourth-backblaze-completion";
+    title = "Fourth to Backblaze backup has not completed";
+    expr = ''sum(count_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" [8d]))'';
+    evaluator = {
+      params = [ 1 ];
+      type = "lt";
+    };
+    noDataState = "Alerting";
+    for = "5m";
+    summary = "Fourth to Backblaze backup is overdue";
+    description = "The Fourth backup container has not logged a successful completion in eight days.";
+    severity = "critical";
+    panelId = 1;
+    dashboardUid = "ops-backup-fourth-backblaze";
+    service = "backup";
+  };
+  backblazeDurationAlert = mkLokiThresholdAlert {
+    uid = "fourth-backblaze-duration";
+    title = "Fourth to Backblaze backup duration is high";
+    expr = ''max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur [8d])'';
+    threshold = 600;
+    for = "5m";
+    summary = "Fourth to Backblaze backup exceeded ten minutes";
+    description = "The most recent Fourth to Backblaze backup took more than 600 seconds.";
+    severity = "warning";
+    panelId = 3;
+    dashboardUid = "ops-backup-fourth-backblaze";
+    service = "backup";
   };
   rsyncRecencyAlert = {
     uid = "fourth-rsync-recency";
@@ -1335,6 +1370,8 @@ in
           folder = "Ops";
           interval = "1m";
           rules = [
+            backblazeCompletionAlert
+            backblazeDurationAlert
             rsyncRecencyAlert
             rsyncErrorAlert
             rsyncDeleteVolumeAlert

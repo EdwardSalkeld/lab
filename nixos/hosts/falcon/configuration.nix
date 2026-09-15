@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ./freshrss.nix
+    ./navidrome.nix
   ];
 
   networking = {
@@ -32,7 +33,13 @@
     enable = true;
     package = tailscalePackage;
     openFirewall = true;
-    extraUpFlags = [ "--advertise-exit-node" ];
+    # Reconcile persistent Tailscale preferences after every NixOS switch.
+    # Falcon remains an exit node and now accepts Partridge's approved home-LAN
+    # subnet route when it is away from 10.4.1.0/24.
+    extraSetFlags = [
+      "--advertise-exit-node"
+      "--accept-routes=true"
+    ];
   };
   boot.kernel.sysctl = {
     "net.ipv4.ip_forward" = 1;
@@ -45,7 +52,10 @@
     openFirewall = false;
   };
 
+  alcachofa.journalToLoki.enable = true;
+
   alcachofa.remoteDeploy.postSwitchHealthchecks = [
+    "alloy.service"
     "nginx.service"
     "phpfpm-freshrss.service"
     "freshrss-updater.timer"

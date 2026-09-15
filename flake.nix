@@ -33,7 +33,7 @@
     };
     # bbmb is release-pinned; change the ref to move it.
     bbmb = {
-      url = "github:EdwardSalkeld/bbmb/v7";
+      url = "github:EdwardSalkeld/bbmb/v8";
       flake = false;
     };
   };
@@ -277,6 +277,8 @@
           inherit system;
           specialArgs.tailscalePackage = pkgsUnstable.tailscale;
           modules = [
+            sops-nix.nixosModules.sops
+            ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/falcon/configuration.nix
           ];
