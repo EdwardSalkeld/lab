@@ -277,6 +277,7 @@
           inherit system;
           specialArgs.tailscalePackage = pkgsUnstable.tailscale;
           modules = [
+            sops-nix.nixosModules.sops
             ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/falcon/configuration.nix

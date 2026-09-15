@@ -5,6 +5,7 @@ keys:
   - &partridge "age1p46dg990257vmdzxjutu5ujgjep2wax6z5tapgthkp6kelptu9cs80zc99"
   - &magpie "age162pm4ssrw8ngrk6zdkztuvc4ez4mzt8jwnvk2wn7jnkye9393ujs8rkgsg"
   - &kite "age13h3555r6v4tmxfnlusj05qw9wvdjkpxtz0w923kyz6w45czpjgmsh9dj83"
+  - &falcon "age16sppf53kf0gw2cqzrrey8atrn5va5r6s7ntuwulqd5wrhdrk6dvqpuml4p"
   # Derived from Blink's existing SSH host ED25519 key. Preserve that key
   # during the reinstall before the first NixOS reboot.
   - &blink "age19j57heaz0r3x576l3zdvp3xca97uqlkdrqxc244warcy0hjjdczqdcmw5n"
@@ -31,6 +32,13 @@ creation_rules:
           - *edward_mac
           - *vault_backup
           - *kite
+  - path_regex: nixos/hosts/falcon/secrets/.*\.yaml$
+    key_groups:
+      - age:
+          - *edward_m1
+          - *edward_mac
+          - *vault_backup
+          - *falcon
   - path_regex: nixos/hosts/blink/secrets/.*\.yaml$
     key_groups:
       - age:

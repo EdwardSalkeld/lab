@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ./freshrss.nix
+    ./navidrome.nix
   ];
 
   networking = {
