@@ -3,6 +3,7 @@
 let
   jellyfinDomain = "jellyfin.alcachofa.faith";
   navidromeDomain = "navidrome.alcachofa.faith";
+  photoviewDomain = "photos.alcachofa.faith";
   mcmDomain = "mcm.alcachofa.faith";
 in
 {
@@ -41,6 +42,7 @@ in
       environmentFile = config.sops.templates."acme-cloudflare.env".path;
       extraDomainNames = [
         navidromeDomain
+        photoviewDomain
         mcmDomain
       ];
       group = "nginx";
@@ -68,6 +70,12 @@ in
         forceSSL = true;
         useACMEHost = jellyfinDomain;
         locations."/".proxyPass = "http://127.0.0.1:4533";
+      };
+
+      ${photoviewDomain} = {
+        forceSSL = true;
+        useACMEHost = jellyfinDomain;
+        locations."/".proxyPass = "http://127.0.0.1:4001";
       };
 
       ${mcmDomain} = {
