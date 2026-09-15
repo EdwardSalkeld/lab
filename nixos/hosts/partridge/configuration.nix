@@ -11,6 +11,7 @@
     ./linear-export.nix
     ./octopus-dl.nix
     ./opnsense-exporter.nix
+    ./postgres-backup.nix
     ./postgres-readonly.nix
     ./prometheus.nix
     ./reverse-proxy.nix
