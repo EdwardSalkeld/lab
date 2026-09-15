@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ./web.nix
+    ./photoview.nix
     ./mcm.nix
   ];
 
@@ -71,6 +72,7 @@
   alcachofa.remoteDeploy.postSwitchHealthchecks = [
     "jellyfin.service"
     "navidrome.service"
+    "photoview.service"
     "mcm-api.service"
     "mcm-worker.service"
     "tailscaled.service"
