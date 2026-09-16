@@ -29,6 +29,25 @@
     };
   };
 
+  # Office-stereo playback is intentionally separate from the WiiM's Spotify
+  # Connect input. The passed-through PCM2902 DAC is exposed by ALSA as CODEC.
+  services.mpd = {
+    enable = true;
+    openFirewall = true;
+    settings = {
+      music_directory = "/data/partial/record-library/library";
+      bind_to_address = "any";
+      audio_output = [
+        {
+          type = "alsa";
+          name = "Office USB DAC";
+          device = "hw:CARD=CODEC,DEV=0";
+          mixer_type = "none";
+        }
+      ];
+    };
+  };
+
   alcachofa.kite.mcm.enable = true;
 
   systemd.tmpfiles.rules = [

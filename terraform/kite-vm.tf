@@ -31,6 +31,12 @@ resource "proxmox_virtual_environment_vm" "kite" {
     bridge = var.proxmox_network_bridge
   }
 
+  # Burr-Brown/TI PCM2902 USB DAC beside Luna.  Match vendor/product rather
+  # than the host's volatile USB bus/device number so it returns after reboot.
+  usb {
+    host = "08bb:2902"
+  }
+
   efi_disk {
     datastore_id = var.luna_vm_datastore_id
   }
