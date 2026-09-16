@@ -1,7 +1,5 @@
-# TLS front end for the chatting UIs. Both had only ever been plain HTTP on the
-# LAN, relying on being LAN-only: the worker run list on 9465, and the handler
-# schedule list on 9464. The handler shares its port with /metrics, so there is
-# no separate vhost for the metrics.
+# TLS front end for the chatting UIs. The handler shares its port with
+# /metrics, so there is no separate vhost for the metrics.
 { config, ... }:
 
 let
