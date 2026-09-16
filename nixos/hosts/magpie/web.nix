@@ -5,6 +5,7 @@
 let
   workerDomain = "chatting-worker.int.alcachofa.faith";
   handlerDomain = "chatting-handler.int.alcachofa.faith";
+  bbmbDomain = "chatting-bbmb.int.alcachofa.faith";
 in
 {
   sops.secrets."acme/cloudflare_dns_api_token" = {
@@ -32,7 +33,10 @@ in
     certs.${workerDomain} = {
       dnsProvider = "cloudflare";
       environmentFile = config.sops.templates."acme-cloudflare.env".path;
-      extraDomainNames = [ handlerDomain ];
+      extraDomainNames = [
+        handlerDomain
+        bbmbDomain
+      ];
       group = "nginx";
     };
   };
@@ -55,6 +59,14 @@ in
         forceSSL = true;
         useACMEHost = workerDomain;
         locations."/".proxyPass = "http://127.0.0.1:9464";
+      };
+
+      # Metrics only, no UI. It exists so Prometheus has an HTTPS target and
+      # the broker's own port can stay off the network entirely.
+      ${bbmbDomain} = {
+        forceSSL = true;
+        useACMEHost = workerDomain;
+        locations."/".proxyPass = "http://127.0.0.1:9877";
       };
     };
   };

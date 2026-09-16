@@ -29,9 +29,8 @@ let
   handlerConfig = {
     db_path = "/var/lib/handler/chatting-message-handler.db";
     bbmb_address = "127.0.0.1:9876";
-    # Bind metrics on all interfaces so Partridge's Prometheus can scrape the
-    # handler; the magpie firewall only opens 9464 to the LAN.
-    metrics_host = "0.0.0.0";
+    # Prometheus now scrapes through nginx, so this need not leave the host.
+    metrics_host = "127.0.0.1";
     poll_interval_seconds = 30;
     poll_timeout_seconds = 2;
     allowed_egress_channels = [
