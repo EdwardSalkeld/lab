@@ -8,6 +8,7 @@
     ./chatting-secrets.nix
     ./chatting-prune.nix
     ./forgejo-runner.nix
+    ./web.nix
   ];
 
   networking.hostName = "magpie";
