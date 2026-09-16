@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@name@</title>
+    <style>
+      :root {
+        --paper: #ece1c6;
+        --ink: #2a251c;
+        --faint: #6f6449;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #17150f;
+          --ink: #e7ddc4;
+          --faint: #8d8264;
+        }
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        gap: 2rem;
+        margin: 0;
+        min-height: 100svh;
+        padding: 2rem 1rem 1.5rem;
+      }
+
+      main {
+        align-items: center;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 1.75rem;
+        justify-content: center;
+      }
+
+      img {
+        border-radius: 2px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, .18), 0 12px 34px rgba(0, 0, 0, .22);
+        max-height: 78svh;
+        max-width: min(92vw, 62rem);
+        object-fit: contain;
+      }
+
+      h1 {
+        font-size: clamp(1.75rem, 5vw, 2.75rem);
+        font-weight: 400;
+        letter-spacing: .34em;
+        margin: 0;
+        /* The plates set their captions in spaced capitals; match them. */
+        text-indent: .34em;
+        text-transform: uppercase;
+      }
+
+      footer {
+        color: var(--faint);
+        font-size: .72rem;
+        letter-spacing: .02em;
+        line-height: 1.5;
+        text-align: center;
+        text-wrap: balance;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="bird.jpg" alt="@plate@. @alt@">
+      <h1>@name@</h1>
+    </main>
+    <footer>@credit@</footer>
+  </body>
+</html>

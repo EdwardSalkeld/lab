@@ -1,55 +1,8 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 
 let
   partridgeInternalDomain = "partridge.int.alcachofa.faith";
   partridgeTailnetDomain = "partridge.ts.alcachofa.faith";
-  partridgeSite = pkgs.writeTextDir "index.html" ''
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>partridge</title>
-        <style>
-          :root {
-            color-scheme: light dark;
-            font-family: ui-sans-serif, system-ui, sans-serif;
-          }
-
-          body {
-            align-items: center;
-            display: grid;
-            margin: 0;
-            min-height: 100vh;
-            place-items: center;
-          }
-
-          main {
-            max-width: 34rem;
-            padding: 2rem;
-          }
-
-          h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            letter-spacing: 0;
-            margin: 0 0 0.75rem;
-          }
-
-          p {
-            line-height: 1.6;
-            margin: 0;
-          }
-        </style>
-      </head>
-      <body>
-        <main>
-          <h1>partridge</h1>
-          <p>NixOS on Proxmox, managed from the lab IaC repo.</p>
-        </main>
-      </body>
-    </html>
-  '';
 in
 {
   sops.secrets."acme/cloudflare_dns_api_token" = {
@@ -87,19 +40,18 @@ in
     recommendedOptimisation = true;
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
+  };
 
-    virtualHosts = {
-      ${partridgeInternalDomain} = {
-        forceSSL = true;
-        root = partridgeSite;
-        useACMEHost = partridgeInternalDomain;
-      };
-
-      ${partridgeTailnetDomain} = {
-        forceSSL = true;
-        root = partridgeSite;
-        useACMEHost = partridgeInternalDomain;
-      };
-    };
+  alcachofa.holdingPage = {
+    enable = true;
+    domains = [
+      partridgeInternalDomain
+      partridgeTailnetDomain
+    ];
+    useACMEHost = partridgeInternalDomain;
+    image = ./bird.jpg;
+    plate = "Common or Grey Partridge, Perdix cinerea";
+    alt = "A grey partridge standing among daisies and dry grass, a second bird crouched behind it.";
+    credit = "Common or Grey Partridge, <i>Perdix cinerea</i>. Drawn by E. Neale, lithographed by J. Smit, from Lilford's <i>Coloured Figures of the Birds of the British Islands</i> (1885-97). CC BY 2.0, via Wikimedia Commons.";
   };
 }

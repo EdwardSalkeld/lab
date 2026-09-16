@@ -6,6 +6,7 @@ let
   workerDomain = "chatting-worker.int.alcachofa.faith";
   handlerDomain = "chatting-handler.int.alcachofa.faith";
   bbmbDomain = "chatting-bbmb.int.alcachofa.faith";
+  hostDomain = "magpie.int.alcachofa.faith";
 in
 {
   sops.secrets."acme/cloudflare_dns_api_token" = {
@@ -36,6 +37,7 @@ in
       extraDomainNames = [
         handlerDomain
         bbmbDomain
+        hostDomain
       ];
       group = "nginx";
     };
@@ -72,4 +74,14 @@ in
   };
 
   alcachofa.remoteDeploy.postSwitchHealthchecks = [ "nginx.service" ];
+
+  alcachofa.holdingPage = {
+    enable = true;
+    domains = [ hostDomain ];
+    useACMEHost = workerDomain;
+    image = ./bird.jpg;
+    plate = "Magpie, Pica caudata";
+    alt = "A magpie on open ground before a tuft of dry grass, black and white with a long iridescent tail.";
+    credit = "Magpie, <i>Pica caudata</i>. Archibald Thorburn, from Lilford's <i>Coloured Figures of the Birds of the British Islands</i> (1885-97). Public domain, via Wikimedia Commons.";
+  };
 }
