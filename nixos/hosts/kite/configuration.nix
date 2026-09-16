@@ -42,6 +42,10 @@
           type = "alsa";
           name = "Office USB DAC";
           device = "hw:CARD=CODEC,DEV=0";
+          # PCM2902 is a USB 1.1 DAC.  Keep its hardware clock at the 48 kHz
+          # rate used by the clean direct ALSA test; MPD resamples library
+          # material instead of asking the DAC to change rate per track.
+          format = "48000:16:2";
           mixer_type = "none";
         }
       ];
