@@ -46,17 +46,22 @@ in
         ];
       }
       {
+        # Scraped through Magpie's nginx so the exporters themselves need not
+        # listen on the network. The instance label changes shape as a result:
+        # it is now the vhost, not magpie plus an exporter port.
         job_name = "bbmb";
         scrape_interval = "5s";
+        scheme = "https";
         static_configs = [
-          { targets = [ "magpie.int.alcachofa.faith:9877" ]; }
+          { targets = [ "chatting-bbmb.int.alcachofa.faith" ]; }
         ];
       }
       {
         job_name = "billy";
         scrape_interval = "5s";
+        scheme = "https";
         static_configs = [
-          { targets = [ "magpie.int.alcachofa.faith:9464" ]; }
+          { targets = [ "chatting-handler.int.alcachofa.faith" ]; }
         ];
       }
       {

@@ -13,7 +13,6 @@
 
   networking.hostName = "magpie";
   networking.networkmanager.enable = true;
-  networking.firewall.trustedInterfaces = [ "tailscale0" ];
   alcachofa.journalToLoki.enable = true;
 
   # Magpie's small root disk fills quickly with Nix build/store churn from the
@@ -56,15 +55,10 @@
     };
   };
 
-  # LAN access to the chatting services: bbmb broker metrics (9877), message
-  # handler metrics (9464), and the worker activity UI (9465). No auth on these,
-  # so they rely on being LAN-only. Node exporter (9100) is opened separately by
-  # the shared VM base module.
-  networking.firewall.allowedTCPPorts = [
-    9464
-    9465
-    9877
-  ];
+  # The chatting ports carry no auth, so nothing reaches them from the network:
+  # nginx proxies each one from localhost, and the tailnet interface is no
+  # longer blanket-trusted. SSH, node exporter and nginx stay reachable because
+  # their own modules open them globally.
 
   services.tailscale = {
     enable = true;
