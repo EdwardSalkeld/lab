@@ -235,6 +235,7 @@
           };
           modules = [
             sops-nix.nixosModules.sops
+            ./nixos/modules/holding-page.nix
             ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
@@ -251,6 +252,7 @@
           };
           modules = [
             sops-nix.nixosModules.sops
+            ./nixos/modules/holding-page.nix
             ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
@@ -266,6 +268,7 @@
           };
           modules = [
             sops-nix.nixosModules.sops
+            ./nixos/modules/holding-page.nix
             ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
@@ -278,6 +281,7 @@
           specialArgs.tailscalePackage = pkgsUnstable.tailscale;
           modules = [
             sops-nix.nixosModules.sops
+            ./nixos/modules/holding-page.nix
             ./nixos/modules/journal-to-loki.nix
             ./nixos/modules/remote-deploy.nix
             ./nixos/hosts/falcon/configuration.nix

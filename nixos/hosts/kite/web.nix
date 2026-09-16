@@ -5,6 +5,7 @@ let
   navidromeDomain = "navidrome.alcachofa.faith";
   photoviewDomain = "photos.alcachofa.faith";
   mcmDomain = "mcm.alcachofa.faith";
+  hostDomain = "kite.int.alcachofa.faith";
 in
 {
   sops = {
@@ -44,6 +45,7 @@ in
         navidromeDomain
         photoviewDomain
         mcmDomain
+        hostDomain
       ];
       group = "nginx";
     };
@@ -84,5 +86,15 @@ in
         locations."/".proxyPass = "http://127.0.0.1:8000";
       };
     };
+  };
+
+  alcachofa.holdingPage = {
+    enable = true;
+    domains = [ hostDomain ];
+    useACMEHost = jellyfinDomain;
+    image = ./bird.jpg;
+    plate = "Kite, Milvus regalis";
+    alt = "A red kite perched on a pine branch, chestnut and grey plumage with a pale head.";
+    credit = "Kite, <i>Milvus regalis</i>. Archibald Thorburn, from Lilford's <i>Coloured Figures of the Birds of the British Islands</i> (1885-97). Public domain, via Wikimedia Commons.";
   };
 }

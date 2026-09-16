@@ -5,6 +5,7 @@
     ./hardware-configuration.nix
     ./freshrss.nix
     ./navidrome.nix
+    ./web.nix
   ];
 
   networking = {
