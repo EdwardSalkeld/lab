@@ -36,11 +36,24 @@
     # Make the home LAN reachable to tailnet devices when the route is later
     # approved in the tailnet policy. Advertise /23 rather than the LAN's /24:
     # a client already on 10.4.1.0/24 keeps its more-specific direct LAN route.
-    extraSetFlags = [ "--advertise-routes=10.4.0.0/23" ];
+    #
+    # Partridge also offers itself as an exit node so traffic from untrusted
+    # networks egresses via home. Falcon stays an exit node too, as a fallback
+    # for when home is unreachable.
+    extraSetFlags = [
+      "--advertise-routes=10.4.0.0/23"
+      "--advertise-exit-node"
+    ];
   };
 
-  # A subnet router must be able to forward packets from tailscale0 to the LAN.
-  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+  # A subnet router must be able to forward packets from tailscale0 to the LAN,
+  # and an exit node must forward them on to the internet. Partridge has no
+  # IPv6 upstream today, but --advertise-exit-node advertises ::/0 regardless,
+  # so enable v6 forwarding rather than leave the kernel silently dropping it.
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 1;
+  };
 
   fileSystems."/srv/code" = {
     device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1";
