@@ -170,3 +170,9 @@ nixos-rebuild dry-build --flake .#magpie
 
 If the host should be disposable, avoid storing important state on its root disk
 unless Terraform also manages a separate persistent disk for that state.
+
+## 9. Give It a Landing Page
+
+Every host answers on its own hostname with a plate of the bird it is named
+after. See [docs/host-landing-pages.md](../docs/host-landing-pages.md) for
+sourcing the illustration, preparing it, and wiring up the module.

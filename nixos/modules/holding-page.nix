@@ -1,6 +1,8 @@
 # A host's landing page: one antique plate of the bird it is named after, the
 # hostname underneath. Nothing else — these names get typed by hand and landing
 # on a default nginx page gives no clue which machine answered.
+#
+# Sourcing and preparing a plate for a new host: docs/host-landing-pages.md
 { config, lib, pkgs, ... }:
 
 let
