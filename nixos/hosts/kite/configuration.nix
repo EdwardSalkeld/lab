@@ -83,6 +83,10 @@
   };
 
   users.users.jellyfin.extraGroups = [ "media" ];
+  # Most of the record library is world-readable, but some migrated artist
+  # directories retain group-only access.  MPD needs the same read group as
+  # the library without becoming a general-purpose privileged account.
+  users.users.mpd.extraGroups = [ "data" ];
 
   users.users.edward.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAbd34g7lWe3qsntjGhdgLVFSSdh9BvrFDTqlNADdZvD edward@fourth"
