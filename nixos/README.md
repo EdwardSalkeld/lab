@@ -273,6 +273,39 @@ sudo systemctl start restic-backups-partridge-postgres.service
 sudo restic-partridge-postgres snapshots
 ```
 
+## Kite Data Backups
+
+Kite owns the backup flow for its data disk.  When enabled,
+`kite-data-sync.service` pushes `/data/full` and `/data/partial` to Fourth each
+day; native NixOS Restic then archives only `/data/full` to the existing
+Backblaze B2 repository.  This implements [house#120](https://github.com/brokensbone/house/issues/120):
+`partial` has two local-disk copies, while `full` also has the off-site archive.
+
+The configuration is deliberately disabled in
+`nixos/hosts/kite/configuration.nix` until this one-time hand-off is complete:
+
+1. Create `kite-backup` on Fourth, with a dedicated public key restricted to
+   receiving only `/data/full` and `/data/partial`; create those destination
+   directories with ownership writable by that account.
+2. Copy `nixos/hosts/kite/secrets/kite-backup.yaml.example` to
+   `kite-backup.yaml`, replace its placeholders with the new SSH material and
+   the existing Fourth Restic/Backblaze values, encrypt it with `sops`, and
+   commit the encrypted `kite-backup.yaml` (never its plaintext).
+3. Set `alcachofa.kite.backups.enable = true`, deploy Kite, then run the sync
+   and Restic units manually once.  Confirm the new Kite journal entries are in
+   Loki and that the Restic repository has a new snapshot.
+4. Only after that verification, migrate the Grafana backup dashboard/alerts
+   from Fourth Docker logs to Kite systemd journals and remove the old Fourth
+   cron and Docker Restic services from `house`.
+
+Useful commands on Kite after enabling:
+
+```sh
+sudo systemctl start kite-data-sync.service
+sudo systemctl start restic-backups-kite-full.service
+sudo restic-kite-full snapshots
+```
+
 ## Loki on `partridge`
 
 Loki runs in single-node filesystem mode on port `3100`, backed by a dedicated
