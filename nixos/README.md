@@ -284,13 +284,13 @@ Backblaze B2 repository.  This implements [house#120](https://github.com/brokens
 The configuration is deliberately disabled in
 `nixos/hosts/kite/configuration.nix` until this one-time hand-off is complete:
 
-1. Create `kite-backup` on Fourth, with a dedicated public key restricted to
-   receiving only `/data/full` and `/data/partial`; create those destination
-   directories with ownership writable by that account.
-2. Copy `nixos/hosts/kite/secrets/kite-backup.yaml.example` to
-   `kite-backup.yaml`, replace its placeholders with the new SSH material and
-   the existing Fourth Restic/Backblaze values, encrypt it with `sops`, and
-   commit the encrypted `kite-backup.yaml` (never its plaintext).
+1. Add the dedicated Kite backup public key to Fourth's existing `edward`
+   account. The `/data/full` and `/data/partial` destination paths already
+   exist there, so no receiver account or directory setup is required.
+2. Add the existing Fourth Restic/Backblaze values to the already encrypted
+   `nixos/hosts/kite/secrets/kite-backup.yaml`; the adjacent `.example` lists
+   every key. Do not replace the pre-generated `fourth_ssh_key` value and never
+   commit plaintext secrets.
 3. Set `alcachofa.kite.backups.enable = true`, deploy Kite, then run the sync
    and Restic units manually once.  Confirm the new Kite journal entries are in
    Loki and that the Restic repository has a new snapshot.

@@ -11,15 +11,16 @@ in
 
     fourthTarget = lib.mkOption {
       type = lib.types.str;
-      default = "kite-backup@fourth.ts.alcachofa.faith";
-      description = "Restricted SSH account on Fourth that receives Kite's data copies.";
+      default = "edward@fourth.ts.alcachofa.faith";
+      description = "Fourth's existing SSH account which receives Kite's data copies.";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    # The first deployment needs these six values copied from Fourth's ignored
-    # Docker environment file, plus a dedicated key for the restricted Fourth
-    # receive account.  The accompanying .example file documents every value.
+    # The dedicated Kite-to-Fourth SSH key is already encrypted in
+    # kite-backup.yaml. Before the first deployment, add that public key to
+    # Fourth's existing Edward account and add the Restic/B2 values to this
+    # encrypted file. The accompanying .example file documents those values.
     sops.secrets = {
       "kite-backup/fourth_ssh_key" = {
         sopsFile = ./secrets/kite-backup.yaml;
