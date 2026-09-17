@@ -20,6 +20,9 @@ let
       BEETSDIR = cfg.beetsDir;
       HOME = "/var/lib/wantlist";
       MCM_BEETS_DIRECTORY = cfg.musicDir;
+      # The migrated Beets DB still stores this historical prefix. MCM translates
+      # it only while building its read-only MPD track cache; it never exposes it.
+      MCM_LEGACY_MUSIC_DIR = "/home/edward/.config/beets/library";
       MCM_IMPORT_INBOX_PATH = cfg.importInbox;
       MCM_MUSIC_DIR = cfg.musicDir;
       MCM_TV_ROOT = cfg.tvRoot;
