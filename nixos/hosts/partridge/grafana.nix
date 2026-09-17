@@ -192,8 +192,8 @@ let
     };
   prometheusDatasourceUid = "fdp9rmnopl3wgf";
   lokiDatasourceUid = "ce6j6e2q9rapsa";
-  fourthRsyncLogSelector = ''{host="fourth", source="file", filename="/host/edward/data-sync.log"}'';
-  fourthBackblazeLogSelector = ''{host="fourth", source="docker", container_name="/docker-backup-1"}'';
+  kiteRsyncLogSelector = ''{host="kite", source="journal", systemd_unit="kite-data-sync.service"}'';
+  kiteResticLogSelector = ''{host="kite", source="journal", systemd_unit="restic-backups-kite-full.service"}'';
   # Single rule over up; Grafana fans it out into one alert instance per scrape
   # target, labelled by `instance`/`job`. up == 0 means the scrape failed (host,
   # exporter or service down) while the series still exists; NoData covers the
@@ -783,7 +783,7 @@ let
       };
       labels = {
         service = service;
-        host = "fourth";
+        host = "kite";
         severity = severity;
       };
       notification_settings.receiver = alertsContactPointName;
@@ -801,59 +801,59 @@ let
     "(?i)code 24"
   ];
   rsyncErrorAlert = mkLokiThresholdAlert {
-    uid = "fourth-rsync-errors";
+    uid = "kite-rsync-errors";
     title = "Kite to Fourth rsync errors or failures";
-    expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "${rsyncErrorPatterns}" [5m]))'';
+    expr = ''sum(count_over_time(${kiteRsyncLogSelector} |~ "${rsyncErrorPatterns}" [5m]))'';
     threshold = 0;
     for = "2m";
     summary = "Kite to Fourth rsync errors";
-    description = "/host/edward/data-sync.log on fourth has matched Kite to Fourth rsync error/failure patterns for 2m. Check the backup log for transfer failures, permissions issues, space exhaustion, or disconnects.";
+    description = "kite-data-sync.service on Kite has matched Kite to Fourth rsync error/failure patterns for 2m. Check the unit journal for transfer failures, permissions issues, space exhaustion, or disconnects.";
     severity = "critical";
     panelId = 3;
   };
   rsyncDeleteVolumeAlert = mkLokiThresholdAlert {
-    uid = "fourth-rsync-delete-volume";
+    uid = "kite-rsync-delete-volume";
     title = "Kite to Fourth rsync delete volume";
-    expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "\\*deleting " [5m]))'';
+    expr = ''sum(count_over_time(${kiteRsyncLogSelector} |~ "\\*deleting " [5m]))'';
     threshold = 5;
     for = "2m";
     summary = "Kite to Fourth rsync delete burst";
-    description = "/host/edward/data-sync.log on fourth has logged more than 5 Kite to Fourth delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
+    description = "kite-data-sync.service on Kite has logged more than 5 Kite to Fourth delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
     severity = "warning";
     panelId = 2;
   };
   backblazeCompletionAlert = mkLokiThresholdAlert {
-    uid = "fourth-backblaze-completion";
-    title = "Fourth to Backblaze backup has not completed";
-    expr = ''sum(count_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" [8d]))'';
+    uid = "kite-backblaze-completion";
+    title = "Kite to Backblaze backup has not completed";
+    expr = ''sum(count_over_time(${kiteResticLogSelector} |= "snapshot " |= " saved" [8d]))'';
     evaluator = {
       params = [ 1 ];
       type = "lt";
     };
     noDataState = "Alerting";
     for = "5m";
-    summary = "Fourth to Backblaze backup is overdue";
-    description = "The Fourth backup container has not logged a successful completion in eight days.";
+    summary = "Kite to Backblaze backup is overdue";
+    description = "restic-backups-kite-full.service has not logged a successful Restic snapshot in eight days.";
     severity = "critical";
     panelId = 1;
     dashboardUid = "ops-backup-fourth-backblaze";
     service = "backup";
   };
   backblazeDurationAlert = mkLokiThresholdAlert {
-    uid = "fourth-backblaze-duration";
-    title = "Fourth to Backblaze backup duration is high";
-    expr = ''max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur [8d])'';
-    threshold = 600;
+    uid = "kite-backblaze-errors";
+    title = "Kite to Backblaze backup errors or failures";
+    expr = ''sum(count_over_time(${kiteResticLogSelector} |~ "(?i)error|(?i)failed|(?i)fatal" [5m]))'';
+    threshold = 0;
     for = "5m";
-    summary = "Fourth to Backblaze backup exceeded ten minutes";
-    description = "The most recent Fourth to Backblaze backup took more than 600 seconds.";
-    severity = "warning";
+    summary = "Kite to Backblaze backup errors";
+    description = "restic-backups-kite-full.service has logged an error or failure pattern for 5m.";
+    severity = "critical";
     panelId = 3;
     dashboardUid = "ops-backup-fourth-backblaze";
     service = "backup";
   };
   rsyncRecencyAlert = {
-    uid = "fourth-rsync-recency";
+    uid = "kite-rsync-recency";
     title = "Rsync Log Recency";
     condition = "C";
     data = [
@@ -871,7 +871,7 @@ let
             uid = lokiDatasourceUid;
           };
           editorMode = "code";
-          expr = ''count_over_time(${fourthRsyncLogSelector} | drop detected_level [36h])'';
+          expr = ''count_over_time(${kiteRsyncLogSelector} | drop detected_level [36h])'';
           intervalMs = 1000;
           maxDataPoints = 43200;
           queryType = "range";
@@ -939,11 +939,11 @@ let
       __dashboardUid__ = "ops-backups-kite-fourth";
       __panelId__ = "4";
       summary = "Kite to Fourth rsync log recency is low";
-      description = "/host/edward/data-sync.log on fourth has fewer than 3 Kite to Fourth log entries across the last 36h for 5m, which suggests the sync may not be running.";
+      description = "kite-data-sync.service on Kite has fewer than 3 Kite to Fourth log entries across the last 36h for 5m, which suggests the sync may not be running.";
     };
     labels = {
       service = "rsync";
-      host = "fourth";
+      host = "kite";
       severity = "warning";
     };
     notification_settings.receiver = alertsContactPointName;
