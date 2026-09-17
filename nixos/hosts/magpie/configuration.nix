@@ -150,6 +150,9 @@
     go
     gnumake
     htop
+    # Local MPD client for Billy's radio operator work. It connects to Kite's
+    # MPD over the network, without an interactive SSH session there.
+    mpc
     nodejs
     python3
     ripgrep

@@ -137,9 +137,12 @@
   };
 
   environment.systemPackages = with pkgs; [
+    # Deliberate operator tool for the scheduled MPD radio. MCM owns the
+    # Beets-facing catalogue cache; `mpc` provides safe, inspectable queue control.
     curl
     git
     htop
+    mpc
     rsync
     smartmontools
     sqlite
