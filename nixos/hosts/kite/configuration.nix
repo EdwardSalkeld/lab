@@ -137,10 +137,8 @@
   };
 
   environment.systemPackages = with pkgs; [
-    # Deliberate operator tools for the scheduled MPD radio.  `mpc` handles
-    # safe, inspectable queue control; Beets is the authoritative local
-    # catalogue query surface used to select programmes.
-    beets
+    # Deliberate operator tool for the scheduled MPD radio. MCM owns the
+    # Beets-facing catalogue cache; `mpc` provides safe, inspectable queue control.
     curl
     git
     htop
