@@ -137,9 +137,14 @@
   };
 
   environment.systemPackages = with pkgs; [
+    # Deliberate operator tools for the scheduled MPD radio.  `mpc` handles
+    # safe, inspectable queue control; Beets is the authoritative local
+    # catalogue query surface used to select programmes.
+    beets
     curl
     git
     htop
+    mpc
     rsync
     smartmontools
     sqlite
