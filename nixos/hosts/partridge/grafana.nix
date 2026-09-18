@@ -193,7 +193,7 @@ let
   prometheusDatasourceUid = "fdp9rmnopl3wgf";
   lokiDatasourceUid = "ce6j6e2q9rapsa";
   fourthRsyncLogSelector = ''{host="fourth", source="file", filename="/host/edward/data-sync.log"}'';
-  fourthBackblazeLogSelector = ''{host="fourth", source="docker", container_name="/docker-backup-1"}'';
+  kiteResticLogSelector = ''{host="kite", source="journal", systemd_unit="restic-backups-kite-full.service"}'';
   # Single rule over up; Grafana fans it out into one alert instance per scrape
   # target, labelled by `instance`/`job`. up == 0 means the scrape failed (host,
   # exporter or service down) while the series still exists; NoData covers the
@@ -694,6 +694,7 @@ let
       panelId,
       dashboardUid ? "ops-backups-kite-fourth",
       service ? "rsync",
+      host ? "fourth",
       noDataState ? "OK",
     }:
     {
@@ -783,7 +784,7 @@ let
       };
       labels = {
         service = service;
-        host = "fourth";
+        inherit host;
         severity = severity;
       };
       notification_settings.receiver = alertsContactPointName;
@@ -823,34 +824,36 @@ let
     panelId = 2;
   };
   backblazeCompletionAlert = mkLokiThresholdAlert {
-    uid = "fourth-backblaze-completion";
-    title = "Fourth to Backblaze backup has not completed";
-    expr = ''sum(count_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" [8d]))'';
+    uid = "kite-backblaze-completion";
+    title = "Kite to Backblaze backup has not completed";
+    expr = ''sum(count_over_time(${kiteResticLogSelector} |= "snapshot " |= " saved" [8d]))'';
     evaluator = {
       params = [ 1 ];
       type = "lt";
     };
     noDataState = "Alerting";
     for = "5m";
-    summary = "Fourth to Backblaze backup is overdue";
-    description = "The Fourth backup container has not logged a successful completion in eight days.";
+    summary = "Kite to Backblaze backup is overdue";
+    description = "restic-backups-kite-full.service has not logged a successful Restic snapshot in eight days.";
     severity = "critical";
     panelId = 1;
     dashboardUid = "ops-backup-fourth-backblaze";
     service = "backup";
+    host = "kite";
   };
   backblazeDurationAlert = mkLokiThresholdAlert {
-    uid = "fourth-backblaze-duration";
-    title = "Fourth to Backblaze backup duration is high";
-    expr = ''max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur [8d])'';
-    threshold = 600;
+    uid = "kite-backblaze-errors";
+    title = "Kite to Backblaze backup errors or failures";
+    expr = ''sum(count_over_time(${kiteResticLogSelector} |~ "(?i)error|(?i)failed|(?i)fatal" [5m]))'';
+    threshold = 0;
     for = "5m";
-    summary = "Fourth to Backblaze backup exceeded ten minutes";
-    description = "The most recent Fourth to Backblaze backup took more than 600 seconds.";
-    severity = "warning";
+    summary = "Kite to Backblaze backup errors";
+    description = "restic-backups-kite-full.service has logged an error or failure pattern for 5m.";
+    severity = "critical";
     panelId = 3;
     dashboardUid = "ops-backup-fourth-backblaze";
     service = "backup";
+    host = "kite";
   };
   rsyncRecencyAlert = {
     uid = "fourth-rsync-recency";
