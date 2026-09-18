@@ -107,7 +107,7 @@
             "uid": "ce6j6e2q9rapsa"
           },
           "editorMode": "code",
-          "expr": "count_over_time({host=\"kite\", source=\"journal\", systemd_unit=\"kite-data-sync.service\"}[$__auto])",
+          "expr": "count_over_time({host=\"fourth\", source=\"file\", filename=\"/host/edward/data-sync.log\"}[$__auto])",
           "queryType": "range",
           "refId": "A"
         }
@@ -174,7 +174,7 @@
             "uid": "ce6j6e2q9rapsa"
           },
           "editorMode": "builder",
-          "expr": "{host=\"kite\", source=\"journal\", systemd_unit=\"kite-data-sync.service\"}",
+          "expr": "{host=\"fourth\", source=\"file\", filename=\"/host/edward/data-sync.log\"} |= ``",
           "queryType": "range",
           "refId": "A"
         }
@@ -211,7 +211,7 @@
             "uid": "ce6j6e2q9rapsa"
           },
           "editorMode": "code",
-          "expr": "{host=\"kite\", source=\"journal\", systemd_unit=\"kite-data-sync.service\"}",
+          "expr": "{host=\"fourth\", source=\"file\", filename=\"/host/edward/data-sync.log\"} |= ``",
           "queryType": "range",
           "refId": "A"
         }
