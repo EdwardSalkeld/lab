@@ -70,11 +70,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1789674662,
-        "narHash": "sha256-gdTkUVmKWoA7jrJgJ/hn8mlXOLOwdc5f2YiQyl8C0fc=",
+        "lastModified": 1789737303,
+        "narHash": "sha256-SEFheO0advperDJ6HPhNuhXv/mUpxYYQIQy782Y6xls=",
         "owner": "brokensbone",
         "repo": "media-collection-manager",
-        "rev": "ed0e5784c03eef226ec6a36cb1971178d1e2c6a3",
+        "rev": "ccdad959e3f32a95bbfd50e708e88e57ade132fc",
         "type": "github"
       },
       "original": {
