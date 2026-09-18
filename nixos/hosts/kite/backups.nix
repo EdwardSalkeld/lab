@@ -1,41 +1,17 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 let
   cfg = config.alcachofa.kite.backups;
-  fourthSshKey = config.sops.secrets."kite-backup/fourth_ssh_key".path;
-  fourthKnownHosts = config.sops.secrets."kite-backup/fourth_known_hosts".path;
 in
 {
   options.alcachofa.kite.backups = {
-    enable = lib.mkEnableOption "Kite's on-site and off-site data backups";
-
-    fourthTarget = lib.mkOption {
-      type = lib.types.str;
-      default = "edward@fourth.ts.alcachofa.faith";
-      description = "Fourth's existing SSH account which receives Kite's data copies.";
-    };
+    enable = lib.mkEnableOption "Kite's off-site data backup";
   };
 
   config = lib.mkIf cfg.enable {
-    # The dedicated Kite-to-Fourth SSH key is already encrypted in
-    # kite-backup.yaml. Before the first deployment, add that public key to
-    # Fourth's existing Edward account and add the Restic/B2 values to this
-    # encrypted file. The accompanying .example file documents those values.
+    # Before the first deployment, add the existing Restic/B2 values to
+    # kite-backup.yaml. The accompanying .example file documents those values.
     sops.secrets = {
-      "kite-backup/fourth_ssh_key" = {
-        sopsFile = ./secrets/kite-backup.yaml;
-        key = "fourth_ssh_key";
-        owner = "edward";
-        group = "data";
-        mode = "0400";
-      };
-      "kite-backup/fourth_known_hosts" = {
-        sopsFile = ./secrets/kite-backup.yaml;
-        key = "fourth_known_hosts";
-        owner = "edward";
-        group = "data";
-        mode = "0400";
-      };
       "kite-backup/restic_repository" = {
         sopsFile = ./secrets/kite-backup.yaml;
         key = "restic_repository";
@@ -66,56 +42,8 @@ in
       '';
     };
 
-    systemd.services.kite-data-sync = {
-      description = "Push Kite full and partial data copies to Fourth";
-      after = [ "data.mount" "network-online.target" ];
-      wants = [ "network-online.target" ];
-      unitConfig.ConditionPathIsMountPoint = "/data";
-      path = [ pkgs.coreutils pkgs.openssh pkgs.rsync ];
-      serviceConfig = {
-        Type = "oneshot";
-        User = "edward";
-        Group = "data";
-        UMask = "0027";
-        Nice = 10;
-        IOSchedulingClass = "idle";
-      };
-      script = ''
-        set -euo pipefail
-
-        ssh_command="${pkgs.openssh}/bin/ssh -i ${fourthSshKey} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${fourthKnownHosts}"
-        sync_dir() {
-          source=$1
-          destination=$2
-          echo "Starting Kite to Fourth sync: $source -> $destination"
-          ${pkgs.rsync}/bin/rsync -aiv --delete-delay \
-            --exclude='lost+found' \
-            --exclude='blink-reinstall-backup-20260829T080849Z/' \
-            --exclude='*/venv/*' \
-            --exclude='**/mysql/scheduler' \
-            -e "$ssh_command" \
-            "$source/" "${cfg.fourthTarget}:$destination/"
-          echo "Completed Kite to Fourth sync: $source -> $destination"
-        }
-
-        sync_dir /data/full /data/full
-        sync_dir /data/partial /data/partial
-      '';
-    };
-
-    systemd.timers.kite-data-sync = {
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        # Preserve the old Fourth cron's 04:32 Europe/London schedule across
-        # BST changes even though NixOS hosts otherwise use UTC by default.
-        OnCalendar = "*-*-* 04:32:00 Europe/London";
-        Persistent = true;
-        RandomizedDelaySec = "15m";
-      };
-    };
-
-    # This archives only /data/full.  /data/partial deliberately has the local
-    # Kite and Fourth copies but no off-site copy, as described in house#120.
+    # Fourth remains responsible for pulling the local recovery copy. This
+    # module only moves the independent /data/full off-site archive to Kite.
     services.restic.backups.kite-full = {
       paths = [ "/data/full" ];
       environmentFile = config.sops.templates."kite-backup-restic.env".path;

@@ -275,33 +275,28 @@ sudo restic-partridge-postgres snapshots
 
 ## Kite Data Backups
 
-Kite owns the backup flow for its data disk.  When enabled,
-`kite-data-sync.service` pushes `/data/full` and `/data/partial` to Fourth each
-day; native NixOS Restic then archives only `/data/full` to the existing
-Backblaze B2 repository.  This implements [house#120](https://github.com/brokensbone/house/issues/120):
-`partial` has two local-disk copies, while `full` also has the off-site archive.
+Kite owns the off-site archive for its data disk. When enabled, native NixOS
+Restic archives `/data/full` to the existing Backblaze B2 repository. This
+implements the off-site part of [house#120](https://github.com/brokensbone/house/issues/120).
+Fourth remains outside Lab control and continues to pull the local recovery
+copy itself; Kite never opens a connection to Fourth.
 
 The configuration is deliberately disabled in
 `nixos/hosts/kite/configuration.nix` until this one-time hand-off is complete:
 
-1. Add the dedicated Kite backup public key to Fourth's existing `edward`
-   account. The `/data/full` and `/data/partial` destination paths already
-   exist there, so no receiver account or directory setup is required.
-2. Add the existing Fourth Restic/Backblaze values to the already encrypted
-   `nixos/hosts/kite/secrets/kite-backup.yaml`; the adjacent `.example` lists
-   every key. Do not replace the pre-generated `fourth_ssh_key` value and never
-   commit plaintext secrets.
-3. Set `alcachofa.kite.backups.enable = true`, deploy Kite, then run the sync
-   and Restic units manually once.  Confirm the new Kite journal entries are in
-   Loki and that the Restic repository has a new snapshot.
-4. Only after that verification, migrate the Grafana backup dashboard/alerts
-   from Fourth Docker logs to Kite systemd journals and remove the old Fourth
-   cron and Docker Restic services from `house`.
+1. Create the encrypted `nixos/hosts/kite/secrets/kite-backup.yaml` using the
+   adjacent `.example`, then add the existing Fourth Restic/Backblaze values.
+   Never commit plaintext secrets.
+2. Set `alcachofa.kite.backups.enable = true`, deploy Kite, then run the Restic
+   unit manually once. Confirm the new Kite journal entries are in Loki and
+   that the Restic repository has a new snapshot.
+3. Only after that verification, migrate the Grafana Backblaze dashboard/alerts
+   from Fourth Docker logs to Kite systemd journals and retire only the old
+   Fourth Docker Restic service. Keep Fourth's rsync pull and its monitoring.
 
 Useful commands on Kite after enabling:
 
 ```sh
-sudo systemctl start kite-data-sync.service
 sudo systemctl start restic-backups-kite-full.service
 sudo restic-kite-full snapshots
 ```
