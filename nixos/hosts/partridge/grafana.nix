@@ -192,7 +192,7 @@ let
     };
   prometheusDatasourceUid = "fdp9rmnopl3wgf";
   lokiDatasourceUid = "ce6j6e2q9rapsa";
-  kiteRsyncLogSelector = ''{host="kite", source="journal", systemd_unit="kite-data-sync.service"}'';
+  fourthRsyncLogSelector = ''{host="fourth", source="file", filename="/host/edward/data-sync.log"}'';
   kiteResticLogSelector = ''{host="kite", source="journal", systemd_unit="restic-backups-kite-full.service"}'';
   # Single rule over up; Grafana fans it out into one alert instance per scrape
   # target, labelled by `instance`/`job`. up == 0 means the scrape failed (host,
@@ -694,6 +694,7 @@ let
       panelId,
       dashboardUid ? "ops-backups-kite-fourth",
       service ? "rsync",
+      host ? "fourth",
       noDataState ? "OK",
     }:
     {
@@ -783,7 +784,7 @@ let
       };
       labels = {
         service = service;
-        host = "kite";
+        inherit host;
         severity = severity;
       };
       notification_settings.receiver = alertsContactPointName;
@@ -801,24 +802,24 @@ let
     "(?i)code 24"
   ];
   rsyncErrorAlert = mkLokiThresholdAlert {
-    uid = "kite-rsync-errors";
+    uid = "fourth-rsync-errors";
     title = "Kite to Fourth rsync errors or failures";
-    expr = ''sum(count_over_time(${kiteRsyncLogSelector} |~ "${rsyncErrorPatterns}" [5m]))'';
+    expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "${rsyncErrorPatterns}" [5m]))'';
     threshold = 0;
     for = "2m";
     summary = "Kite to Fourth rsync errors";
-    description = "kite-data-sync.service on Kite has matched Kite to Fourth rsync error/failure patterns for 2m. Check the unit journal for transfer failures, permissions issues, space exhaustion, or disconnects.";
+    description = "/host/edward/data-sync.log on fourth has matched Kite to Fourth rsync error/failure patterns for 2m. Check the backup log for transfer failures, permissions issues, space exhaustion, or disconnects.";
     severity = "critical";
     panelId = 3;
   };
   rsyncDeleteVolumeAlert = mkLokiThresholdAlert {
-    uid = "kite-rsync-delete-volume";
+    uid = "fourth-rsync-delete-volume";
     title = "Kite to Fourth rsync delete volume";
-    expr = ''sum(count_over_time(${kiteRsyncLogSelector} |~ "\\*deleting " [5m]))'';
+    expr = ''sum(count_over_time(${fourthRsyncLogSelector} |~ "\\*deleting " [5m]))'';
     threshold = 5;
     for = "2m";
     summary = "Kite to Fourth rsync delete burst";
-    description = "kite-data-sync.service on Kite has logged more than 5 Kite to Fourth delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
+    description = "/host/edward/data-sync.log on fourth has logged more than 5 Kite to Fourth delete lines in 5m for 2m. This is intentionally sensitive so unexpected churn is visible quickly.";
     severity = "warning";
     panelId = 2;
   };
@@ -838,6 +839,7 @@ let
     panelId = 1;
     dashboardUid = "ops-backup-fourth-backblaze";
     service = "backup";
+    host = "kite";
   };
   backblazeDurationAlert = mkLokiThresholdAlert {
     uid = "kite-backblaze-errors";
@@ -851,9 +853,10 @@ let
     panelId = 3;
     dashboardUid = "ops-backup-fourth-backblaze";
     service = "backup";
+    host = "kite";
   };
   rsyncRecencyAlert = {
-    uid = "kite-rsync-recency";
+    uid = "fourth-rsync-recency";
     title = "Rsync Log Recency";
     condition = "C";
     data = [
@@ -871,7 +874,7 @@ let
             uid = lokiDatasourceUid;
           };
           editorMode = "code";
-          expr = ''count_over_time(${kiteRsyncLogSelector} | drop detected_level [36h])'';
+          expr = ''count_over_time(${fourthRsyncLogSelector} | drop detected_level [36h])'';
           intervalMs = 1000;
           maxDataPoints = 43200;
           queryType = "range";
@@ -939,11 +942,11 @@ let
       __dashboardUid__ = "ops-backups-kite-fourth";
       __panelId__ = "4";
       summary = "Kite to Fourth rsync log recency is low";
-      description = "kite-data-sync.service on Kite has fewer than 3 Kite to Fourth log entries across the last 36h for 5m, which suggests the sync may not be running.";
+      description = "/host/edward/data-sync.log on fourth has fewer than 3 Kite to Fourth log entries across the last 36h for 5m, which suggests the sync may not be running.";
     };
     labels = {
       service = "rsync";
-      host = "kite";
+      host = "fourth";
       severity = "warning";
     };
     notification_settings.receiver = alertsContactPointName;
