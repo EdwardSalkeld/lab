@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, codexPackage, ... }:
 
 {
   imports = [
@@ -92,8 +92,9 @@
       "systemd-journal"
       "wheel"
     ];
-    packages = with pkgs; [
-      tree
+    packages = [
+      codexPackage
+      pkgs.tree
     ];
   };
 
