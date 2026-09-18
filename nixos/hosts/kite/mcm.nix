@@ -166,6 +166,13 @@ in
         group = "data";
         mode = "0400";
       };
+      "wantlist/typesafe_api_key" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "typesafe_api_key";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
     };
     sops.templates."mcm.env" = {
       owner = "edward";
@@ -183,6 +190,7 @@ in
         MCM_TRANSMISSION_SSH_USER=${config.sops.placeholder."wantlist/transmission_ssh_user"}
         MCM_TRANSMISSION_SSH_KEY=${config.sops.secrets."wantlist/transmission_ssh_key".path}
         MCM_NOTIFICATION_WEBHOOK_URL=${config.sops.placeholder."wantlist/notification_webhook_url"}
+        MCM_TYPESAFE_API_KEY=${config.sops.placeholder."wantlist/typesafe_api_key"}
       '';
     };
 
