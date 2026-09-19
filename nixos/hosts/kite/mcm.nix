@@ -23,6 +23,9 @@ let
       # The migrated Beets DB still stores this historical prefix. MCM translates
       # it only while building its read-only MPD track cache; it never exposes it.
       MCM_LEGACY_MUSIC_DIR = "/home/edward/.config/beets/library";
+      # The MCM worker owns the weekday radio handoff: load the dated programme at 07:00
+      # and start the untouched queue at 09:00, both in Europe/London.
+      MCM_MPD_HOST = "127.0.0.1";
       MCM_IMPORT_INBOX_PATH = cfg.importInbox;
       MCM_MUSIC_DIR = cfg.musicDir;
       MCM_TV_ROOT = cfg.tvRoot;
