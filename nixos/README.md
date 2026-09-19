@@ -273,6 +273,34 @@ sudo systemctl start restic-backups-partridge-postgres.service
 sudo restic-partridge-postgres snapshots
 ```
 
+## Kite Data Backups
+
+Kite owns the off-site archive for its data disk. When enabled, native NixOS
+Restic archives `/data/full` to the existing Backblaze B2 repository. This
+implements the off-site part of [house#120](https://github.com/brokensbone/house/issues/120).
+Fourth remains outside Lab control and continues to pull the local recovery
+copy itself; Kite never opens a connection to Fourth.
+
+The configuration is deliberately disabled in
+`nixos/hosts/kite/configuration.nix` until this one-time hand-off is complete:
+
+1. Create the encrypted `nixos/hosts/kite/secrets/kite-backup.yaml` using the
+   adjacent `.example`, then add the existing Fourth Restic/Backblaze values.
+   Never commit plaintext secrets.
+2. Set `alcachofa.kite.backups.enable = true`, deploy Kite, then run the Restic
+   unit manually once. Confirm the new Kite journal entries are in Loki and
+   that the Restic repository has a new snapshot.
+3. Only after that verification, migrate the Grafana Backblaze dashboard/alerts
+   from Fourth Docker logs to Kite systemd journals and retire only the old
+   Fourth Docker Restic service. Keep Fourth's rsync pull and its monitoring.
+
+Useful commands on Kite after enabling:
+
+```sh
+sudo systemctl start restic-backups-kite-full.service
+sudo restic-kite-full snapshots
+```
+
 ## Loki on `partridge`
 
 Loki runs in single-node filesystem mode on port `3100`, backed by a dedicated
