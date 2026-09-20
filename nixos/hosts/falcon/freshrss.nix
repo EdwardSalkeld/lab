@@ -120,6 +120,7 @@ in
     description = "FreshRSS SQLite backup";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
+    path = [ pkgs.gzip ];
     environment.DATA_PATH = dataDir;
     script = ''
       config_file=${dataDir}/config.php
@@ -141,7 +142,7 @@ in
       timestamp=$(${pkgs.coreutils}/bin/date --utc +%Y%m%dT%H%M%SZ)
       temporary_archive=${backupDir}/.state-$timestamp.tar.gz.tmp
       archive=${backupDir}/state-$timestamp.tar.gz
-      ${pkgs.gnutar}/bin/tar --create --use-compress-program=${pkgs.gzip}/bin/gzip --file "$temporary_archive" \
+      ${pkgs.gnutar}/bin/tar --create --gzip --file "$temporary_archive" \
         --exclude='./cache' \
         --exclude='./users/*/db.sqlite*' \
         --exclude='./users/*/sqlite-backups' \
