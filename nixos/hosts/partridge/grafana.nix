@@ -1475,9 +1475,9 @@ in
               receiver = alertsEmailContactPointName;
               object_matchers = [
                 [
-                  "__alert_rule_uid__"
+                  "service"
                   "="
-                  "kite-media-services-inactive"
+                  "kite-media"
                 ]
               ];
             }
