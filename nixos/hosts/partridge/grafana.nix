@@ -5,6 +5,7 @@ let
   grafanaPort = 3001;
   octopusStaleDataThresholdDays = 4;
   alertsContactPointName = "Alcachofa Alerts";
+  alertsEmailContactPointName = "Alcachofa Email Alerts";
   alertsTelegramChatId = "-5594899826";
   grafanaFailureNotify = pkgs.writeShellScript "grafana-failure-notify" ''
     set -euo pipefail
@@ -288,7 +289,8 @@ let
     labels = {
       severity = "critical";
     };
-    notification_settings.receiver = alertsContactPointName;
+    # This rule uses the policy tree so the Luna/Kite dependency outage can be
+    # routed to email without suppressing Telegram for unrelated hosts.
     isPaused = false;
   };
   websiteDownAlert = {
@@ -476,7 +478,7 @@ let
       service = "systemd";
       severity = "critical";
     };
-    notification_settings.receiver = alertsContactPointName;
+    # This rule uses the policy tree so individual failed units can be routed.
     isPaused = false;
   };
   # A unit can be cleanly stopped without entering the failed state, so keep
@@ -573,7 +575,7 @@ let
       service = "kite-media";
       severity = "critical";
     };
-    notification_settings.receiver = alertsContactPointName;
+    # This rule uses the policy tree so downstream Kite symptoms can be routed.
     isPaused = false;
   };
   # MCM pauses ingest/reconcile/plays when its Spotify refresh token is missing or
@@ -1385,6 +1387,22 @@ in
       contactPoints = [
         {
           orgId = 1;
+          name = alertsEmailContactPointName;
+          receivers = [
+            {
+              uid = "email-alerts-only";
+              name = "Email Alcachofa only";
+              type = "email";
+              disableResolveMessage = false;
+              settings = {
+                addresses = "edsalkeld@fastmail.com";
+                singleEmail = false;
+              };
+            }
+          ];
+        }
+        {
+          orgId = 1;
           name = alertsContactPointName;
           receivers = [
             {
@@ -1436,6 +1454,53 @@ in
           group_by = [
             "grafana_folder"
             "alertname"
+          ];
+          routes = [
+            {
+              receiver = alertsEmailContactPointName;
+              object_matchers = [
+                [
+                  "__alert_rule_uid__"
+                  "="
+                  "prometheus-target-down"
+                ]
+                [
+                  "instance"
+                  "=~"
+                  "mcm\\.alcachofa\\.faith|kite\\.int\\.alcachofa\\.faith:9100|luna\\.int\\.alcachofa\\.faith:(9100|9221)"
+                ]
+              ];
+            }
+            {
+              receiver = alertsEmailContactPointName;
+              object_matchers = [
+                [
+                  "__alert_rule_uid__"
+                  "="
+                  "kite-media-services-inactive"
+                ]
+              ];
+            }
+            {
+              receiver = alertsEmailContactPointName;
+              object_matchers = [
+                [
+                  "__alert_rule_uid__"
+                  "="
+                  "systemd-unit-failed"
+                ]
+                [
+                  "instance"
+                  "="
+                  "falcon.ts.alcachofa.faith:9100"
+                ]
+                [
+                  "name"
+                  "="
+                  "freshrss-sqlite-backup.service"
+                ]
+              ];
+            }
           ];
         }
       ];
