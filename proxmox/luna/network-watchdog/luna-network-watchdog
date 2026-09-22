@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Recover Luna's onboard NIC only after sustained loss of both the LAN gateway
+# and an external address. This is an availability backstop, not a NIC fix.
+set -Eeuo pipefail
+
+readonly config_file=/etc/default/luna-network-watchdog
+readonly state_dir=/var/lib/luna-network-watchdog
+readonly log_dir=/var/log/luna-network-watchdog
+readonly lock_file=/run/luna-network-watchdog.lock
+
+interface=nic0
+probe_interface=vmbr0
+gateway=10.4.1.1
+external_address=1.1.1.1
+failure_threshold=3
+reboot_cooldown_seconds=86400
+link_reset_wait_seconds=10
+
+if [[ -r "$config_file" ]]; then
+  # Administrator-controlled, shell-compatible configuration.
+  # shellcheck disable=SC1090
+  source "$config_file"
+fi
+
+mkdir -p "$state_dir" "$log_dir"
+exec 9>"$lock_file"
+flock -n 9 || exit 0
+
+log() {
+  logger --tag luna-network-watchdog -- "$*"
+  printf '%s %s\n' "$(date --iso-8601=seconds)" "$*" >&2
+}
+
+probe() {
+  local address=$1
+  ping -I "$probe_interface" -n -q -c 1 -W 3 "$address" >/dev/null 2>&1
+}
+
+network_healthy() {
+  probe "$gateway" && probe "$external_address"
+}
+
+failure_file="$state_dir/consecutive_failures"
+if network_healthy; then
+  rm -f "$failure_file"
+  exit 0
+fi
+
+failures=0
+if [[ -r "$failure_file" ]]; then
+  read -r failures <"$failure_file" || true
+fi
+[[ "$failures" =~ ^[0-9]+$ ]] || failures=0
+failures=$((failures + 1))
+printf '%s\n' "$failures" >"$failure_file"
+sync -f "$failure_file" 2>/dev/null || true
+
+log "gateway ${gateway} and external ${external_address} failed (${failures}/${failure_threshold})"
+if (( failures < failure_threshold )); then
+  exit 0
+fi
+
+timestamp=$(date --utc +%Y%m%dT%H%M%SZ)
+evidence_file="$log_dir/${timestamp}-network-failure.log"
+{
+  echo "Luna network watchdog evidence: $timestamp"
+  echo; echo '== ip -br link =='; ip -br link
+  echo; echo '== ip -s link =='; ip -s link show dev "$interface" || true
+  echo; echo '== ip route =='; ip route
+  echo; echo '== ethtool =='; ethtool "$interface" || true
+  echo; echo '== ethtool statistics =='; ethtool -S "$interface" || true
+  echo; echo '== recent kernel NIC messages =='
+  journalctl -k -b --since '-10 min' --no-pager | grep -Ei 'e1000e|nic0|hardware unit hang|watchdog' || true
+} >"$evidence_file" 2>&1
+log "saved network failure evidence to ${evidence_file}"
+
+log "attempting one ${interface} link reset"
+ip link set dev "$interface" down || log "could not bring ${interface} down"
+sleep 3
+ip link set dev "$interface" up || log "could not bring ${interface} up"
+sleep "$link_reset_wait_seconds"
+
+if network_healthy; then
+  rm -f "$failure_file"
+  log "network recovered after ${interface} link reset"
+  exit 0
+fi
+
+reboot_file="$state_dir/last_automatic_reboot_epoch"
+last_reboot=0
+if [[ -r "$reboot_file" ]]; then
+  read -r last_reboot <"$reboot_file" || true
+fi
+[[ "$last_reboot" =~ ^[0-9]+$ ]] || last_reboot=0
+now=$(date +%s)
+
+if (( now - last_reboot < reboot_cooldown_seconds )); then
+  remaining=$((reboot_cooldown_seconds - (now - last_reboot)))
+  log "network remains down after link reset; automatic reboot capped for another ${remaining}s"
+  exit 1
+fi
+
+printf '%s\n' "$now" >"$reboot_file"
+sync -f "$reboot_file" 2>/dev/null || true
+log "network remains down after link reset; rebooting (automatic reboot cap now active for ${reboot_cooldown_seconds}s)"
+systemctl reboot --message='luna-network-watchdog: NIC remained isolated after link reset'
