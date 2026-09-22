@@ -9,6 +9,11 @@ Proxmox hosts:
 - `sol`: primary Proxmox host
 - `luna`: standalone Proxmox host
 
+Luna's host-side, non-NixOS network recovery watchdog is maintained in
+[`proxmox/luna/network-watchdog`](proxmox/luna/network-watchdog/). It is a
+guarded manual install because the Proxmox host itself is Debian, not one of
+this repository's NixOS configurations.
+
 Repo-managed NixOS VMs:
 
 - `partridge` on `sol`: monitoring, Grafana, Loki, and PostgreSQL
