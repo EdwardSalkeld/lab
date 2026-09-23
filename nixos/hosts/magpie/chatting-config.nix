@@ -19,7 +19,7 @@ let
   contextRefs = [ "repo:${workspaceDir}" ];
   codexConfig = ''
     personality = "pragmatic"
-    model = "gpt-5.6-terra"
+    model = "gpt-6-sol"
     model_reasoning_effort = "medium"
 
     [projects."${workspaceDir}"]
