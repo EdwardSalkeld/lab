@@ -17,6 +17,10 @@ for path in "$falcon_path" "$kite_path" "$magpie_path" "$partridge_path"; do
     exit 2
   fi
 done
+if ! git merge-base --is-ancestor "$sha" HEAD; then
+  echo "refusing to deploy a commit outside current main: $sha" >&2
+  exit 2
+fi
 
 # Every target is fully qualified so the loop has no host-specific addressing
 # logic. Falcon's Tailnet address is published through our managed DNS.

@@ -24,9 +24,9 @@ the deploy orchestrator.
    manual switch. Existing installed wrappers accept only the old `lab-switch`
    command; they cannot accept the pinned command until this code is running.
    In particular, check Partridge's build plan before its bootstrap switch.
-4. Verify Fourth's `/opt/deploy/run.sh` dispatches `nix-switch` with arguments
-   to `deploy/nix-switch.sh`, as it already does for `plan-terraform`. Install
-   the new deploy script on Fourth before running this workflow.
+
+Fourth's existing dispatcher preserves command arguments and checks out the
+latest `main` before running `deploy/nix-switch.sh`; it needs no update.
 
 Until the cache variables and token are set, the deploy workflow fails before
 Terraform or any host switch. Do not merge before the bootstrap is ready:
