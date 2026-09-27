@@ -1,8 +1,5 @@
-# Lets the orchestrator (fourth) trigger a rebuild of THIS host. fourth SSHes in
-# as root with a key forced to the wrapper below, which rebuilds this host from
-# the public flake on GitHub. Build-on-target: fourth is aarch64 and can't build
-# x86 closures, so each host builds its own. A compromise of fourth's onward key
-# can therefore only trigger a rebuild-from-main, never obtain a shell.
+# Lets fourth trigger a pinned switch of a CI-built system. The forced key has
+# no shell access and only accepts a commit and its expected output.
 { config, lib, pkgs, ... }:
 let
   host = config.networking.hostName;
@@ -15,8 +12,38 @@ let
     # guarantee the health-checked units are running before exit.
     set -uo pipefail
     nixos_rebuild=/run/current-system/sw/bin/nixos-rebuild
+    nix=/run/current-system/sw/bin/nix
     systemctl=/run/current-system/sw/bin/systemctl
     healthchecks=(${postSwitchHealthchecks})
+
+    read -r command sha cache_name cache_key expected_path extra <<<"''${SSH_ORIGINAL_COMMAND:-}"
+    if [[ "$command" != lab-switch || ! "$sha" =~ ^[0-9a-f]{40}$ ||
+          ! "$cache_name" =~ ^[a-z0-9][a-z0-9-]*$ ||
+          ! "$cache_key" =~ ^[a-z0-9.-]+-1:[A-Za-z0-9+/=]+$ ||
+          ! "$expected_path" =~ ^/nix/store/[a-z0-9]{32}-[A-Za-z0-9.+_-]+$ ||
+          -n "''${extra:-}" ]]; then
+      echo 'invalid lab-switch request' >&2
+      exit 2
+    fi
+
+    # The output path is checked after fetching so a stale or mismatched CI
+    # result cannot be activated.
+    source="github:EdwardSalkeld/lab/''${sha}"
+    flake="''${source}#${host}"
+    cache_url="https://''${cache_name}.cachix.org"
+    nix_options=(--option extra-substituters "$cache_url"
+                 --option extra-trusted-public-keys "$cache_key"
+                 --option builders ""
+                 --option max-jobs 0)
+    if ! actual_path="$("$nix" build --no-link --print-out-paths
+        "''${nix_options[@]}" "''${source}#nixosConfigurations.${host}.config.system.build.toplevel")"; then
+      echo "could not fetch the complete CI-built closure for ${host}" >&2
+      exit 1
+    fi
+    if [[ "$actual_path" != "$expected_path" ]]; then
+      echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
+      exit 1
+    fi
 
     units_healthy() {
       local unit
@@ -33,7 +60,7 @@ let
     }
 
     rc=0
-    if ! "$nixos_rebuild" switch --flake "github:EdwardSalkeld/lab#${host}" --refresh; then
+    if ! "$nixos_rebuild" switch --flake "$flake" "''${nix_options[@]}"; then
       echo "nixos-rebuild switch failed; rolling back ${host} to the last generation" >&2
       rc=1
       "$nixos_rebuild" switch --rollback || echo "rollback switch also failed" >&2
@@ -74,7 +101,7 @@ let
   '';
   remoteCommand = pkgs.writeShellScript "lab-remote-command" ''
     case "''${SSH_ORIGINAL_COMMAND:-}" in
-      lab-switch)
+      lab-switch\ *)
         exec ${labSwitch}
         ;;
       nix-gc)

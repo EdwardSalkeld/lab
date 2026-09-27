@@ -175,9 +175,12 @@ sudo systemctl status chatting-bbmb chatting-handler chatting-worker
 
 ## GitHub Deploy Workflow
 
-On pushes to `main`, the `deploy` workflow joins Tailscale as `tag:ci`, SSHes
-to `deploy@fourth.ts.alcachofa.faith`, and asks the orchestrator to run
-`apply-terraform` followed by `nix-switch`.
+On pushes to `main`, the `deploy` workflow first builds and publishes all four
+NixOS system closures from the exact commit. It then joins Tailscale as
+`tag:ci`, SSHes to `deploy@fourth.ts.alcachofa.faith`, and asks the orchestrator
+to run `apply-terraform` followed by a pinned, cache-only `nix-switch`. See
+[`docs/ci-built-nixos-deploy.md`](../docs/ci-built-nixos-deploy.md) for cache
+setup and the required first rollout.
 
 On pull requests that touch Terraform, CI uses the same route to ask fourth to
 run `plan-terraform <pr-number> <head-sha>`. Fourth fetches that PR ref into a
@@ -194,6 +197,10 @@ Required GitHub Actions secrets:
 - `TS_OAUTH_SECRET`: Tailscale OAuth client secret
 - `FOURTH_DEPLOY_SSH_KEY`: private key matching the repo-declared deploy key on
   `fourth`
+- `LAB_NIX_CACHE_AUTH_TOKEN`: write token for the Lab Cachix cache
+
+Required repository variables: `LAB_NIX_CACHE_NAME` and
+`LAB_NIX_CACHE_PUBLIC_KEY`.
 
 The Tailscale ACL should allow `tag:ci` to reach `fourth`'s Tailscale SSH
 endpoint. The first deployment of this wiring must still be applied manually so
