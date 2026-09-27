@@ -7,17 +7,68 @@ on:
   workflow_dispatch:
 
 # Serialize deploys; never cancel an in-flight one (would leave a half-applied
-# terraform run / rebuild / dangling state lock). Newer runs queue; because the
-# orchestrator always works from current main, the last run applies the latest
-# state.
+# terraform run / rebuild / dangling state lock). Each queued run deploys the
+# exact commit it built.
 concurrency:
   group: deploy-lab
   cancel-in-progress: false
 
 jobs:
+  build-systems:
+    name: build and publish NixOS systems
+    runs-on: ubuntu-latest
+    outputs:
+      falcon: ${{ steps.build.outputs.falcon }}
+      kite: ${{ steps.build.outputs.kite }}
+      magpie: ${{ steps.build.outputs.magpie }}
+      partridge: ${{ steps.build.outputs.partridge }}
+    steps:
+      - name: require cache configuration
+        env:
+          CACHE_NAME: ${{ vars.LAB_NIX_CACHE_NAME }}
+          CACHE_KEY: ${{ vars.LAB_NIX_CACHE_PUBLIC_KEY }}
+          CACHE_TOKEN: ${{ secrets.LAB_NIX_CACHE_AUTH_TOKEN }}
+        run: |
+          test -n "$CACHE_NAME" && test -n "$CACHE_KEY" && test -n "$CACHE_TOKEN" || {
+            echo 'Set LAB_NIX_CACHE_NAME, LAB_NIX_CACHE_PUBLIC_KEY and LAB_NIX_CACHE_AUTH_TOKEN before deploying.' >&2
+            exit 1
+          }
+      - name: checkout exact deploy commit
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            http2 = false
+            fallback = true
+      - name: configure writable cache
+        uses: cachix/cachix-action@v17
+        with:
+          name: ${{ vars.LAB_NIX_CACHE_NAME }}
+          authToken: ${{ secrets.LAB_NIX_CACHE_AUTH_TOKEN }}
+          useDaemon: false
+          skipPush: true
+      - name: build and publish every host closure
+        id: build
+        env:
+          CACHE_NAME: ${{ vars.LAB_NIX_CACHE_NAME }}
+          CACHIX_AUTH_TOKEN: ${{ secrets.LAB_NIX_CACHE_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          for host in falcon kite magpie partridge; do
+            path="$(nix build --no-link --print-out-paths ".#nixosConfigurations.${host}.config.system.build.toplevel")"
+            test -n "$path"
+            cachix push "$CACHE_NAME" "$path"
+            echo "${host}=${path}" >> "$GITHUB_OUTPUT"
+          done
+
   # Infra first: reconcile the Proxmox VMs before rebuilding their configs.
   apply-terraform:
     name: apply-terraform
+    needs: build-systems
     runs-on: ubuntu-latest
     steps:
       - name: tailscale
@@ -47,7 +98,7 @@ jobs:
 
   nix-switch:
     name: nix-switch
-    needs: apply-terraform
+    needs: [build-systems, apply-terraform]
     runs-on: ubuntu-latest
     steps:
       - name: tailscale
@@ -65,10 +116,19 @@ jobs:
           chmod 0600 ~/.ssh/deploy
 
       - name: trigger nix-switch on the orchestrator
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+          CACHE_NAME: ${{ vars.LAB_NIX_CACHE_NAME }}
+          CACHE_KEY: ${{ vars.LAB_NIX_CACHE_PUBLIC_KEY }}
+          FALCON_PATH: ${{ needs.build-systems.outputs.falcon }}
+          KITE_PATH: ${{ needs.build-systems.outputs.kite }}
+          MAGPIE_PATH: ${{ needs.build-systems.outputs.magpie }}
+          PARTRIDGE_PATH: ${{ needs.build-systems.outputs.partridge }}
         run: |
           ssh \
             -i ~/.ssh/deploy \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             deploy@fourth.ts.alcachofa.faith \
-            nix-switch
+            nix-switch "$DEPLOY_SHA" "$CACHE_NAME" "$CACHE_KEY" \
+              "$FALCON_PATH" "$KITE_PATH" "$MAGPIE_PATH" "$PARTRIDGE_PATH"
