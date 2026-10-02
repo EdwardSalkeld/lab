@@ -75,6 +75,7 @@ let
     ];
     telegram_allowed_channel_ids = [
       "-1003738951842"
+      "-5201675435"
     ];
     telegram_context_refs = contextRefs;
     # Shared with the worker (a different OS user), not handler-private: the
