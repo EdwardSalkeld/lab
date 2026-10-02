@@ -67,6 +67,7 @@ let
       "-4974044081"
       "-1004974044081"
       "-5060255147"
+      "-5201675435"
       "-5273941835"
       "-5367346228"
       "-541767767"
@@ -75,7 +76,6 @@ let
     ];
     telegram_allowed_channel_ids = [
       "-1003738951842"
-      "-5201675435"
     ];
     telegram_context_refs = contextRefs;
     # Shared with the worker (a different OS user), not handler-private: the
