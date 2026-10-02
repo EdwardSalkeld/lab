@@ -8,6 +8,7 @@ Active resources:
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
 - `proxmox_virtual_environment_vm.kite` when `enable_kite_vm = true`
+- `proxmox_virtual_environment_container.sparrow` for Chatting roadmap testing
 
 ## Quick Ops
 
@@ -73,6 +74,16 @@ The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
+
+## Chatting Test Container
+
+`sparrow` is a Debian 13 LXC on `sol` (CT 76300). It has 4 cores, 4 GiB RAM,
+and a 24 GiB root filesystem on `local-lvm`. It uses DHCP on `vmbr0` and grants
+Edward and Billy root SSH inside an unprivileged container. It was bootstrapped
+and tested before the Terraform PR was merged, so the import block adopts the
+existing CT rather than creating a second one. See
+[../docs/sparrow-chatting-test.md](../docs/sparrow-chatting-test.md) for the
+deployment smoke test.
 
 ## Kite VM
 
