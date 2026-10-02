@@ -80,8 +80,10 @@ has a real NixOS install with `qemu-guest-agent` running.
 `sparrow` is a Debian 13 LXC on `sol` (CT 76300). It has 4 cores, 4 GiB RAM,
 and a 24 GiB root filesystem on `local-lvm`. It uses DHCP on `vmbr0` and grants
 Edward and Billy root SSH inside an unprivileged container. It was bootstrapped
-and tested before the Terraform PR was merged, so the import block adopts the
-existing CT rather than creating a second one. See
+and tested before the Terraform PR was merged, so the plan/apply scripts copy
+`deploy/sparrow-import.tf.template` into the Terraform root to adopt the
+existing CT rather than creating a second one. The template sits outside the
+Terraform root because the current tfsec release cannot parse import blocks. See
 [../docs/sparrow-chatting-test.md](../docs/sparrow-chatting-test.md) for the
 deployment smoke test.
 

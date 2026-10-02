@@ -56,10 +56,3 @@ resource "proxmox_virtual_environment_container" "sparrow" {
     prevent_destroy = true
   }
 }
-
-# Sparrow was brought up on sol to verify guest access and the first deployment
-# before this PR is merged. Adopt that exact CT into the Lab Terraform state.
-import {
-  to = proxmox_virtual_environment_container.sparrow
-  id = "sol/76300"
-}
