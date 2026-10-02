@@ -2,7 +2,7 @@
 # Install the isolated Chatting test stack on Sparrow.
 set -euo pipefail
 
-ref="${1:-prototype/work-item-routing}"
+ref="${1:-roadmap/chatting-upgrades}"
 repo=/opt/chatting-roadmap
 venv=/opt/chatting-roadmap-venv
 token=/root/telegram-bot.token
@@ -44,7 +44,12 @@ if ! command -v codex >/dev/null; then
   npm install -g @openai/codex
 fi
 
-install -d -m 700 /etc/chatting /var/lib/chatting /var/lib/chatting/workspaces
+install -d -m 700 /etc/chatting /var/lib/chatting
+# Lane users need to traverse the state directory to reach their own private
+# workspace. State databases remain root-only; all newly created files use 0600.
+chmod 600 /var/lib/chatting/*.db /var/lib/chatting/*.db-* 2>/dev/null || true
+chmod 711 /var/lib/chatting
+install -d -m 711 /var/lib/chatting/workspaces
 python3 - "$token" <<'PY'
 import json
 import pathlib
@@ -76,6 +81,7 @@ worker = {
     'codex_command': '/usr/local/bin/codex exec --json --skip-git-repo-check --sandbox danger-full-access --model gpt-6-luna',
     'codex_working_dir': str(state),
     'workspace_root': str(state / 'workspaces'),
+    'isolate_executors': True,
     'handler_egress_url': 'http://127.0.0.1:9467/egress',
 }
 for name, value in [('handler.json', handler), ('worker.json', worker)]:
@@ -101,6 +107,7 @@ After=chatting-bbmb.service
 Requires=chatting-bbmb.service
 [Service]
 EnvironmentFile=/etc/chatting/secrets.env
+UMask=0077
 ExecStart=/usr/local/bin/chatting-test-handler --config /etc/chatting/handler.json
 Restart=always
 [Install]
@@ -113,6 +120,7 @@ After=chatting-handler.service
 Requires=chatting-handler.service
 [Service]
 Environment=PYTHONPATH=/opt/chatting-roadmap
+UMask=0077
 ExecStart=/opt/chatting-roadmap-venv/bin/python -m app.main_worker --config /etc/chatting/worker.json
 WorkingDirectory=/opt/chatting-roadmap
 Restart=always
