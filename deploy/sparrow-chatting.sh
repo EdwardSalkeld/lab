@@ -97,7 +97,7 @@ handler = {
 worker = {
     'db_path': str(state / 'worker-state' / 'worker.db'),
     'bbmb_address': '127.0.0.1:9876',
-    'codex_command': '/usr/local/bin/codex exec --json --skip-git-repo-check --sandbox danger-full-access --model gpt-6-luna',
+    'codex_command': '/usr/local/bin/codex exec --json --skip-git-repo-check --sandbox danger-full-access',
     'codex_working_dir': str(state),
     'workspace_root': str(state / 'workspaces'),
     'handler_egress_url': 'http://127.0.0.1:9467/egress',
