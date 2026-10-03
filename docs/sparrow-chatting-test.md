@@ -29,9 +29,12 @@ The script is idempotent and prints the deployed commit. It installs and starts
 `chatting-bbmb`, `chatting-handler`, and `chatting-worker` as systemd services.
 Its checkout lives at `/opt/chatting-roadmap`; the Python environment is
 `/opt/chatting-roadmap-venv`; handler and worker state is under
-`/var/lib/chatting`. It installs Codex separately. Codex needs root-only login
-state in `/root/.codex` or an API key in the root service environment before
-the worker can answer tasks. Authentication state is kept off Git.
+`/var/lib/chatting`. It installs Codex separately. The deployment copies the
+initial Codex login from `/root/.codex/auth.json` into the private home of the
+`chatting-worker` service user. The worker and its Codex subprocess run as that
+unprivileged user. Its database and all existing workspaces are migrated to
+that account; the handler database and Telegram token remain root-owned.
+Authentication state is kept off Git.
 The test bot's Telegram handle can be checked using `getMe`. Check service
 status with `systemctl status chatting-bbmb chatting-handler chatting-worker`.
 `pct exec 76300 -- ...` on `sol` is available for recovery if guest SSH is

@@ -45,10 +45,27 @@ if ! command -v codex >/dev/null; then
 fi
 
 install -d -m 700 /etc/chatting /var/lib/chatting
-# Keep the test stack's state under the worker account.
-chmod 600 /var/lib/chatting/*.db /var/lib/chatting/*.db-* 2>/dev/null || true
-chmod 700 /var/lib/chatting
-install -d -m 700 /var/lib/chatting/workspaces
+if ! id chatting-worker >/dev/null 2>&1; then
+  useradd --system --home-dir /var/lib/chatting/worker-home \
+    --shell /usr/sbin/nologin chatting-worker
+fi
+# The handler keeps its own root-owned database and token. The worker needs
+# only its database, persistent workspaces, and a private Codex login/home.
+chmod 711 /var/lib/chatting
+install -d -o chatting-worker -g chatting-worker -m 700 \
+  /var/lib/chatting/worker-home /var/lib/chatting/worker-home/.codex
+if [[ ! -s /var/lib/chatting/worker-home/.codex/auth.json ]]; then
+  install -o chatting-worker -g chatting-worker -m 600 \
+    /root/.codex/auth.json /var/lib/chatting/worker-home/.codex/auth.json
+fi
+install -d -o chatting-worker -g chatting-worker -m 700 /var/lib/chatting/workspaces
+chown -R chatting-worker:chatting-worker /var/lib/chatting/workspaces
+for path in /var/lib/chatting/worker.db /var/lib/chatting/worker.db-*; do
+  if [[ -e "$path" ]]; then
+    chown chatting-worker:chatting-worker "$path"
+    chmod 600 "$path"
+  fi
+done
 python3 - "$token" <<'PY'
 import json
 import pathlib
@@ -117,6 +134,10 @@ Description=Chatting test worker
 After=chatting-handler.service
 Requires=chatting-handler.service
 [Service]
+User=chatting-worker
+Group=chatting-worker
+Environment=HOME=/var/lib/chatting/worker-home
+Environment=CODEX_HOME=/var/lib/chatting/worker-home/.codex
 Environment=PYTHONPATH=/opt/chatting-roadmap
 UMask=0077
 ExecStart=/opt/chatting-roadmap-venv/bin/python -m app.main_worker --config /etc/chatting/worker.json
