@@ -44,6 +44,7 @@ if ! command -v codex >/dev/null; then
   npm install -g @openai/codex
 fi
 
+systemctl stop chatting-worker.service 2>/dev/null || true
 install -d -m 700 /etc/chatting /var/lib/chatting
 if ! id chatting-worker >/dev/null 2>&1; then
   useradd --system --home-dir /var/lib/chatting/worker-home \
@@ -53,7 +54,8 @@ fi
 # only its database, persistent workspaces, and a private Codex login/home.
 chmod 711 /var/lib/chatting
 install -d -o chatting-worker -g chatting-worker -m 700 \
-  /var/lib/chatting/worker-home /var/lib/chatting/worker-home/.codex
+  /var/lib/chatting/worker-home /var/lib/chatting/worker-home/.codex \
+  /var/lib/chatting/worker-state
 if [[ ! -s /var/lib/chatting/worker-home/.codex/auth.json ]]; then
   install -o chatting-worker -g chatting-worker -m 600 \
     /root/.codex/auth.json /var/lib/chatting/worker-home/.codex/auth.json
@@ -62,10 +64,11 @@ install -d -o chatting-worker -g chatting-worker -m 700 /var/lib/chatting/worksp
 chown -R chatting-worker:chatting-worker /var/lib/chatting/workspaces
 for path in /var/lib/chatting/worker.db /var/lib/chatting/worker.db-*; do
   if [[ -e "$path" ]]; then
-    chown chatting-worker:chatting-worker "$path"
-    chmod 600 "$path"
+    mv "$path" /var/lib/chatting/worker-state/
   fi
 done
+chown -R chatting-worker:chatting-worker /var/lib/chatting/worker-state
+chmod 700 /var/lib/chatting/worker-state
 python3 - "$token" <<'PY'
 import json
 import pathlib
@@ -92,7 +95,7 @@ handler = {
     'telegram_attachment_dir': str(state / 'telegram-attachments'),
 }
 worker = {
-    'db_path': str(state / 'worker.db'),
+    'db_path': str(state / 'worker-state' / 'worker.db'),
     'bbmb_address': '127.0.0.1:9876',
     'codex_command': '/usr/local/bin/codex exec --json --skip-git-repo-check --sandbox danger-full-access --model gpt-6-luna',
     'codex_working_dir': str(state),
@@ -103,6 +106,8 @@ for name, value in [('handler.json', handler), ('worker.json', worker)]:
     (config / name).write_text(json.dumps(value, indent=2) + '\n')
     (config / name).chmod(0o600)
 PY
+chmod 711 /etc/chatting
+chown chatting-worker:chatting-worker /etc/chatting/worker.json
 
 install -m 644 /dev/stdin /etc/systemd/system/chatting-bbmb.service <<'UNIT'
 [Unit]
@@ -120,11 +125,13 @@ install -m 644 /dev/stdin /etc/systemd/system/chatting-handler.service <<'UNIT'
 Description=Chatting test handler
 After=chatting-bbmb.service
 Requires=chatting-bbmb.service
+StartLimitIntervalSec=0
 [Service]
 EnvironmentFile=/etc/chatting/secrets.env
 UMask=0077
 ExecStart=/usr/local/bin/chatting-test-handler --config /etc/chatting/handler.json
 Restart=always
+RestartSec=5s
 [Install]
 WantedBy=multi-user.target
 UNIT
@@ -132,7 +139,7 @@ install -m 644 /dev/stdin /etc/systemd/system/chatting-worker.service <<'UNIT'
 [Unit]
 Description=Chatting test worker
 After=chatting-handler.service
-Requires=chatting-handler.service
+Wants=chatting-handler.service
 [Service]
 User=chatting-worker
 Group=chatting-worker

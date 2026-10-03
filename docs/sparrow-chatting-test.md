@@ -32,8 +32,9 @@ Its checkout lives at `/opt/chatting-roadmap`; the Python environment is
 `/var/lib/chatting`. It installs Codex separately. The deployment copies the
 initial Codex login from `/root/.codex/auth.json` into the private home of the
 `chatting-worker` service user. The worker and its Codex subprocess run as that
-unprivileged user. Its database and all existing workspaces are migrated to
-that account; the handler database and Telegram token remain root-owned.
+unprivileged user. Its database is in `/var/lib/chatting/worker-state`, and
+all existing workspaces are migrated to that account. The handler database
+and Telegram token remain root-owned.
 Authentication state is kept off Git.
 The test bot's Telegram handle can be checked using `getMe`. Check service
 status with `systemctl status chatting-bbmb chatting-handler chatting-worker`.
