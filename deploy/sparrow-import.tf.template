@@ -1,0 +1,8 @@
+# Sparrow was bootstrapped on sol to verify access before merging its Terraform
+# resource. Copy this into the Terraform root for plan/apply so state adopts it.
+# Keep this outside terraform/: the current tfsec release cannot parse import
+# blocks, although Terraform itself supports them.
+import {
+  to = proxmox_virtual_environment_container.sparrow
+  id = "sol/76300"
+}
