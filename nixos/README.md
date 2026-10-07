@@ -173,6 +173,29 @@ sudo systemctl start chatting.target
 sudo systemctl status chatting-bbmb chatting-handler chatting-worker
 ```
 
+### Recovering Codex login on `magpie`
+
+If incoming messages stop getting replies while all three chatting services are
+active, run this from the lab repo on a machine connected to the tailnet:
+
+```sh
+./scripts/magpie-codex-reauth.sh
+```
+
+The script shows recent worker failures, SSHes to `edward@magpie`, runs device
+login as the shell-less `worker` user, then checks the new login with a real
+read-only Codex request. An `execution_error` with `401 Unauthorized` or
+`invalidated oauth token` indicates that reauthentication is needed. Open the
+URL printed by Codex, sign in, and enter its one-time code. Device code login
+must be enabled in the ChatGPT account or workspace settings.
+
+The credentials are stored in `/var/lib/worker/.codex/auth.json`; do not print
+or copy them into logs, tickets, or the repo. `codex login status` only confirms
+that credentials are present and can report a login even when the token has
+been invalidated. No service restart is needed: the worker starts a fresh Codex
+process for each task. Messages already marked `execution_error` are not
+automatically retried; resend any needed requests after login succeeds.
+
 ## GitHub Deploy Workflow
 
 On pushes to `main`, the `deploy` workflow joins Tailscale as `tag:ci`, SSHes
