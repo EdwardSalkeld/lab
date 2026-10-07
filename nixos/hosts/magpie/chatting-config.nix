@@ -108,10 +108,14 @@ let
     db_path = "/var/lib/worker/chatting-worker.db";
     bbmb_address = "127.0.0.1:9876";
     max_attempts = 2;
+    executor_pool_size = 2;
     poll_timeout_seconds = 20;
     sleep_seconds = 1.0;
-    codex_command = "codex exec --dangerously-bypass-approvals-and-sandbox";
+    # The work item session view renders Codex's JSON event stream live.
+    codex_command = "codex exec --json --dangerously-bypass-approvals-and-sandbox";
     codex_working_dir = workspaceDir;
+    workspace_root = "${workspaceDir}/.chatting-workspaces";
+    handler_egress_url = "http://127.0.0.1:9467/egress";
   };
 in
 {
