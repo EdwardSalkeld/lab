@@ -43,6 +43,14 @@
     ];
   };
 
+  # Keep per-item workspaces on the dedicated workspace disk while giving
+  # them a short, visible path alongside the shared workspace.
+  fileSystems."/srv/chatting/workspaces" = {
+    device = "/srv/chatting/workspace/workspaces";
+    fsType = "none";
+    options = [ "bind" "x-systemd.requires-mounts-for=/srv/chatting/workspace" ];
+  };
+
   # Dedicated disk for Docker/CI storage (terraform magpie scsi2, serial
   # `magpie-ci`), kept off the 24 GB OS root so CI image churn can't fill it.
   # Formatted once with `mkfs.ext4 -L dockerdata`; see forgejo-runner.nix.
