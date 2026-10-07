@@ -7,6 +7,7 @@
     ./grafana.nix
     ./hardware-configuration.nix
     ./exercise-tracker.nix
+    ./family-tunnel.nix
     ./loki.nix
     ./linear-export.nix
     ./octopus-dl.nix
