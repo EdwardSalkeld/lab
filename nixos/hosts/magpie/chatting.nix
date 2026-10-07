@@ -107,6 +107,7 @@ in
       workerConfigPath
       "/srv/chatting/workspace"
     ];
+    unitConfig.RequiresMountsFor = [ "/srv/chatting/workspaces" ];
     restartTriggers = [
       config.environment.etc."chatting/worker.json".source
       config.environment.etc."chatting/codex-config.toml".source
@@ -147,6 +148,7 @@ in
       ReadWritePaths = [
         "/var/lib/worker"
         "/srv/chatting/workspace"
+        "/srv/chatting/workspaces"
       ];
       Restart = "always";
       RestartSec = "5s";
