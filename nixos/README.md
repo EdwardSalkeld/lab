@@ -176,42 +176,22 @@ sudo systemctl status chatting-bbmb chatting-handler chatting-worker
 ### Recovering Codex login on `magpie`
 
 If incoming messages stop getting replies while all three chatting services are
-active, check the worker log first:
+active, run this from the lab repo on a machine connected to the tailnet:
 
 ```sh
-ssh edward@magpie
-sudo journalctl -u chatting-worker --since '1 hour ago' --no-pager \
-  | rg 'worker_processed|401 Unauthorized|invalidated oauth token'
+./scripts/magpie-codex-reauth.sh
 ```
 
-An `execution_error` with `401 Unauthorized` or `invalidated oauth token` means
-Codex needs a fresh login. The `worker` account has no login shell, so run the
-Codex binary as that user with its home and auth directory set explicitly:
+The script shows recent worker failures, SSHes to `edward@magpie`, runs device
+login as the shell-less `worker` user, then checks the new login with a real
+read-only Codex request. An `execution_error` with `401 Unauthorized` or
+`invalidated oauth token` indicates that reauthentication is needed. Open the
+URL printed by Codex, sign in, and enter its one-time code. Device code login
+must be enabled in the ChatGPT account or workspace settings.
 
-```sh
-sudo -u worker env \
-  HOME=/var/lib/worker CODEX_HOME=/var/lib/worker/.codex \
-  /etc/profiles/per-user/edward/bin/codex login --device-auth
-```
-
-Open the URL shown by Codex on a browser, sign in, and enter the one-time code.
-The command exits with `Successfully logged in` when complete. Device code login
-must be enabled in the ChatGPT account or workspace settings. The credentials
-are stored in `/var/lib/worker/.codex/auth.json`; do not print or copy them into
-logs, tickets, or the repo.
-
-Verify with a real read-only Codex request as `worker`:
-
-```sh
-sudo -u worker env \
-  HOME=/var/lib/worker CODEX_HOME=/var/lib/worker/.codex \
-  /etc/profiles/per-user/edward/bin/codex exec \
-  --cd /var/lib/worker --skip-git-repo-check --sandbox read-only \
-  'Reply with exactly OK.' </dev/null
-```
-
-It should exit successfully and print `OK`. `codex login status` only confirms
-that credentials are present; it can report a login even when the token has
+The credentials are stored in `/var/lib/worker/.codex/auth.json`; do not print
+or copy them into logs, tickets, or the repo. `codex login status` only confirms
+that credentials are present and can report a login even when the token has
 been invalidated. No service restart is needed: the worker starts a fresh Codex
 process for each task. Messages already marked `execution_error` are not
 automatically retried; resend any needed requests after login succeeds.
