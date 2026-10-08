@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
   helloWorld = pkgs.writeTextDir "index.html" ''
@@ -10,6 +10,11 @@ let
   '';
 in
 {
+  sops.secrets."family-tunnel/token" = {
+    sopsFile = ./secrets/family-tunnel.yaml;
+    key = "token";
+  };
+
   # Temporary origin for the first stage. It is only reachable on loopback.
   systemd.services.family-tunnel-hello = {
     description = "Temporary family tunnel hello-world origin";
@@ -26,8 +31,8 @@ in
     };
   };
 
-  # The token is supplied after the Cloudflare Terraform tunnel exists. Keep
-  # it outside the Nix store and pass it through systemd's credential directory.
+  # SOPS materialises the token outside the Nix store. Pass it through
+  # systemd's credential directory to the connector.
   systemd.services.family-tunnel = {
     description = "Cloudflare Tunnel connector for family.salkeld.net";
     wantedBy = [ "multi-user.target" ];
@@ -39,10 +44,9 @@ in
       "network-online.target"
       "family-tunnel-hello.service"
     ];
-    unitConfig.ConditionPathExists = "/var/lib/cloudflared/family-token";
     serviceConfig = {
       ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel run --token-file \${CREDENTIALS_DIRECTORY}/tunnel-token";
-      LoadCredential = "tunnel-token:/var/lib/cloudflared/family-token";
+      LoadCredential = "tunnel-token:${config.sops.secrets."family-tunnel/token".path}";
       DynamicUser = true;
       ProtectSystem = "strict";
       ProtectHome = true;
