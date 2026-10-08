@@ -54,12 +54,8 @@ resource "proxmox_virtual_environment_container" "sparrow" {
 
   lifecycle {
     prevent_destroy = true
-    # Sparrow was created before Terraform adopted it. Proxmox does not expose
-    # these creation-only values on import, so comparing them would replace the
-    # running test container on every deploy.
-    ignore_changes = [
-      initialization[0].user_account,
-      operating_system[0].template_file_id,
-    ]
+    # Sparrow is temporary and was configured before Terraform adopted it.
+    # Leave the running container untouched while keeping its import in state.
+    ignore_changes = all
   }
 }
