@@ -54,5 +54,8 @@ resource "proxmox_virtual_environment_container" "sparrow" {
 
   lifecycle {
     prevent_destroy = true
+    # Sparrow is temporary and was configured before Terraform adopted it.
+    # Leave the running container untouched while keeping its import in state.
+    ignore_changes = all
   }
 }
