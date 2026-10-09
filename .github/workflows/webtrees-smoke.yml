@@ -5,6 +5,9 @@ on:
     paths:
       - '.github/workflows/webtrees-smoke.yml'
       - 'nixos/hosts/partridge/webtrees.nix'
+      - 'nixos/hosts/partridge/webtrees-bootstrap.php'
+      - 'nixos/hosts/partridge/secrets/webtrees.yaml'
+      - 'flake.lock'
       - 'scripts/check-webtrees.py'
 
 jobs:
@@ -18,5 +21,5 @@ jobs:
             experimental-features = nix-command flakes
             http2 = false
             fallback = true
-      - name: Native startup, first account, tree, access restrictions and restart
+      - name: Declarative config, bootstrap retry, failure isolation, login, tree and restart
         run: python3 scripts/check-webtrees.py

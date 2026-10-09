@@ -1,16 +1,44 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   stateDir = "/var/lib/webtrees";
+  # Configuration belongs to the deployment, never the writable data folder.
+  connection = {
+    dbtype = "pgsql";
+    dbhost = "/run/postgresql";
+    dbport = toString config.services.postgresql.settings.port;
+    dbuser = "webtrees";
+    dbpass = "";
+    dbname = "webtrees";
+    tblpfx = "wt_";
+    base_url = "http://partridge.tailb35748.ts.net:5052";
+    rewrite_urls = "0";
+  };
+  configFile = pkgs.writeText "webtrees-config.ini.php" (
+    "; <?php return; ?> DO NOT DELETE THIS LINE\n"
+    + lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: "${name}=${builtins.toJSON value}") connection)
+    + "\n"
+  );
+  bootstrapSettings = pkgs.writeText "webtrees-bootstrap.json" (builtins.toJSON {
+    username = "edward";
+    name = "Edward Salkeld";
+    email = "edsalkeld@fastmail.com";
+    language = "en-US";
+  });
   source = pkgs.fetchzip {
     url = "https://github.com/fisharebest/webtrees/releases/download/2.2.6/webtrees-2.2.6.zip";
     hash = "sha256-9DI86LOADdaEbwR3L/3/xuXvrSL96DYAkNdzpQ7b9OU=";
   };
-  # Keep PHP code immutable; only data (including media/config) is writable.
+  # Pin CONFIG_FILE to the store itself. A read-only symlink in writable data
+  # would still allow PHP to unlink/replace it; immutable code closes that hole.
   webtrees = pkgs.runCommand "webtrees-2.2.6" { } ''
     mkdir -p "$out"
     cp -R ${source}/. "$out/"
     chmod -R u+w "$out"
+    substituteInPlace "$out/app/Webtrees.php" \
+      --replace-fail "self::DATA_DIR . 'config.ini.php'" "'${configFile}'"
+    cp ${./webtrees-bootstrap.php} "$out/app/bootstrap.php"
+    cp ${bootstrapSettings} "$out/app/bootstrap.json"
     rm -r "$out/data"
     ln -s ${stateDir}/data "$out/data"
   '';
@@ -27,6 +55,11 @@ let
   };
 in
 {
+  sops.secrets."webtrees/bootstrap_password" = {
+    sopsFile = ./secrets/webtrees.yaml;
+    key = "bootstrap_password";
+    restartUnits = [ "webtrees-bootstrap.service" ];
+  };
   users.groups.webtrees = { };
   users.users.webtrees = {
     isSystemUser = true;
@@ -70,6 +103,29 @@ in
     "d ${stateDir}/sessions 0700 webtrees webtrees -"
   ];
 
+  # Schema and first administrator creation are isolated to webtrees, just
+  # like database creation. No request or mutable setup wizard is required.
+  systemd.services.webtrees-bootstrap = {
+    description = "Initialise webtrees and preserve existing administrators";
+    after = [ "webtrees-db-setup.service" ];
+    requires = [ "webtrees-db-setup.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "webtrees";
+      Group = "webtrees";
+      WorkingDirectory = webtrees;
+      LoadCredential = "bootstrap-password:${config.sops.secrets."webtrees/bootstrap_password".path}";
+      ExecStart = "${php}/bin/php ${webtrees}/app/bootstrap.php";
+      UMask = "0077";
+      ProtectSystem = "strict";
+      ReadWritePaths = [ stateDir ];
+      ProtectHome = true;
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+    };
+  };
+
   services.phpfpm.pools.webtrees = {
     user = "webtrees";
     group = "webtrees";
@@ -98,13 +154,16 @@ in
     after = [
       "postgresql.service"
       "webtrees-db-setup.service"
+      "webtrees-bootstrap.service"
     ];
     requires = [
       "postgresql.service"
       "webtrees-db-setup.service"
+      "webtrees-bootstrap.service"
     ];
     preStart = ''
-      # Seed the upstream data skeleton once; preserve settings and uploads.
+      # Seed the upstream data skeleton once; preserve uploads and any legacy
+      # wizard config for recovery. Legacy config is no longer read.
       if [ ! -e ${stateDir}/data/index.php ]; then
         cp -R ${source}/data/. ${stateDir}/data/
         chown -R webtrees:webtrees ${stateDir}/data
@@ -154,7 +213,7 @@ in
     locations."~ \\.php$".extraConfig = "deny all;";
   };
 
-  # Existing all-database SQL dump includes webtrees. Media and config need
-  # the existing encrypted off-host file backup as well.
+  # Existing SQL dump covers accounts/family data. Writable media uses the
+  # encrypted file backup; connection config is reproducible from this repo.
   services.restic.backups.partridge-postgres.paths = [ "${stateDir}/data" ];
 }
