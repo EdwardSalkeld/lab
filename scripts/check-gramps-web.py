@@ -124,11 +124,11 @@ with tempfile.TemporaryDirectory(prefix="gramps-smoke-") as temp:
         names.append("gramps-smoke-worker")
         docker("run", "-d", "--name", names[-1], *args, worker_config["image"], *worker_config["cmd"])
         # Export is a real Celery job, verifying the shared DB/Redis/volumes.
-        status, job = request("/api/exporters/gramps/file/", token=token, method="POST")
+        status, job = request("/api/exporters/gramps/file", token=token, method="POST")
         assert status == 202, job
         task_id = job["task"]["id"]
         for _ in range(60):
-            _, task = request(f"/api/tasks/{task_id}/", token=token)
+            _, task = request(f"/api/tasks/{task_id}", token=token)
             if task["state"] == "SUCCESS":
                 break
             assert task["state"] != "FAILURE", task
@@ -153,3 +153,5 @@ with tempfile.TemporaryDirectory(prefix="gramps-smoke-") as temp:
     finally:
         for name in reversed(names):
             subprocess.run(["docker", "rm", "-f", name], stdout=subprocess.DEVNULL)
+        # Docker wrote root-owned files into this disposable runner directory.
+        subprocess.run(["sudo", "chown", "-R", f"{os.getuid()}:{os.getgid()}", str(root)], check=True)
