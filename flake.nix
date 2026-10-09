@@ -3,9 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
-    # The Codex CLI moves fast; the pinned 26.05 channel only has an old
-    # release that the current backend rejects (gpt-5.4 needs a newer CLI), so
-    # the chatting worker takes Codex from unstable.
+    # Keep the chatting worker's CLI current with the model selected by
+    # chatting. Codex 0.156.1 rejected gpt-6.1-sol; 0.161.0 was verified on
+    # magpie with the worker's ChatGPT login.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     sops-nix = {
       url = "github:Mic92/sops-nix";
