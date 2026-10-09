@@ -120,7 +120,14 @@ in
         environmentFiles = [ envFile ];
         # Host networking allows loopback-only access to PostgreSQL and Redis.
         # Explicit gunicorn binding keeps the API behind the LAN-only proxy.
-        extraOptions = [ "--network=host" ];
+        podman.sdnotify = "healthy";
+        extraOptions = [
+          "--network=host"
+          "--health-cmd=python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:5051/', timeout=5)\""
+          "--health-interval=10s"
+          "--health-start-period=60s"
+          "--health-retries=6"
+        ];
         cmd = [
           "gunicorn"
           "-w"
