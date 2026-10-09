@@ -2,6 +2,7 @@
 """Exercise the pinned native webtrees stack without touching host services."""
 
 import html.parser
+import http.client
 import http.cookiejar
 import json
 import os
@@ -99,9 +100,13 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
             for key, value in opts["fastcgiParams"].items():
                 content += f"\nfastcgi_param {key} {value.replace(str(app), str(work / 'app'))};"
             locations.append(f"location {name} {{\n{content}\n}}")
-        # Keep the actual location/deny rules; substitute loopback for test LAN.
-        extra = vhost["extraConfig"].replace("10.4.1.0/24", "127.0.0.1")
-        (work / "nginx.conf").write_text(f"pid {work}/nginx.pid;\nerror_log {work}/nginx.log;\nevents {{}}\nhttp {{\ninclude {nginx}/conf/mime.types;\naccess_log off;\nclient_body_temp_path {work}/body;\nfastcgi_temp_path {work}/fastcgi;\nserver {{ listen 127.0.0.1:{port}; root {work}/app;\n{extra}\n" + "\n".join(locations) + "\n}}\n")
+        # Map LAN and tailnet sources to distinct local addresses while keeping
+        # the evaluated allow/deny rules and exercising real Nginx decisions.
+        extra = (vhost["extraConfig"]
+                 .replace("10.4.1.0/24", "127.0.0.1/32")
+                 .replace("100.64.0.0/10", "127.0.0.2/32")
+                 .replace("fd7a:115c:a1e0::/48", "::1/128"))
+        (work / "nginx.conf").write_text(f"pid {work}/nginx.pid;\nerror_log {work}/nginx.log;\nevents {{}}\nhttp {{\ninclude {nginx}/conf/mime.types;\naccess_log off;\nclient_body_temp_path {work}/body;\nfastcgi_temp_path {work}/fastcgi;\nserver {{ listen 127.0.0.1:{port}; listen [::1]:{port}; root {work}/app;\n{extra}\n" + "\n".join(locations) + "\n}}\n")
         processes.append(subprocess.Popen([nginx / "bin/nginx", "-c", work / "nginx.conf", "-p", str(work), "-g", "daemon off;"], stdout=log, stderr=log))
         base = f"http://127.0.0.1:{port}/"
         opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
@@ -120,6 +125,24 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         else:
             raise RuntimeError("Native web stack failed to start")
         assert 'name="lang"' in page, page
+        for destination, source, expected in [
+            ("127.0.0.1", "127.0.0.2", 200),  # Tailnet IPv4
+            ("::1", "::1", 200),  # Tailnet IPv6
+            ("127.0.0.1", "127.0.0.3", 403),  # Outside permitted networks
+        ]:
+            connection = http.client.HTTPConnection(destination, port, timeout=30, source_address=(source, 0))
+            try:
+                connection.request("GET", "/")
+                response = connection.getresponse()
+                response.read()
+                assert response.status == expected, (source, response.status)
+                if expected == 200:
+                    connection.request("GET", "/data/config.ini.php")
+                    response = connection.getresponse()
+                    response.read()
+                    assert response.status == 403, (source, response.status)
+            finally:
+                connection.close()
         data = dict(lang="en-US", dbtype="pgsql", dbhost=str(work / "pgsocket"), dbport="5432", dbuser="webtrees", dbpass="", dbname="webtrees", tblpfx="wt_")
         page = request(data={**data, "step": 5})
         assert 'name="wtuser"' in page, page
@@ -143,7 +166,7 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         time.sleep(1)
         assert "Smoke family" in request()
         assert sql("SELECT count(*) FROM wt_user WHERE user_name = 'smoke'") == "1"
-        print("PASS: native Nginx/PHP-FPM, socket peer authentication, admin/tree creation, private path restrictions and restart persistence")
+        print("PASS: native Nginx/PHP-FPM, LAN and tailnet IPv4/IPv6 access, denied other sources, socket peer authentication, admin/tree creation, private path restrictions and restart persistence")
     except Exception:
         for name in ["process.log", "pg.log", "fpm.log", "nginx.log"]:
             path = work / name

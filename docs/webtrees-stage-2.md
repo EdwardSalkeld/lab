@@ -1,4 +1,4 @@
-# webtrees LAN trial on Partridge
+# webtrees LAN and tailnet trial on Partridge
 
 This is an alternative to Gramps Web in PR #345. It adds one native PHP-FPM
 pool, reusing Partridge's Nginx, PostgreSQL and encrypted Restic backups. There
@@ -12,8 +12,18 @@ in-app code updates and installing modules into the app directory are not
 supported. GEDCOM exports are available through webtrees, rather than Gramps
 XML or Gramps Desktop sync.
 
-After merge/deploy, open **http://10.4.1.30:5052/** from the home LAN. Follow
-the upstream setup wizard, select PostgreSQL, and enter:
+After merge/deploy, connect your phone to Tailscale and open
+**http://partridge.tailb35748.ts.net:5052/**. This works at home and away;
+no exit node or subnet route is required. Partridge's tailnet IPv4 address is
+`100.68.203.63` if you need a DNS diagnostic.
+
+The direct home LAN endpoint **http://10.4.1.30:5052/** also remains reachable.
+Run the first setup through the tailnet hostname and keep
+`http://partridge.tailb35748.ts.net:5052` as the wizard's website URL: webtrees
+uses that configured base URL for links and redirects, so setting it to the
+LAN address would send phone navigation back to the LAN address.
+
+Follow the upstream setup wizard, select PostgreSQL, and enter:
 
 | Setting | Value |
 | --- | --- |
@@ -31,7 +41,10 @@ email and password you choose. Complete this before adding family data.
 
 Create a tree or import a GEDCOM through the browser. Before any future public
 connection, review the site's registration and tree privacy settings; the
-current endpoint is restricted to `10.4.1.0/24`, and the working Cloudflare
+current endpoint allows the home LAN (`10.4.1.0/24`) and Tailscale's IPv4/IPv6
+address ranges (`100.64.0.0/10`, `fd7a:115c:a1e0::/48`). Tailnet access also
+requires permission under the existing Tailscale policy; the personal phone
+already has access to Partridge. The working Cloudflare
 tunnel/hello-world services are unchanged. No public route is added.
 
 Port 5052 and the database/state directories are distinct from Gramps' port

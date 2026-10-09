@@ -93,13 +93,19 @@ in
     '';
   };
 
-  # Separate LAN port lets both candidate PRs coexist. The family tunnel
-  # continues to serve its existing hello-world endpoint.
+  # Separate LAN/tailnet port lets both candidate PRs coexist. Wildcard
+  # listeners avoid depending on Tailscale assigning its addresses at boot;
+  # the source allowlist below and host firewall restrict access.
   networking.firewall.interfaces.ens18.allowedTCPPorts = [ 5052 ];
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 5052 ];
   services.nginx.virtualHosts."webtrees-lan" = {
     listen = [
       {
-        addr = "10.4.1.30";
+        addr = "0.0.0.0";
+        port = 5052;
+      }
+      {
+        addr = "[::]";
         port = 5052;
       }
     ];
@@ -107,6 +113,8 @@ in
     extraConfig = ''
       index index.php;
       allow 10.4.1.0/24;
+      allow 100.64.0.0/10;
+      allow fd7a:115c:a1e0::/48;
       deny all;
       client_max_body_size 110m;
     '';
