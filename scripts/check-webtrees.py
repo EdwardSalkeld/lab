@@ -166,7 +166,38 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         time.sleep(1)
         assert "Smoke family" in request()
         assert sql("SELECT count(*) FROM wt_user WHERE user_name = 'smoke'") == "1"
+        # A later tunnel cutover changes the canonical URL, not the tree or
+        # accounts. Exercise HTTPS URL generation over an HTTP origin.
+        config_file = work / "data/config.ini.php"
+        original_config = config_file.read_text()
+        assert f'base_url="{base.rstrip("/")}"' in original_config
+        config_file.write_text(original_config.replace(
+            f'base_url="{base.rstrip("/")}"',
+            'base_url="https://family.salkeld.net"',
+        ))
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
+        try:
+            connection.request("GET", "/index.php?route=%2Flogin", headers={"Host": "family.salkeld.net", "User-Agent": "webtrees-native-smoke"})
+            response = connection.getresponse()
+            page = response.read().decode()
+            assert response.status == 302, (response.status, page)
+            destination = response.getheader("Location")
+            assert destination.startswith("https://family.salkeld.net/"), destination
+            parsed = urllib.parse.urlsplit(destination)
+            connection.request("GET", parsed.path + "?" + parsed.query, headers={"Host": "family.salkeld.net", "User-Agent": "webtrees-native-smoke"})
+            response = connection.getresponse()
+            page = response.read().decode()
+            assert response.status == 200, (response.status, page)
+            assert 'https://family.salkeld.net/public/' in page, page
+            assert base.rstrip("/") not in page, page
+        finally:
+            connection.close()
+        assert sql("SELECT count(*) FROM wt_user WHERE user_name = 'smoke'") == "1"
+        assert sql("SELECT count(*) FROM wt_gedcom WHERE gedcom_name = 'smoke'") == "1"
+        config_file.write_text(original_config)
+        assert "Smoke family" in request()
         print("PASS: native Nginx/PHP-FPM, LAN and tailnet IPv4/IPv6 access, denied other sources, socket peer authentication, admin/tree creation, private path restrictions and restart persistence")
+        print("PASS: canonical URL cutover to HTTPS behind an HTTP origin preserves the administrator/tree and generates public HTTPS links")
     except Exception:
         for name in ["process.log", "pg.log", "fpm.log", "nginx.log"]:
             path = work / name

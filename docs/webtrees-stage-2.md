@@ -23,6 +23,21 @@ Run the first setup through the tailnet hostname and keep
 uses that configured base URL for links and redirects, so setting it to the
 LAN address would send phone navigation back to the LAN address.
 
+This URL is a changeable setting, not an installation identity. When the
+trial is ready to move behind the existing tunnel, change only `base_url` in
+`/var/lib/webtrees/data/config.ini.php` to `https://family.salkeld.net` as part
+of that cutover. No database rebuild, tree export/import or account recreation
+is required. The explicit HTTPS base URL also makes generated links use HTTPS
+when the tunnel connects to an HTTP origin. Users should open the new URL and
+sign in again; browser cookies are specific to the hostname.
+
+The tunnel cutover will separately need a local origin listener/allowlist and
+the tunnel routing change. The current LAN/tailnet listener rejects loopback
+clients, so changing the URL alone does not connect the tunnel. Keep the
+working hello-world route until that later stage. webtrees uses one canonical
+URL: after cutover, direct LAN/tailnet pages will generate links to the public
+URL rather than provide an independent alternate site.
+
 Follow the upstream setup wizard, select PostgreSQL, and enter:
 
 | Setting | Value |
