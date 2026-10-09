@@ -79,6 +79,7 @@
     tree
   ];
   users.users.billy.extraGroups = [
+    "wheel"
     "systemd-journal"
   ];
   environment.systemPackages = with pkgs; [
