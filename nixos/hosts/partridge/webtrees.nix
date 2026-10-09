@@ -36,13 +36,33 @@ in
 
   # Local peer authentication uses the PHP worker's Unix identity. No new
   # database password, TCP listener or credentials handoff is needed.
-  services.postgresql.ensureDatabases = [ "webtrees" ];
-  services.postgresql.ensureUsers = [
-    {
-      name = "webtrees";
-      ensureDBOwnership = true;
-    }
-  ];
+  # Do not add this application's provisioning to postgresql-setup: existing
+  # services such as Forgejo require that shared unit. A webtrees setup error
+  # must fail only webtrees. Ordering after shared setup avoids catalog races.
+  systemd.services.webtrees-db-setup = {
+    description = "Provision the webtrees database independently";
+    after = [ "postgresql.service" "postgresql-setup.service" ];
+    requires = [ "postgresql.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "postgres";
+      Group = "postgres";
+    };
+    path = [ config.services.postgresql.finalPackage ];
+    environment.PGPORT = toString config.services.postgresql.settings.port;
+    script = ''
+      psql -X -v ON_ERROR_STOP=1 --dbname=postgres <<'SQL'
+      SELECT 'CREATE ROLE webtrees LOGIN'
+      WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'webtrees')
+      \gexec
+      SELECT 'CREATE DATABASE webtrees OWNER webtrees'
+      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'webtrees')
+      \gexec
+      ALTER DATABASE webtrees OWNER TO webtrees;
+      SQL
+    '';
+  };
 
   systemd.tmpfiles.rules = [
     "d ${stateDir} 0700 webtrees webtrees -"
@@ -77,11 +97,11 @@ in
   systemd.services.phpfpm-webtrees = {
     after = [
       "postgresql.service"
-      "postgresql-setup.service"
+      "webtrees-db-setup.service"
     ];
     requires = [
       "postgresql.service"
-      "postgresql-setup.service"
+      "webtrees-db-setup.service"
     ];
     preStart = ''
       # Seed the upstream data skeleton once; preserve settings and uploads.
