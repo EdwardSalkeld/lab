@@ -77,8 +77,40 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         def sql(statement, database="webtrees"):
             return subprocess.check_output([pg / "bin/psql", "-h", work / "pgsocket", "-d", database, "-At", "-v", "ON_ERROR_STOP=1", "-c", statement], text=True).strip()
 
-        sql("CREATE ROLE webtrees LOGIN", "postgres")
-        sql("CREATE DATABASE webtrees OWNER webtrees", "postgres")
+        units = evaluate("systemd.services", "s: builtins.mapAttrs (_: v: { inherit (v) requires requisite bindsTo after script; }) s")
+        assert "webtrees" not in evaluate("services.postgresql.ensureDatabases")
+        assert "webtrees" not in units["postgresql-setup"]["script"]
+        assert "webtrees-db-setup.service" in units["phpfpm-webtrees"]["requires"]
+
+        # Follow actual hard dependencies, including transitive ones. An
+        # application-specific provisioning failure must not gate Forgejo.
+        def hard_dependencies(name, seen=None):
+            seen = set() if seen is None else seen
+            if name in seen or name not in units:
+                return seen
+            seen.add(name)
+            for key in ("requires", "requisite", "bindsTo"):
+                for dependency in units[name][key]:
+                    hard_dependencies(dependency.removesuffix(".service"), seen)
+            return seen
+
+        assert "webtrees-db-setup" not in hard_dependencies("forgejo")
+        sql("CREATE DATABASE existing_service", "postgres")
+        sql("CREATE TABLE marker AS SELECT 42 AS value", "existing_service")
+        setup = units["webtrees-db-setup"]["script"]
+        setup_env = {**os.environ, "PATH": f"{pg}/bin:" + os.environ["PATH"], "PGHOST": str(work / "pgsocket")}
+        # Make new database creation fail, without disrupting existing DBs.
+        sql("ALTER DATABASE template1 RENAME TO unavailable_template", "postgres")
+        failed = subprocess.run(["bash", "-e", "-c", setup], env=setup_env, stdout=log, stderr=log)
+        assert failed.returncode != 0
+        assert sql("SELECT value FROM marker", "existing_service") == "42"
+        sql("ALTER DATABASE unavailable_template RENAME TO template1", "postgres")
+        # Retry the exact evaluated provisioning script, then repeat it to
+        # verify existing live databases/roles are preserved on later deploys.
+        for _ in range(2):
+            subprocess.run(["bash", "-e", "-c", setup], env=setup_env, check=True, stdout=log, stderr=log)
+        assert sql("SELECT value FROM marker", "existing_service") == "42"
+        print("Database provisioning failure isolation and idempotent retry passed", flush=True)
         settings = pool["settings"].copy()
         settings.update({"listen": str(work / "fpm.sock"), "user": unix_user, "group": pwd.getpwuid(os.getuid()).pw_gid})
         for key in ["listen.owner", "listen.group"]:
