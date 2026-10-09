@@ -1,0 +1,132 @@
+{ config, pkgs, ... }:
+
+let
+  stateDir = "/var/lib/webtrees";
+  source = pkgs.fetchzip {
+    url = "https://github.com/fisharebest/webtrees/releases/download/2.2.6/webtrees-2.2.6.zip";
+    hash = "sha256-9DI86LOADdaEbwR3L/3/xuXvrSL96DYAkNdzpQ7b9OU=";
+  };
+  # Keep PHP code immutable; only data (including media/config) is writable.
+  webtrees = pkgs.runCommand "webtrees-2.2.6" { } ''
+    mkdir -p "$out"
+    cp -R ${source}/. "$out/"
+    chmod -R u+w "$out"
+    rm -r "$out/data"
+    ln -s ${stateDir}/data "$out/data"
+  '';
+  php = pkgs.php84.buildEnv {
+    extensions =
+      { enabled, all }:
+      enabled
+      ++ [
+        all.pdo_pgsql
+        all.gd
+        all.intl
+        all.zip
+      ];
+  };
+in
+{
+  users.groups.webtrees = { };
+  users.users.webtrees = {
+    isSystemUser = true;
+    group = "webtrees";
+    home = stateDir;
+  };
+
+  # Local peer authentication uses the PHP worker's Unix identity. No new
+  # database password, TCP listener or credentials handoff is needed.
+  services.postgresql.ensureDatabases = [ "webtrees" ];
+  services.postgresql.ensureUsers = [
+    {
+      name = "webtrees";
+      ensureDBOwnership = true;
+    }
+  ];
+
+  systemd.tmpfiles.rules = [
+    "d ${stateDir} 0700 webtrees webtrees -"
+    "d ${stateDir}/data 0700 webtrees webtrees -"
+    "d ${stateDir}/sessions 0700 webtrees webtrees -"
+  ];
+
+  services.phpfpm.pools.webtrees = {
+    user = "webtrees";
+    group = "webtrees";
+    phpPackage = php;
+    settings = {
+      "listen.owner" = config.services.nginx.user;
+      "listen.group" = config.services.nginx.group;
+      "listen.mode" = "0600";
+      # Occasional use: no PHP request workers remain between visits.
+      pm = "ondemand";
+      "pm.max_children" = 2;
+      "pm.process_idle_timeout" = "30s";
+      "pm.max_requests" = 100;
+      "request_terminate_timeout" = "300s";
+    };
+    phpOptions = ''
+      memory_limit = 256M
+      upload_max_filesize = 100M
+      post_max_size = 110M
+      max_execution_time = 300
+      session.save_path = ${stateDir}/sessions
+      expose_php = Off
+    '';
+  };
+  systemd.services.phpfpm-webtrees = {
+    after = [
+      "postgresql.service"
+      "postgresql-setup.service"
+    ];
+    requires = [
+      "postgresql.service"
+      "postgresql-setup.service"
+    ];
+    preStart = ''
+      # Seed the upstream data skeleton once; preserve settings and uploads.
+      if [ ! -e ${stateDir}/data/index.php ]; then
+        cp -R ${source}/data/. ${stateDir}/data/
+        chown -R webtrees:webtrees ${stateDir}/data
+        chmod -R u+rwX,go-rwx ${stateDir}/data
+      fi
+    '';
+  };
+
+  # Separate LAN port lets both candidate PRs coexist. The family tunnel
+  # continues to serve its existing hello-world endpoint.
+  networking.firewall.interfaces.ens18.allowedTCPPorts = [ 5052 ];
+  services.nginx.virtualHosts."webtrees-lan" = {
+    listen = [
+      {
+        addr = "10.4.1.30";
+        port = 5052;
+      }
+    ];
+    root = webtrees;
+    extraConfig = ''
+      index index.php;
+      allow 10.4.1.0/24;
+      deny all;
+      client_max_body_size 110m;
+    '';
+    locations."/".tryFiles = "$uri $uri/ /index.php?$query_string";
+    # Nginx does not read Apache's .htaccess. Explicitly block all private
+    # directories, including configuration, GEDCOM uploads and raw media.
+    locations."~ ^/(data|app|resources|vendor)(/|$)".extraConfig = "deny all;";
+    locations."~ /\\.".extraConfig = "deny all;";
+    locations."= /index.php" = {
+      fastcgiParams.SCRIPT_FILENAME = "${webtrees}/index.php";
+      extraConfig = ''
+        include ${pkgs.nginx}/conf/fastcgi_params;
+        fastcgi_pass unix:${config.services.phpfpm.pools.webtrees.socket};
+        fastcgi_read_timeout 300s;
+      '';
+    };
+    locations."~ \\.php$".extraConfig = "deny all;";
+  };
+
+  # Existing all-database SQL dump includes webtrees. Media and config need
+  # the existing encrypted off-host file backup as well.
+  services.restic.backups.partridge-postgres.paths = [ "${stateDir}/data" ];
+}
