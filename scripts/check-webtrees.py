@@ -2,12 +2,14 @@
 """Exercise the pinned native webtrees stack without touching host services."""
 
 import html.parser
+import errno
 import http.client
 import http.cookiejar
 import json
 import os
 from pathlib import Path
 import pwd
+import re
 import shutil
 import socket
 import subprocess
@@ -37,6 +39,15 @@ def evaluate(target, apply=None):
 
 
 app, php, pg, nginx = [Path(evaluate(t)) for t in targets]
+config_path = Path(re.search(r"CONFIG_FILE = '([^']+)'", (app / "app/Webtrees.php").read_text())[1])
+assert str(config_path).startswith("/nix/store/")
+for operation in [lambda: config_path.open("a"), lambda: config_path.unlink()]:
+    try:
+        operation()
+    except OSError as error:
+        assert error.errno in (errno.EACCES, errno.EPERM, errno.EROFS), error
+    else:
+        raise AssertionError("Application user can edit or replace deployed configuration")
 vhost = evaluate("services.nginx.virtualHosts.webtrees-lan", "v: { inherit (v) extraConfig; locations = builtins.mapAttrs (_: l: { inherit (l) extraConfig tryFiles fastcgiParams; }) v.locations; }")
 pool = evaluate("services.phpfpm.pools.webtrees", "p: { inherit (p) settings socket phpOptions; }")
 unix_user = pwd.getpwuid(os.getuid()).pw_name
@@ -95,6 +106,8 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
             return seen
 
         assert "webtrees-db-setup" not in hard_dependencies("forgejo")
+        assert "webtrees-bootstrap" not in hard_dependencies("forgejo")
+        assert "webtrees-bootstrap.service" in units["phpfpm-webtrees"]["requires"]
         sql("CREATE DATABASE existing_service", "postgres")
         sql("CREATE TABLE marker AS SELECT 42 AS value", "existing_service")
         setup = units["webtrees-db-setup"]["script"]
@@ -119,11 +132,49 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         options = pool["phpOptions"].replace("/var/lib/webtrees/sessions", str(work / "sessions"))
         (work / "php.ini").write_text((php / "etc/php.ini").read_text() + "\n" + options)
         fpm_command = [php / "bin/php-fpm", "-F", "-y", work / "fpm.conf", "-c", work / "php.ini"]
-        fpm = subprocess.Popen(fpm_command, stdout=log, stderr=log)
-        processes.append(fpm)
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
+        base = f"http://127.0.0.1:{port}/"
+        # Relocate the immutable config only in the test copy, to address the
+        # disposable DB. Exercise the deployed config format and CLI script.
+        config_file = work / "config.ini.php"
+        original_config = config_path.read_text().replace("/run/postgresql", str(work / "pgsocket")).replace(
+            "http://partridge.tailb35748.ts.net:5052", base.rstrip("/")
+        )
+        config_file.write_text(original_config)
+        app_class = work / "app/app/Webtrees.php"
+        app_class.chmod(0o644)
+        app_class.write_text(app_class.read_text().replace(str(config_path), str(config_file)))
+        # Writable legacy config must be ignored, even when it conflicts.
+        (work / "data/config.ini.php").write_text('dbhost="/nonexistent"\nbase_url="http://invalid.example"\n')
+        (work / "credentials").mkdir()
+        credential = work / "credentials/bootstrap-password"
+        credential.write_text("short")
+        bootstrap = [php / "bin/php", work / "app/app/bootstrap.php"]
+        bootstrap_env = {**os.environ, "CREDENTIALS_DIRECTORY": str(work / "credentials")}
+        failed = subprocess.run(bootstrap, env=bootstrap_env, cwd=work / "app", stdout=log, stderr=log)
+        assert failed.returncode != 0
+        assert sql("SELECT count(*) FROM wt_user WHERE user_id > 0") == "0"
+        assert sql("SELECT value FROM marker", "existing_service") == "42"
+        credential.write_text("smoke-test-password")
+        sql("INSERT INTO wt_user (user_name, real_name, email, password) VALUES ('edward', 'Existing user', 'other@example.invalid', 'unusable')")
+        failed = subprocess.run(bootstrap, env=bootstrap_env, cwd=work / "app", stdout=log, stderr=log)
+        assert failed.returncode != 0
+        assert sql("SELECT count(*) FROM wt_user_setting WHERE setting_name='canadmin' AND setting_value='1'") == "0"
+        sql("DELETE FROM wt_user WHERE user_name='edward'")
+        subprocess.run(bootstrap, env=bootstrap_env, cwd=work / "app", check=True, stdout=log, stderr=log)
+        assert sql("SELECT count(*) FROM wt_user WHERE user_name = 'edward'") == "1"
+        # Represent a pre-existing administrator with a different identity.
+        # Repeated deploys must neither add another admin nor reset passwords.
+        sql("UPDATE wt_user SET user_name='smoke', email='smoke@example.invalid' WHERE user_name='edward'")
+        saved_password = sql("SELECT password FROM wt_user WHERE user_name='smoke'")
+        credential.write_text("a-different-bootstrap-password")
+        subprocess.run(bootstrap, env=bootstrap_env, cwd=work / "app", check=True, stdout=log, stderr=log)
+        assert sql("SELECT count(*) FROM wt_user WHERE user_id > 0") == "1"
+        assert sql("SELECT password FROM wt_user WHERE user_name='smoke'") == saved_password
+        fpm = subprocess.Popen(fpm_command, stdout=log, stderr=log)
+        processes.append(fpm)
         locations = []
         for name, opts in vhost["locations"].items():
             content = opts["extraConfig"].replace(str(app), str(work / "app")).replace(pool["socket"], str(work / "fpm.sock"))
@@ -140,7 +191,6 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
                  .replace("fd7a:115c:a1e0::/48", "::1/128"))
         (work / "nginx.conf").write_text(f"pid {work}/nginx.pid;\nerror_log {work}/nginx.log;\nevents {{}}\nhttp {{\ninclude {nginx}/conf/mime.types;\naccess_log off;\nclient_body_temp_path {work}/body;\nfastcgi_temp_path {work}/fastcgi;\nserver {{ listen 127.0.0.1:{port}; listen [::1]:{port}; root {work}/app;\n{extra}\n" + "\n".join(locations) + "\n}}\n")
         processes.append(subprocess.Popen([nginx / "bin/nginx", "-c", work / "nginx.conf", "-p", str(work), "-g", "daemon off;"], stdout=log, stderr=log))
-        base = f"http://127.0.0.1:{port}/"
         opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
         def request(path="", data=None):
@@ -150,13 +200,13 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
 
         for attempt in range(60):
             try:
-                page = request()
+                page = request("index.php?route=%2Flogin")
                 break
             except (OSError, urllib.error.HTTPError):
                 time.sleep(0.5)
         else:
             raise RuntimeError("Native web stack failed to start")
-        assert 'name="lang"' in page, page
+        assert 'name="lang"' not in page, page
         for destination, source, expected in [
             ("127.0.0.1", "127.0.0.2", 200),  # Tailnet IPv4
             ("::1", "::1", 200),  # Tailnet IPv6
@@ -164,7 +214,7 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         ]:
             connection = http.client.HTTPConnection(destination, port, timeout=30, source_address=(source, 0))
             try:
-                connection.request("GET", "/")
+                connection.request("GET", "/index.php?route=%2Flogin", headers={"User-Agent": "webtrees-native-smoke", "Host": f"127.0.0.1:{port}"})
                 response = connection.getresponse()
                 response.read()
                 assert response.status == expected, (source, response.status)
@@ -175,17 +225,15 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
                     assert response.status == 403, (source, response.status)
             finally:
                 connection.close()
-        data = dict(lang="en-US", dbtype="pgsql", dbhost=str(work / "pgsocket"), dbport="5432", dbuser="webtrees", dbpass="", dbname="webtrees", tblpfx="wt_")
-        page = request(data={**data, "step": 5})
-        assert 'name="wtuser"' in page, page
-        request(data={**data, "step": 6, "baseurl": base.rstrip("/"), "wtname": "Smoke Test", "wtuser": "smoke", "wtpass": "smoke-test-password", "wtemail": "smoke@example.invalid"})
-        assert (work / "data/config.ini.php").exists()
+        page = request("index.php?route=%2Flogin")
+        fields = Fields(page).values
+        request("index.php?route=%2Flogin", {**fields, "username": "smoke", "password": "smoke-test-password"})
         assert sql("SELECT count(*) FROM wt_user WHERE user_name = 'smoke'") == "1"
         page = request("index.php?route=%2Fadmin%2Ftrees%2Fcreate")
         fields = Fields(page).values
         page = request("index.php?route=%2Fadmin%2Ftrees%2Fcreate", {**fields, "name": "smoke", "title": "Smoke family"})
         assert sql("SELECT count(*) FROM wt_gedcom WHERE gedcom_name = 'smoke'") == "1", page
-        for path in ["data/config.ini.php", "data/example.ged", "vendor/autoload.php", "app/Webtrees.php", ".htaccess"]:
+        for path in ["data/config.ini.php", "data/example.ged", "vendor/autoload.php", "app/Webtrees.php", "app/bootstrap.json", ".htaccess"]:
             try:
                 request(path)
             except urllib.error.HTTPError as error:
@@ -200,8 +248,6 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         assert sql("SELECT count(*) FROM wt_user WHERE user_name = 'smoke'") == "1"
         # A later tunnel cutover changes the canonical URL, not the tree or
         # accounts. Exercise HTTPS URL generation over an HTTP origin.
-        config_file = work / "data/config.ini.php"
-        original_config = config_file.read_text()
         assert f'base_url="{base.rstrip("/")}"' in original_config
         config_file.write_text(original_config.replace(
             f'base_url="{base.rstrip("/")}"',
@@ -228,7 +274,8 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         assert sql("SELECT count(*) FROM wt_gedcom WHERE gedcom_name = 'smoke'") == "1"
         config_file.write_text(original_config)
         assert "Smoke family" in request()
-        print("PASS: native Nginx/PHP-FPM, LAN and tailnet IPv4/IPv6 access, denied other sources, socket peer authentication, admin/tree creation, private path restrictions and restart persistence")
+        print("PASS: immutable config, ignored legacy wizard config, bootstrap failure/retry and administrator preservation")
+        print("PASS: native Nginx/PHP-FPM, LAN and tailnet IPv4/IPv6 access, denied other sources, socket peer authentication, admin login/tree creation, private path restrictions and restart persistence")
         print("PASS: canonical URL cutover to HTTPS behind an HTTP origin preserves the administrator/tree and generates public HTTPS links")
     except Exception:
         for name in ["process.log", "pg.log", "fpm.log", "nginx.log"]:

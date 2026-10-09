@@ -31,6 +31,7 @@ jobs:
               - 'flake.nix'
               - 'nixos/**'
               - 'tools/**'
+              - 'scripts/check-webtrees.py'
             nix_shared:
               - '.github/workflows/**'
               - '.sops.yaml'
@@ -47,6 +48,7 @@ jobs:
               - 'nixos/hosts/magpie/**'
             nix_partridge:
               - 'nixos/hosts/partridge/**'
+              - 'scripts/check-webtrees.py'
       - name: select NixOS hosts
         id: nix-hosts
         run: |
@@ -236,6 +238,9 @@ jobs:
           save: false
       - name: build ${{ matrix.host }}
         run: nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel -o /tmp/pr-system
+      - name: webtrees installation and failure isolation smoke test
+        if: matrix.host == 'partridge'
+        run: python3 scripts/check-webtrees.py
       - name: build main ${{ matrix.host }}
         run: |
           git fetch origin main
