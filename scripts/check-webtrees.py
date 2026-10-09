@@ -24,7 +24,8 @@ targets = [
     "services.postgresql.package",
     "services.nginx.package",
 ]
-subprocess.run(["nix", "build", "--no-link", *[f"{repo}#{attrs}{t}" for t in targets]], check=True)
+build_roots = tempfile.TemporaryDirectory(prefix="webtrees-build-")
+subprocess.run(["nix", "build", "--out-link", f"{build_roots.name}/result", *[f"{repo}#{attrs}{t}" for t in targets]], check=True)
 
 
 def evaluate(target, apply=None):
@@ -157,3 +158,4 @@ with tempfile.TemporaryDirectory(prefix="webtrees-smoke-") as temp:
         if (work / "pg/postmaster.pid").exists():
             subprocess.run([pg / "bin/pg_ctl", "-D", work / "pg", "-m", "immediate", "stop"], stdout=log)
         log.close()
+        build_roots.cleanup()
