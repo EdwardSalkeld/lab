@@ -25,5 +25,6 @@ Start here:
 - `AGENTS.md` for current operational notes.
 - `terraform/README.md` for Terraform commands.
 - `nixos/README.md` for NixOS host configuration and deploy commands.
+- `scripts/magpie-codex-reauth.sh` to restore chatting's Codex login on magpie.
 - `docs/wren-playbook.md` for the reusable pattern to recreate a disposable
   zero-touch Debian VM from scratch.

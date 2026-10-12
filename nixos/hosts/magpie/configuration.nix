@@ -125,6 +125,10 @@
     "d /srv/chatting 0755 root root -"
     "d /srv/chatting/repo 0755 root root -"
     "d /srv/chatting/workspace 0750 worker worker -"
+    # The backing directory lives on the workspace disk and is bind-mounted
+    # at /srv/chatting/workspaces for per-item workspaces.
+    "d /srv/chatting/workspace/workspaces 0750 worker worker -"
+    "d /srv/chatting/workspaces 0750 worker worker -"
     # Shared drop point for Telegram attachments: the handler downloads into
     # it, the worker (a different OS user) reads them back. 0755 so the worker
     # can traverse; handler owns it so it can write. Pre-created here rather

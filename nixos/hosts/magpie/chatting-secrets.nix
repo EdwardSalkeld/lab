@@ -18,6 +18,10 @@
     "chatting/smtp_password".key = "smtp_password";
     "chatting/telegram_bot_token".key = "telegram_bot_token";
     "chatting/memory_secret_passphrase".key = "memory_secret_passphrase";
+    "chatting/typesafe_api_key" = {
+      sopsFile = ./secrets/chatting-jev.json;
+      key = "typesafe_api_key";
+    };
   };
 
   sops.templates."chatting-handler.env" = {
@@ -37,6 +41,7 @@
     mode = "0400";
     content = ''
       BILLY_MEMORY_SECRET_PASSPHRASE=${config.sops.placeholder."chatting/memory_secret_passphrase"}
+      TYPESAFE_API_KEY=${config.sops.placeholder."chatting/typesafe_api_key"}
     '';
   };
 }

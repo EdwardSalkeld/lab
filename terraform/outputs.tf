@@ -27,3 +27,13 @@ output "kite_vm_name" {
   value       = var.enable_kite_vm ? proxmox_virtual_environment_vm.kite[0].name : null
   description = "The name of kite when enabled"
 }
+
+output "sparrow_container_id" {
+  value       = proxmox_virtual_environment_container.sparrow.vm_id
+  description = "Proxmox container ID for the Chatting test host"
+}
+
+output "sparrow_ipv4" {
+  value       = try(proxmox_virtual_environment_container.sparrow.ipv4["eth0"], null)
+  description = "DHCP IPv4 address of the Chatting test host"
+}

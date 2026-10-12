@@ -3,16 +3,16 @@
     "bbmb": {
       "flake": false,
       "locked": {
-        "lastModified": 1788132670,
-        "narHash": "sha256-J8vWsTWrZVysXMDmwd1RQXazekm920DfUDJ985cxkCs=",
+        "lastModified": 1790868519,
+        "narHash": "sha256-Q+T6xQeybBCs+lWKkQMqzBkS+VAViCycG0PKDRZD0Jw=",
         "owner": "EdwardSalkeld",
         "repo": "bbmb",
-        "rev": "50f59c9986316e8a5b85dd3b0a4e5a8ec3592fca",
+        "rev": "0f0186773bee0ffc2fad6d24d6c6aa704b36fade",
         "type": "github"
       },
       "original": {
         "owner": "EdwardSalkeld",
-        "ref": "v8",
+        "ref": "v9",
         "repo": "bbmb",
         "type": "github"
       }
@@ -20,11 +20,11 @@
     "chatting": {
       "flake": false,
       "locked": {
-        "lastModified": 1788956931,
-        "narHash": "sha256-rUT/1npHo7lfHJveBEWEhPefnxL5szq3mNgOrFMawj4=",
+        "lastModified": 1791367105,
+        "narHash": "sha256-h8aTxCVuOau36F697255o83nkXhIac9vHBeSWmxdCNU=",
         "owner": "EdwardSalkeld",
         "repo": "chatting",
-        "rev": "c87601b36e9aae73d146c22d48a90ff89e74c040",
+        "rev": "4478565316123c12923c1920029f69b64d631230",
         "type": "github"
       },
       "original": {
@@ -101,11 +101,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1790185690,
-        "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
+        "lastModified": 1791456040,
+        "narHash": "sha256-H83yz/do+hjOO0uujHyH8RgtIQP2v7Mw+cLwcZK/xKc=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "4975466d324710c576dc11ad614684e6bd8cad8e",
+        "rev": "e7439b6b14ad3cc35d05608ebca9bce01a25f5f8",
         "type": "github"
       },
       "original": {

@@ -13,9 +13,11 @@ flock -w 1800 8
 
 terraform -chdir=terraform init -input=false
 
+cp deploy/sparrow-import.tf.template terraform/sparrow-import.tf
+
 plan_file="$(mktemp)"
 plan_json="$(mktemp)"
-trap 'rm -f "$plan_file" "$plan_json"' EXIT
+trap 'rm -f "$plan_file" "$plan_json" terraform/sparrow-import.tf' EXIT
 
 # The Proxmox provider has previously turned a Luna authorization failure
 # during refresh into a missing Kite VM. Apply an exact, non-refreshing plan
