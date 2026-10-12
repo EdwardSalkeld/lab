@@ -57,23 +57,46 @@ case "$name" in
       printf '%s\\n' "$TEST_PATH"
     fi
     ;;
-  nix-store) [[ "${TEST_FETCH_FAIL:-0}" == 0 ]] || exit 1 ;;
+  nix-store)
+    [[ "${TEST_FETCH_FAIL:-0}" == 0 ]] || exit 1
+    [[ "$*" != *--add-root* || "${TEST_PIN_FAIL:-0}" == 0 ]] || exit 1
+    ;;
+  nix-env) [[ "${TEST_PROFILE_FAIL:-0}" == 0 ]] || exit 1 ;;
   nixos-rebuild)
-    [[ "${TEST_SWITCH_FAIL:-0}" == 0 || "$*" == *--rollback* ]] || exit 1
+    # The old recovery command fails on flake-only hosts, as in production.
+    [[ "$*" != *--rollback* ]] || exit 1
+    [[ "${TEST_SWITCH_FAIL:-0}" == 0 ]] || exit 1
+    ;;
+  systemctl)
+    if [[ "$1" == is-active ]]; then
+      [[ "${TEST_HEALTH_FAIL:-0}" == 0 ]] || exit 1
+      if [[ "${TEST_HEALTH_UNTIL_RECOVERY:-0}" == 1 ]]; then
+        [[ "$(< "$TEST_LOG")" == *"restore switch"* ]] || exit 1
+      fi
+    fi
     ;;
   activate) [[ "${TEST_SWITCH_FAIL:-0}" == 0 ]] || exit 1 ;;
+  restore) [[ "${TEST_RECOVERY_FAIL:-0}" == 0 ]] || exit 1 ;;
   hostname) echo partridge ;;
-  readlink) echo "$TEST_PREVIOUS" ;;
+  readlink)
+    [[ "${TEST_READLINK_FAIL:-0}" == 0 ]] || exit 1
+    echo "$TEST_PREVIOUS"
+    ;;
 esac
 ''')
     stub.chmod(0o755)
-    for name in ("nix", "nix-store", "nix-env", "nixos-rebuild", "systemctl", "activate", "hostname", "readlink"):
+    for name in ("nix", "nix-store", "nix-env", "nixos-rebuild", "systemctl", "activate", "restore", "hostname", "readlink"):
         (temp / name).symlink_to(stub)
     scripts = {}
     for name, text in (("switch", switch), ("bootstrap", bootstrap)):
         text = text.replace("/run/current-system/sw/bin/", f"{temp}/")
         text = text.replace('"$actual_path/bin/switch-to-configuration"', f'"{temp}/activate"')
         text = text.replace('"$previous/bin/switch-to-configuration"', f'"{temp}/activate"')
+        if name == "switch":
+            text = text.replace(f'"{temp}/activate"', f'"{temp}/restore"')
+            text = text.replace('"$previous/sw/bin/nix-env"', f'"{temp}/nix-env"')
+            text = text.replace('"$previous/sw/bin/systemctl"', f'"{temp}/systemctl"')
+            text = text.replace("/run/lab-switch-recovery.XXXXXX", str(temp / "recovery.XXXXXX"))
         text = text.replace('"$EUID" != 0', '0 != 0')
         text = text.replace("/run/lock/lab-bootstrap.lock", str(temp / "lock"))
         text = text.replace("sleep 5", ":")
@@ -89,6 +112,7 @@ esac
         env.update(overrides)
         result = subprocess.run(["bash", str(scripts[name]), *args], env=env,
                                 text=True, capture_output=True)
+        assert not list(temp.glob("recovery.*")), "recovery root leaked"
         return result, log.read_text()
 
     pinned = f"lab-switch {sha} {cache} {key} {expected}"
@@ -99,6 +123,9 @@ esac
     assert f"nix-store --realise {expected}" in calls and "nix build" not in calls
     assert expected not in calls.splitlines()[0]  # evaluated flake, then path check
     assert "nixos-rebuild switch --flake github:EdwardSalkeld/lab/" in calls
+    assert f"--realise {previous} --option builders  --option max-jobs 0" in calls
+    assert calls.index("--add-root") < calls.index("nixos-rebuild switch")
+    assert "restore switch" not in calls and "nix-env" not in calls
     for request in ("", "lab-switch bad test key path", pinned + " extra",
                     f"lab-switch {sha} other {key} {expected}",
                     f"lab-switch {sha} {cache} test.cachix.org-1:AAAA= {expected}"):
@@ -110,8 +137,34 @@ esac
     result, calls = run("switch", request="lab-switch")
     assert result.returncode == 0 and "nix build" not in calls
     assert "--refresh" in calls
-    result, calls = run("switch", request=pinned, TEST_SWITCH_FAIL="1")
-    assert result.returncode != 0 and "--rollback" in calls
+    for overrides in ({"TEST_PIN_FAIL": "1"}, {"TEST_READLINK_FAIL": "1"}):
+        result, calls = run("switch", request=pinned, **overrides)
+        assert result.returncode != 0 and "nixos-rebuild" not in calls
+
+    restore_profile = f"nix-env --profile /nix/var/nix/profiles/system --set {previous}"
+    for overrides in ({"TEST_SWITCH_FAIL": "1"}, {"TEST_HEALTH_FAIL": "1"},
+                      {"TEST_HEALTH_UNTIL_RECOVERY": "1"},
+                      {"TEST_SWITCH_FAIL": "1", "TEST_HEALTH_FAIL": "1"},
+                      # Re-deploying the same closure must not select an older generation.
+                      {"TEST_SWITCH_FAIL": "1", "TEST_PREVIOUS": expected}):
+        result, calls = run("switch", request=pinned, **overrides)
+        prior = overrides.get("TEST_PREVIOUS", previous)
+        profile = f"nix-env --profile /nix/var/nix/profiles/system --set {prior}"
+        assert result.returncode != 0, result.stderr
+        assert calls.count(profile) == 1 and calls.count("restore switch") == 1
+        assert calls.index(profile) < calls.index("restore switch")
+        assert "--rollback" not in calls and calls.count("nixos-rebuild") == 1
+        if "TEST_HEALTH_FAIL" not in overrides:
+            assert "systemctl start " not in calls
+    for overrides, diagnostic in (
+        ({"TEST_RECOVERY_FAIL": "1"}, "activating the previous system also failed"),
+        ({"TEST_PROFILE_FAIL": "1"}, "restoring the previous system profile failed"),
+    ):
+        result, calls = run("switch", request=pinned, TEST_SWITCH_FAIL="1",
+                            TEST_HEALTH_FAIL="1", **overrides)
+        assert result.returncode != 0 and diagnostic in result.stderr
+        assert restore_profile in calls and calls.count("restore switch") == 1
+        assert "systemctl start " in calls, "last-resort service recovery was skipped"
 
     args = ["partridge", sha, cache, key, expected]
     result, calls = run("bootstrap", ["plan", *args])
