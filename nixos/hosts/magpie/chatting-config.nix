@@ -16,10 +16,11 @@
 
 let
   workspaceDir = "/srv/chatting/workspace";
+  workspacesDir = "/srv/chatting/workspaces";
   contextRefs = [ "repo:${workspaceDir}" ];
   codexConfig = ''
     personality = "pragmatic"
-    model = "gpt-5.6-terra"
+    model = "gpt-6-sol"
     model_reasoning_effort = "medium"
 
     [projects."${workspaceDir}"]
@@ -67,6 +68,7 @@ let
       "-4974044081"
       "-1004974044081"
       "-5060255147"
+      "-5201675435"
       "-5273941835"
       "-5367346228"
       "-541767767"
@@ -83,13 +85,14 @@ let
     telegram_attachment_dir = "/srv/chatting/attachments";
     # The handler refuses to send an outbound attachment whose local path falls
     # outside this allowlist (a fail-closed guard against a caller naming an
-    # arbitrary file to exfiltrate). Permit the two places a legitimate
-    # attachment lives: the shared attachment dir (inbound photos echoed back)
-    # and the executor workspace (files the agent produced). Empty would block
-    # every outbound file attachment.
+    # arbitrary file to exfiltrate). Permit the three places a legitimate
+    # attachment lives: the shared attachment dir (inbound photos echoed back),
+    # the shared workspace, and the per-item workspaces (files the agent
+    # produced). Empty would block every outbound file attachment.
     egress_attachment_allowed_dirs = [
       "/srv/chatting/attachments"
       workspaceDir
+      workspacesDir
     ];
 
     context_refs = contextRefs;
@@ -107,10 +110,14 @@ let
     db_path = "/var/lib/worker/chatting-worker.db";
     bbmb_address = "127.0.0.1:9876";
     max_attempts = 2;
+    executor_pool_size = 2;
     poll_timeout_seconds = 20;
     sleep_seconds = 1.0;
-    codex_command = "codex exec --dangerously-bypass-approvals-and-sandbox";
+    # The work item session view renders Codex's JSON event stream live.
+    codex_command = "codex exec --json --dangerously-bypass-approvals-and-sandbox";
     codex_working_dir = workspaceDir;
+    workspace_root = workspacesDir;
+    handler_egress_url = "http://127.0.0.1:9467/egress";
   };
 in
 {

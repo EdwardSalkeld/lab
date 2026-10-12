@@ -3,9 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
-    # The Codex CLI moves fast; the pinned 26.05 channel only has an old
-    # release that the current backend rejects (gpt-5.4 needs a newer CLI), so
-    # the chatting worker takes Codex from unstable.
+    # Keep the chatting worker's CLI current with the model selected by
+    # chatting. Codex 0.156.1 rejected gpt-6.1-sol; 0.161.0 was verified on
+    # magpie with the worker's ChatGPT login.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     sops-nix = {
       url = "github:Mic92/sops-nix";
@@ -33,7 +33,7 @@
     };
     # bbmb is release-pinned; change the ref to move it.
     bbmb = {
-      url = "github:EdwardSalkeld/bbmb/v8";
+      url = "github:EdwardSalkeld/bbmb/v9";
       flake = false;
     };
   };
@@ -64,15 +64,15 @@
           exec python -m app.main_worker "$@"
         '';
       };
-      bbmbServer = pkgs.buildGo126Module {
+      bbmbServer = pkgs.buildGo127Module {
         pname = "bbmb-server";
-        version = "v7";
+        version = "v9";
         src = bbmbSrc;
         modRoot = "server";
         vendorHash = null;
         subPackages = [ "." ];
         doCheck = false;
-        # Upstream bbmb v7 now requires Go 1.26.
+        # Upstream bbmb v9 requires Go 1.27.
         postInstall = ''
           mv "$out/bin/server" "$out/bin/bbmb-server"
         '';

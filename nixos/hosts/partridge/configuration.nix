@@ -7,6 +7,7 @@
     ./grafana.nix
     ./hardware-configuration.nix
     ./exercise-tracker.nix
+    ./family-tunnel.nix
     ./loki.nix
     ./linear-export.nix
     ./octopus-dl.nix
@@ -19,6 +20,7 @@
     ./vaultwarden.nix
     ./mcm-db.nix
     ./web.nix
+    ./webtrees.nix
   ];
 
   networking.hostName = "partridge";
@@ -77,6 +79,7 @@
     tree
   ];
   users.users.billy.extraGroups = [
+    "wheel"
     "systemd-journal"
   ];
   environment.systemPackages = with pkgs; [
