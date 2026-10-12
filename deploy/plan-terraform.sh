@@ -41,7 +41,7 @@ git archive "$head_sha" | tar -x -C "$plan_dir"
 cd "$plan_dir"
 terraform -chdir=terraform init -input=false
 
-cp deploy/sparrow-import.tf.template terraform/sparrow-import.tf
+cp deploy/sparrow-retired.tf.template terraform/sparrow-retired.tf
 
 plan_file="$PWD/terraform.plan"
 plan_json="$PWD/terraform-plan.json"
