@@ -53,12 +53,11 @@ printf ' %s' "$@" >> "$TEST_LOG"
 printf '\\n' >> "$TEST_LOG"
 case "$name" in
   nix)
-    if [[ "$1" == copy ]]; then
-      [[ "${TEST_FETCH_FAIL:-0}" == 0 ]] || exit 1
-    elif [[ "$1" == eval && "$*" == *toplevel.outPath* ]]; then
+    if [[ "$1" == eval && "$*" == *toplevel.outPath* ]]; then
       printf '%s\\n' "$TEST_PATH"
     fi
     ;;
+  nix-store) [[ "${TEST_FETCH_FAIL:-0}" == 0 ]] || exit 1 ;;
   nixos-rebuild)
     [[ "${TEST_SWITCH_FAIL:-0}" == 0 || "$*" == *--rollback* ]] || exit 1
     ;;
@@ -68,7 +67,7 @@ case "$name" in
 esac
 ''')
     stub.chmod(0o755)
-    for name in ("nix", "nix-env", "nixos-rebuild", "systemctl", "activate", "hostname", "readlink"):
+    for name in ("nix", "nix-store", "nix-env", "nixos-rebuild", "systemctl", "activate", "hostname", "readlink"):
         (temp / name).symlink_to(stub)
     scripts = {}
     for name, text in (("switch", switch), ("bootstrap", bootstrap)):
@@ -97,7 +96,7 @@ esac
     assert result.returncode == 0, result.stderr
     assert "--option max-jobs 0" in calls and '--option builders ' in calls
     assert "--option require-sigs true" in calls
-    assert "nix copy --from https://" in calls and "nix build" not in calls
+    assert f"nix-store --realise {expected}" in calls and "nix build" not in calls
     assert expected not in calls.splitlines()[0]  # evaluated flake, then path check
     assert "nixos-rebuild switch --flake github:EdwardSalkeld/lab/" in calls
     for request in ("", "lab-switch bad test key path", pinned + " extra",
@@ -118,7 +117,7 @@ esac
     result, calls = run("bootstrap", ["plan", *args])
     assert result.returncode == 0, result.stderr
     assert "nix store diff-closures" in calls
-    assert "nix copy --from https://" in calls and "nix build" not in calls
+    assert f"nix-store --realise {expected}" in calls and "nix build" not in calls
     assert "nix-env" not in calls and "activate" not in calls
     for overrides in ({"TEST_FETCH_FAIL": "1"}, {"TEST_PATH": previous}):
         result, calls = run("bootstrap", ["switch", *args, previous], **overrides)

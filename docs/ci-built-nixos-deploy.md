@@ -7,9 +7,11 @@ Fourth then asks each host to switch to the exact commit and store path that CI
 built. The host fetches the closure with local builds disabled, checks the
 resulting path, and retains the existing rollback and service health checks.
 A missing cache object or mismatched path fails before activation.
-Hosts use `nix copy --from` to import the signed runtime closure explicitly:
+Hosts use `nix-store --realise` on the exact output path to fetch its signed runtime closure:
 some NixOS scaffolding disables normal derivation substitution, so a cache-only
-`nix build` is not sufficient even when the published output exists.
+`nix build` is not sufficient even when the published output exists. This also
+uses the normal NixOS cache for upstream paths which Cachix deliberately omits
+([Cachix FAQ](https://docs.cachix.org/faq)). No derivation path is realised.
 
 This applies to every repo-managed NixOS host. It does not change Terraform's
 execution location. GitHub Actions remains the build machine; Fourth remains

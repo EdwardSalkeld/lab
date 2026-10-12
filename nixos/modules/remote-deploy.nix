@@ -13,6 +13,7 @@ let
     set -uo pipefail
     nixos_rebuild=/run/current-system/sw/bin/nixos-rebuild
     nix=/run/current-system/sw/bin/nix
+    nix_store=/run/current-system/sw/bin/nix-store
     systemctl=/run/current-system/sw/bin/systemctl
     healthchecks=(${postSwitchHealthchecks})
 
@@ -56,10 +57,10 @@ let
         echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
         exit 1
       fi
-      # NixOS scaffolding includes allowSubstitutes=false derivations. Import
-      # the signed runtime closure explicitly; nix build can otherwise try to
-      # realize those derivations even when their outputs are in the cache.
-      if ! "$nix" copy --from "$cache_url" "''${nix_options[@]}" "$expected_path"; then
+      # Realise the output path, not its derivation. This bypasses scaffolding
+      # with allowSubstitutes=false and uses both Cachix and cache.nixos.org
+      # (Cachix intentionally omits paths available from that upstream cache).
+      if ! "$nix_store" --realise "$expected_path" "''${nix_options[@]}"; then
         echo "could not fetch the complete CI-built closure for ${host}" >&2
         exit 1
       fi

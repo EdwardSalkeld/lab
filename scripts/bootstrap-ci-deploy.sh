@@ -24,6 +24,7 @@ fi
 exec 9>/run/lock/lab-bootstrap.lock
 flock -n 9 || { echo 'another bootstrap is running' >&2; exit 1; }
 nix=/run/current-system/sw/bin/nix
+nix_store=/run/current-system/sw/bin/nix-store
 nix_env=/run/current-system/sw/bin/nix-env
 systemctl=/run/current-system/sw/bin/systemctl
 source="github:EdwardSalkeld/lab/${sha}"
@@ -38,7 +39,7 @@ if [[ "$actual_path" != "$expected_path" ]]; then
   echo "CI path mismatch: expected $expected_path; got $actual_path" >&2
   exit 1
 fi
-"$nix" copy --from "https://${cache_name}.cachix.org" "${options[@]}" "$expected_path"
+"$nix_store" --realise "$expected_path" "${options[@]}"
 previous=$(readlink -f /run/current-system)
 printf 'Current: %s\nPrepared: %s\n' "$previous" "$actual_path"
 "$nix" store diff-closures "$previous" "$actual_path"
