@@ -7,6 +7,9 @@ Fourth then asks each host to switch to the exact commit and store path that CI
 built. The host fetches the closure with local builds disabled, checks the
 resulting path, and retains the existing rollback and service health checks.
 A missing cache object or mismatched path fails before activation.
+Hosts use `nix copy --from` to import the signed runtime closure explicitly:
+some NixOS scaffolding disables normal derivation substitution, so a cache-only
+`nix build` is not sufficient even when the published output exists.
 
 This applies to every repo-managed NixOS host. It does not change Terraform's
 execution location. GitHub Actions remains the build machine; Fourth remains
@@ -19,7 +22,10 @@ the deploy orchestrator.
    `LAB_NIX_CACHE_PUBLIC_KEY` to those values.
 2. Create a cache write token scoped to that cache and set the repository
    secret `LAB_NIX_CACHE_AUTH_TOKEN`. Only CI receives it. Hosts receive the
-   public signing key and URL for each switch.
+   public signing key and URL for each switch. The installed wrapper pins
+   `alcachofa.remoteDeploy.cacheName` and `cachePublicKey` and rejects a request
+   that supplies a different cache or key. Cache/key rotation therefore also
+   requires an explicit host trust-configuration update.
 3. Run the deploy workflow on this PR branch with **build_only=true**. This
    publishes signed closures and a `bootstrap-manifest` artifact, without
    Terraform or host switches. An omitted/false input runs the normal deploy;

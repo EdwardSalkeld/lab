@@ -31,6 +31,11 @@ let
       echo 'invalid lab-switch request' >&2
       exit 2
     else
+      if [[ "$cache_name" != ${lib.escapeShellArg cfg.cacheName} ||
+            "$cache_key" != ${lib.escapeShellArg cfg.cachePublicKey} ]]; then
+        echo 'deploy cache does not match the installed trust configuration' >&2
+        exit 2
+      fi
 
       # The output path is checked after fetching so a stale or mismatched CI
       # result cannot be activated.
@@ -42,13 +47,20 @@ let
                    --option require-sigs true
                    --option builders ""
                    --option max-jobs 0)
-      if ! actual_path="$("$nix" build --no-link --print-out-paths \
-          "''${nix_options[@]}" "''${source}#nixosConfigurations.${host}.config.system.build.toplevel")"; then
-        echo "could not fetch the complete CI-built closure for ${host}" >&2
+      if ! actual_path="$("$nix" eval --raw "''${nix_options[@]}" \
+          "''${source}#nixosConfigurations.${host}.config.system.build.toplevel.outPath")"; then
+        echo "could not evaluate the CI-built output for ${host}" >&2
         exit 1
       fi
       if [[ "$actual_path" != "$expected_path" ]]; then
         echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
+        exit 1
+      fi
+      # NixOS scaffolding includes allowSubstitutes=false derivations. Import
+      # the signed runtime closure explicitly; nix build can otherwise try to
+      # realize those derivations even when their outputs are in the cache.
+      if ! "$nix" copy --from "$cache_url" "''${nix_options[@]}" "$expected_path"; then
+        echo "could not fetch the complete CI-built closure for ${host}" >&2
         exit 1
       fi
     fi
@@ -125,6 +137,16 @@ let
   fourthDeployKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEHQr6Slpjl/R7ZMoIf9CWb/Mmwjn5MaFXTpyqxUE952 fourth-deploy";
 in
 {
+  options.alcachofa.remoteDeploy.cacheName = lib.mkOption {
+    type = lib.types.str;
+    default = "brokensbone-main";
+    description = "Trusted Cachix cache for CI-built system deployments.";
+  };
+  options.alcachofa.remoteDeploy.cachePublicKey = lib.mkOption {
+    type = lib.types.str;
+    default = "brokensbone-main.cachix.org-1:4dEguXUK+SK1OJBN9Q3AD4Dpl+tKVsRwqf3HJQy8Bd4=";
+    description = "Installed trust anchor; a deploy request cannot replace this key.";
+  };
   options.alcachofa.remoteDeploy.postSwitchHealthchecks = lib.mkOption {
     type = lib.types.listOf lib.types.str;
     default = [ ];

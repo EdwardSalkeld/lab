@@ -35,7 +35,12 @@ bootstrap = (root / "scripts/bootstrap-ci-deploy.sh").read_text()
 expected = "/nix/store/" + "a" * 32 + "-nixos-system-partridge"
 previous = "/nix/store/" + "b" * 32 + "-nixos-system-partridge"
 sha = "c" * 40
-key = "test.cachix.org-1:AAAA="
+config = json.loads(output(
+    "nix", "eval", "--json",
+    f"{root}#nixosConfigurations.partridge.config.alcachofa.remoteDeploy",
+))
+cache = config["cacheName"]
+key = config["cachePublicKey"]
 
 with tempfile.TemporaryDirectory(prefix="check-ci-deploy-") as directory:
     temp = Path(directory)
@@ -48,8 +53,9 @@ printf ' %s' "$@" >> "$TEST_LOG"
 printf '\\n' >> "$TEST_LOG"
 case "$name" in
   nix)
-    if [[ "$1" == build ]]; then
+    if [[ "$1" == copy ]]; then
       [[ "${TEST_FETCH_FAIL:-0}" == 0 ]] || exit 1
+    elif [[ "$1" == eval && "$*" == *toplevel.outPath* ]]; then
       printf '%s\\n' "$TEST_PATH"
     fi
     ;;
@@ -86,14 +92,17 @@ esac
                                 text=True, capture_output=True)
         return result, log.read_text()
 
-    pinned = f"lab-switch {sha} test {key} {expected}"
+    pinned = f"lab-switch {sha} {cache} {key} {expected}"
     result, calls = run("switch", request=pinned)
     assert result.returncode == 0, result.stderr
     assert "--option max-jobs 0" in calls and '--option builders ' in calls
     assert "--option require-sigs true" in calls
+    assert "nix copy --from https://" in calls and "nix build" not in calls
     assert expected not in calls.splitlines()[0]  # evaluated flake, then path check
     assert "nixos-rebuild switch --flake github:EdwardSalkeld/lab/" in calls
-    for request in ("", "lab-switch bad test key path", pinned + " extra"):
+    for request in ("", "lab-switch bad test key path", pinned + " extra",
+                    f"lab-switch {sha} other {key} {expected}",
+                    f"lab-switch {sha} {cache} test.cachix.org-1:AAAA= {expected}"):
         result, calls = run("switch", request=request)
         assert result.returncode != 0 and not calls, (request, calls)
     for overrides in ({"TEST_FETCH_FAIL": "1"}, {"TEST_PATH": previous}):
@@ -105,10 +114,11 @@ esac
     result, calls = run("switch", request=pinned, TEST_SWITCH_FAIL="1")
     assert result.returncode != 0 and "--rollback" in calls
 
-    args = ["partridge", sha, "test", key, expected]
+    args = ["partridge", sha, cache, key, expected]
     result, calls = run("bootstrap", ["plan", *args])
     assert result.returncode == 0, result.stderr
     assert "nix store diff-closures" in calls
+    assert "nix copy --from https://" in calls and "nix build" not in calls
     assert "nix-env" not in calls and "activate" not in calls
     for overrides in ({"TEST_FETCH_FAIL": "1"}, {"TEST_PATH": previous}):
         result, calls = run("bootstrap", ["switch", *args, previous], **overrides)

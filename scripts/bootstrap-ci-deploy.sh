@@ -32,12 +32,13 @@ options=(--option extra-substituters "https://${cache_name}.cachix.org"
          --option require-sigs true --option builders "" --option max-jobs 0)
 
 # This fetches the complete closure or fails. No local or remote builders.
-actual_path="$("$nix" build --no-link --print-out-paths "${options[@]}" \
-  "${source}#nixosConfigurations.${host}.config.system.build.toplevel")"
+actual_path="$("$nix" eval --raw "${options[@]}" \
+  "${source}#nixosConfigurations.${host}.config.system.build.toplevel.outPath")"
 if [[ "$actual_path" != "$expected_path" ]]; then
   echo "CI path mismatch: expected $expected_path; got $actual_path" >&2
   exit 1
 fi
+"$nix" copy --from "https://${cache_name}.cachix.org" "${options[@]}" "$expected_path"
 previous=$(readlink -f /run/current-system)
 printf 'Current: %s\nPrepared: %s\n' "$previous" "$actual_path"
 "$nix" store diff-closures "$previous" "$actual_path"
