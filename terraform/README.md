@@ -78,10 +78,12 @@ has a real NixOS install with `qemu-guest-agent` running.
 
 Sparrow (CT 76300 on `sol`) was deleted on 2026-10-12 after testing finished.
 Its Terraform resource and deployment installer have been removed. The plan
-and apply scripts copy `deploy/sparrow-retired.tf.template` into the Terraform
+and apply scripts copy `deploy/sparrow-import.tf.template` into the Terraform
 root to forget any remaining state without deleting the absent container again.
 The template stays outside the Terraform root because tfsec cannot parse state
-migration blocks. See [../docs/sparrow-chatting-test.md](../docs/sparrow-chatting-test.md).
+migration blocks. The historical filename is retained for compatibility with
+dispatchers running older plan scripts; it now contains a retirement directive,
+not an import. See [../docs/sparrow-chatting-test.md](../docs/sparrow-chatting-test.md).
 
 ## Kite VM
 
