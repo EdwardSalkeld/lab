@@ -17,32 +17,40 @@ let
     healthchecks=(${postSwitchHealthchecks})
 
     read -r command sha cache_name cache_key expected_path extra <<<"''${SSH_ORIGINAL_COMMAND:-}"
-    if [[ "$command" != lab-switch || ! "$sha" =~ ^[0-9a-f]{40}$ ||
+    if [[ "''${SSH_ORIGINAL_COMMAND:-}" == lab-switch ]]; then
+      # Transitional compatibility while hosts are bootstrapped individually.
+      # The existing main workflow still sends the bare command. Only this
+      # legacy path retains build-on-target until #325 is merged.
+      flake="github:EdwardSalkeld/lab#${host}"
+      nix_options=(--refresh)
+    elif [[ "$command" != lab-switch || ! "$sha" =~ ^[0-9a-f]{40}$ ||
           ! "$cache_name" =~ ^[a-z0-9][a-z0-9-]*$ ||
           ! "$cache_key" =~ ^[a-z0-9.-]+-1:[A-Za-z0-9+/=]+$ ||
           ! "$expected_path" =~ ^/nix/store/[a-z0-9]{32}-[A-Za-z0-9.+_-]+$ ||
           -n "''${extra:-}" ]]; then
       echo 'invalid lab-switch request' >&2
       exit 2
-    fi
+    else
 
-    # The output path is checked after fetching so a stale or mismatched CI
-    # result cannot be activated.
-    source="github:EdwardSalkeld/lab/''${sha}"
-    flake="''${source}#${host}"
-    cache_url="https://''${cache_name}.cachix.org"
-    nix_options=(--option extra-substituters "$cache_url"
-                 --option extra-trusted-public-keys "$cache_key"
-                 --option builders ""
-                 --option max-jobs 0)
-    if ! actual_path="$("$nix" build --no-link --print-out-paths
-        "''${nix_options[@]}" "''${source}#nixosConfigurations.${host}.config.system.build.toplevel")"; then
-      echo "could not fetch the complete CI-built closure for ${host}" >&2
-      exit 1
-    fi
-    if [[ "$actual_path" != "$expected_path" ]]; then
-      echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
-      exit 1
+      # The output path is checked after fetching so a stale or mismatched CI
+      # result cannot be activated.
+      source="github:EdwardSalkeld/lab/''${sha}"
+      flake="''${source}#${host}"
+      cache_url="https://''${cache_name}.cachix.org"
+      nix_options=(--option extra-substituters "$cache_url"
+                   --option extra-trusted-public-keys "$cache_key"
+                   --option require-sigs true
+                   --option builders ""
+                   --option max-jobs 0)
+      if ! actual_path="$("$nix" build --no-link --print-out-paths \
+          "''${nix_options[@]}" "''${source}#nixosConfigurations.${host}.config.system.build.toplevel")"; then
+        echo "could not fetch the complete CI-built closure for ${host}" >&2
+        exit 1
+      fi
+      if [[ "$actual_path" != "$expected_path" ]]; then
+        echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
+        exit 1
+      fi
     fi
 
     units_healthy() {
@@ -101,7 +109,7 @@ let
   '';
   remoteCommand = pkgs.writeShellScript "lab-remote-command" ''
     case "''${SSH_ORIGINAL_COMMAND:-}" in
-      lab-switch\ *)
+      lab-switch | lab-switch\ *)
         exec ${labSwitch}
         ;;
       nix-gc)

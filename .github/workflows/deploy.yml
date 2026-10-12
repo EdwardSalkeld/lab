@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      build_only:
+        description: Publish closures and bootstrap manifest without Terraform or host switches
+        type: boolean
+        default: false
 
 # Serialize deploys; never cancel an in-flight one (would leave a half-applied
 # terraform run / rebuild / dangling state lock). Each queued run deploys the
@@ -58,17 +63,27 @@ jobs:
           CACHIX_AUTH_TOKEN: ${{ secrets.LAB_NIX_CACHE_AUTH_TOKEN }}
         run: |
           set -euo pipefail
+          mkdir -p bootstrap-manifest
+          printf '%s\n' "$GITHUB_SHA" > bootstrap-manifest/commit
           for host in falcon kite magpie partridge; do
             path="$(nix build --no-link --print-out-paths ".#nixosConfigurations.${host}.config.system.build.toplevel")"
             test -n "$path"
             cachix push "$CACHE_NAME" "$path"
             echo "${host}=${path}" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "$path" > "bootstrap-manifest/${host}"
           done
+      - name: upload bootstrap manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-manifest
+          path: bootstrap-manifest/
+          if-no-files-found: error
 
   # Infra first: reconcile the Proxmox VMs before rebuilding their configs.
   apply-terraform:
     name: apply-terraform
     needs: build-systems
+    if: ${{ !inputs.build_only }}
     runs-on: ubuntu-latest
     steps:
       - name: tailscale
