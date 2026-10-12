@@ -80,11 +80,42 @@ let
       done
     }
 
+    # Capture the running system before nixos-rebuild can change the profile.
+    # A failed switch may leave the profile advanced, or create no generation
+    # at all. Rolling back by generation can therefore select the wrong system.
+    if ! previous="$(readlink -e /run/current-system)"; then
+      echo 'could not determine the running system; refusing to switch' >&2
+      exit 1
+    fi
+    if ! recovery_root="$(mktemp -d /run/lab-switch-recovery.XXXXXX)"; then
+      echo 'could not create a recovery GC root; refusing to switch' >&2
+      exit 1
+    fi
+    trap 'rm -rf -- "$recovery_root"' EXIT
+    if ! "$nix_store" --add-root "$recovery_root/system" --indirect \
+        --realise "$previous" --option builders "" --option max-jobs 0; then
+      echo 'could not retain the running system for recovery; refusing to switch' >&2
+      exit 1
+    fi
+    nix_env="$previous/sw/bin/nix-env"
+    systemctl="$previous/sw/bin/systemctl"
+    recovered=0
+    restore_previous() {
+      # Try once even if both switch and health checks fail. This activates an
+      # existing closure without evaluating a flake or requiring nixos-config.
+      [[ "$recovered" == 0 ]] || return 0
+      recovered=1
+      "$nix_env" --profile /nix/var/nix/profiles/system --set "$previous" || \
+        echo 'restoring the previous system profile failed' >&2
+      "$previous/bin/switch-to-configuration" switch || \
+        echo 'activating the previous system also failed' >&2
+    }
+
     rc=0
     if ! "$nixos_rebuild" switch --flake "$flake" "''${nix_options[@]}"; then
-      echo "nixos-rebuild switch failed; rolling back ${host} to the last generation" >&2
+      echo "nixos-rebuild switch failed; restoring ${host} to $previous" >&2
       rc=1
-      "$nixos_rebuild" switch --rollback || echo "rollback switch also failed" >&2
+      restore_previous
     fi
 
     if [ "''${#healthchecks[@]}" -eq 0 ]; then
@@ -95,7 +126,7 @@ let
     if ! units_healthy; then
       echo "post-switch health check failed on ${host}; rolling back" >&2
       rc=1
-      "$nixos_rebuild" switch --rollback || echo "rollback switch also failed" >&2
+      restore_previous
       sleep 5
     fi
 
