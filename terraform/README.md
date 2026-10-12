@@ -8,7 +8,6 @@ Active resources:
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
 - `proxmox_virtual_environment_vm.kite` when `enable_kite_vm = true`
-- `proxmox_virtual_environment_container.sparrow` for Chatting roadmap testing
 
 ## Quick Ops
 
@@ -75,17 +74,16 @@ installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
 
-## Chatting Test Container
+## Retired Chatting Test Container
 
-`sparrow` is a Debian 13 LXC on `sol` (CT 76300). It has 4 cores, 4 GiB RAM,
-and a 24 GiB root filesystem on `local-lvm`. It uses DHCP on `vmbr0` and grants
-Edward and Billy root SSH inside an unprivileged container. It was bootstrapped
-and tested before the Terraform PR was merged, so the plan/apply scripts copy
-`deploy/sparrow-import.tf.template` into the Terraform root to adopt the
-existing CT rather than creating a second one. The template sits outside the
-Terraform root because the current tfsec release cannot parse import blocks. See
-[../docs/sparrow-chatting-test.md](../docs/sparrow-chatting-test.md) for the
-deployment smoke test.
+Sparrow (CT 76300 on `sol`) was deleted on 2026-10-12 after testing finished.
+Its Terraform resource and deployment installer have been removed. The plan
+and apply scripts copy `deploy/sparrow-import.tf.template` into the Terraform
+root to forget any remaining state without deleting the absent container again.
+The template stays outside the Terraform root because tfsec cannot parse state
+migration blocks. The historical filename is retained for compatibility with
+dispatchers running older plan scripts; it now contains a retirement directive,
+not an import. See [../docs/sparrow-chatting-test.md](../docs/sparrow-chatting-test.md).
 
 ## Kite VM
 
