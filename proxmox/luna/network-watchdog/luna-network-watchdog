@@ -37,7 +37,8 @@ probe() {
 }
 
 network_healthy() {
-  probe "$gateway" && probe "$external_address"
+  # Either reachable target proves the host is not isolated.
+  probe "$gateway" || probe "$external_address"
 }
 
 failure_file="$state_dir/consecutive_failures"
@@ -60,6 +61,28 @@ if (( failures < failure_threshold )); then
   exit 0
 fi
 
+# Cap the whole disruptive recovery sequence, including link resets. Retain
+# the old reboot timestamp as a guard when upgrading an existing installation.
+recovery_file="$state_dir/last_automatic_recovery_epoch"
+reboot_file="$state_dir/last_automatic_reboot_epoch"
+last_recovery=0
+for cap_file in "$recovery_file" "$reboot_file"; do
+  cap_epoch=0
+  if [[ -r "$cap_file" ]]; then
+    read -r cap_epoch <"$cap_file" || true
+  fi
+  [[ "$cap_epoch" =~ ^[0-9]+$ ]] || cap_epoch=0
+  if (( cap_epoch > last_recovery )); then
+    last_recovery=$cap_epoch
+  fi
+done
+now=$(date +%s)
+if (( last_recovery > 0 && now - last_recovery < reboot_cooldown_seconds )); then
+  remaining=$((reboot_cooldown_seconds - (now - last_recovery)))
+  log "host remains isolated; link reset and automatic reboot capped for another ${remaining}s"
+  exit 1
+fi
+
 timestamp=$(date --utc +%Y%m%dT%H%M%SZ)
 evidence_file="$log_dir/${timestamp}-network-failure.log"
 {
@@ -74,6 +97,9 @@ evidence_file="$log_dir/${timestamp}-network-failure.log"
 } >"$evidence_file" 2>&1
 log "saved network failure evidence to ${evidence_file}"
 
+# Persist before touching the NIC, even if recovery or the reboot request fails.
+printf '%s\n' "$now" >"$recovery_file"
+sync -f "$recovery_file" 2>/dev/null || true
 log "attempting one ${interface} link reset"
 ip link set dev "$interface" down || log "could not bring ${interface} down"
 sleep 3
@@ -86,20 +112,7 @@ if network_healthy; then
   exit 0
 fi
 
-reboot_file="$state_dir/last_automatic_reboot_epoch"
-last_reboot=0
-if [[ -r "$reboot_file" ]]; then
-  read -r last_reboot <"$reboot_file" || true
-fi
-[[ "$last_reboot" =~ ^[0-9]+$ ]] || last_reboot=0
 now=$(date +%s)
-
-if (( now - last_reboot < reboot_cooldown_seconds )); then
-  remaining=$((reboot_cooldown_seconds - (now - last_reboot)))
-  log "network remains down after link reset; automatic reboot capped for another ${remaining}s"
-  exit 1
-fi
-
 printf '%s\n' "$now" >"$reboot_file"
 sync -f "$reboot_file" 2>/dev/null || true
 log "network remains down after link reset; rebooting (automatic reboot cap now active for ${reboot_cooldown_seconds}s)"
