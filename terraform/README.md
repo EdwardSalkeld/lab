@@ -82,29 +82,29 @@ and review the Terraform plan for an in-place `scsi0` size change before
 applying it. Sol's `local-lvm` thin pool had approximately 86 GiB physically
 free when checked on 2026-10-13; check current capacity before applying.
 
-Deploy the Magpie NixOS configuration with `boot.growPartition = true` and
-`fileSystems."/".autoResize = true`, then apply the Terraform disk expansion
-and reboot Magpie in a planned maintenance window. The NixOS configuration
-grows the root partition and its ext4 filesystem at boot. Terraform alone
-only enlarges the virtual disk. The reboot interrupts the chatting services.
+Terraform only enlarges the virtual disk. The guest partition and ext4
+filesystem must be grown separately by an operator with privileged guest
+access. This change deliberately leaves guest resize settings unchanged;
+it does not enable automatic partition or filesystem growth.
 
 The current guest root is the final partition on the disk with serial
 `magpie-root`: `/dev/sdb2`, labelled `nixos`, following the EFI partition.
-After reboot, verify the disk is 36 GiB, the root filesystem is roughly
-35.5 GiB, and chatting is healthy:
+After the operator completes the guest resize, verify the disk is 36 GiB,
+the root filesystem is roughly 35.5 GiB, and chatting is healthy:
 
 ```sh
 lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS,SERIAL
 df -h /
 systemctl --failed
-systemctl status growpart.service systemd-growfs-root.service
 systemctl is-active chatting-handler.service chatting-worker.service
 ```
 
-Deploying, applying and rebooting are separate operational steps; opening
-the PR does not perform them. Guest deployment/reboot needs privileged
-access: the Billy SSH key was accepted on Magpie during the investigation,
-but interactive sudo required a password and direct root SSH was rejected.
+The host disk can also be enlarged directly on Sol with
+`qm disk resize 75280 scsi0 36G`. This does not resize the guest filesystem
+or require a guest reboot. Keep Terraform's desired size aligned with the
+host to avoid drift. Guest resize is left to Edward; the Billy SSH key was
+accepted on Magpie during the investigation, but interactive sudo required
+a password and direct root SSH was rejected.
 
 ## Retired Chatting Test Container
 
