@@ -34,7 +34,7 @@ in
   config = lib.mkIf runnerEnabled {
     # Docker exists solely to back the runner. Its data-root, /var/lib/docker,
     # is mounted on the dedicated magpie-ci disk (hardware-configuration.nix) so
-    # CI image/layer churn can never fill magpie's 24 GB OS root.
+    # CI image/layer churn can never fill magpie's OS root.
     virtualisation.docker.enable = true;
     # 26.05's default docker package is flagged unmaintained/EOL, which fails
     # evaluation; pin the maintained line instead of whitelisting a stale one.

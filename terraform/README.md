@@ -60,7 +60,7 @@ pattern.
 
 - Name: `magpie`
 - Node: `sol`
-- Root disk: 24 GiB on `local-lvm`
+- Root disk: 36 GiB on `local-lvm`
 - Workspace disk: 5 GiB on `local-lvm`
 - Network bridge: `vmbr0`
 
@@ -73,6 +73,38 @@ The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
+
+### Growing Magpie's root disk
+
+The 36 GiB default increases the existing 24 GiB disk by 12 GiB. Check that
+the `alcachofa/house` workspace does not override `magpie_root_disk_size`,
+and review the Terraform plan for an in-place `scsi0` size change before
+applying it. Sol's `local-lvm` thin pool had approximately 86 GiB physically
+free when checked on 2026-10-13; check current capacity before applying.
+
+Deploy the Magpie NixOS configuration with `boot.growPartition = true` and
+`fileSystems."/".autoResize = true`, then apply the Terraform disk expansion
+and reboot Magpie in a planned maintenance window. The NixOS configuration
+grows the root partition and its ext4 filesystem at boot. Terraform alone
+only enlarges the virtual disk. The reboot interrupts the chatting services.
+
+The current guest root is the final partition on the disk with serial
+`magpie-root`: `/dev/sdb2`, labelled `nixos`, following the EFI partition.
+After reboot, verify the disk is 36 GiB, the root filesystem is roughly
+35.5 GiB, and chatting is healthy:
+
+```sh
+lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS,SERIAL
+df -h /
+systemctl --failed
+systemctl status growpart.service systemd-growfs-root.service
+systemctl is-active chatting-handler.service chatting-worker.service
+```
+
+Deploying, applying and rebooting are separate operational steps; opening
+the PR does not perform them. Guest deployment/reboot needs privileged
+access: the Billy SSH key was accepted on Magpie during the investigation,
+but interactive sudo required a password and direct root SSH was rejected.
 
 ## Retired Chatting Test Container
 
