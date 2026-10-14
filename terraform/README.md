@@ -60,7 +60,7 @@ pattern.
 
 - Name: `magpie`
 - Node: `sol`
-- Root disk: 24 GiB on `local-lvm`
+- Root disk: 36 GiB on `local-lvm`
 - Workspace disk: 5 GiB on `local-lvm`
 - Network bridge: `vmbr0`
 
@@ -73,6 +73,58 @@ The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
+
+### Growing Magpie's root disk
+
+The 36 GiB default increases the existing 24 GiB disk by 12 GiB. Check that
+the `alcachofa/house` workspace does not override `magpie_root_disk_size`,
+and review the Terraform plan for an in-place `scsi0` size change before
+applying it. Sol's `local-lvm` thin pool had approximately 86 GiB physically
+free when checked on 2026-10-13; check current capacity before applying.
+
+Terraform only enlarges the virtual disk. Magpie's NixOS configuration enables
+`boot.growPartition` and `fileSystems."/".autoResize` so the final root partition
+and its ext4 filesystem consume additional space on the next boot after that
+configuration is deployed. An immediate online resize can instead be done with
+`growpart` followed by `resize2fs`; a NixOS switch alone does not guarantee that
+an already-active growth service will run again after a disk expansion.
+
+The current guest root is the final partition on the disk with serial
+`magpie-root`: `/dev/sdb2`, labelled `nixos`, following the EFI partition.
+Resolve the current root device and confirm the parent disk's serial before
+resizing: device names can change. For the layout verified on 2026-10-14:
+
+```sh
+findmnt -n -o SOURCE /
+lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS,SERIAL
+sudo sfdisk --dump /dev/sdb > magpie-root-before-grow.sfdisk
+growpart_path="$(nix build --no-link --print-out-paths nixpkgs#cloud-utils.guest)/bin/growpart"
+sudo "$growpart_path" --dry-run /dev/sdb 2
+sudo "$growpart_path" --update=on /dev/sdb 2
+sudo resize2fs /dev/sdb2
+```
+
+The online resize completed on 2026-10-14 without a reboot. The root partition
+grew from 23.5 to 35.5 GiB while retaining its start sector and UUID; ext4 now
+reports 35 GiB usable, about 15 GiB available and 57% used. All three chatting
+services remained active and no systemd units were failed. A partition-table
+backup is stored on Magpie at `/root/magpie-root-before-grow-20261014.sfdisk`.
+
+After any guest resize, verify the disk is 36 GiB,
+the root filesystem is roughly 35.5 GiB, and chatting is healthy:
+
+```sh
+lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS,SERIAL
+df -h /
+systemctl --failed
+systemctl is-active chatting-bbmb.service chatting-handler.service chatting-worker.service
+```
+
+The host disk can also be enlarged directly on Sol with
+`qm disk resize 75280 scsi0 36G`. This does not resize the guest filesystem
+or require a guest reboot. Keep Terraform's desired size aligned with the
+host to avoid drift. Guest resize requires privileged access; the completed
+online resize used Edward's passwordless sudo access.
 
 ## Retired Chatting Test Container
 
