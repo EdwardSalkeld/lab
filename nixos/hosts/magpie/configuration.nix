@@ -15,7 +15,7 @@
   networking.networkmanager.enable = true;
   alcachofa.journalToLoki.enable = true;
 
-  # Magpie's small root disk fills quickly with Nix build/store churn from the
+  # Magpie's root disk fills quickly with Nix build/store churn from the
   # worker. Remove every unreachable store path at the daily run rather than
   # retaining it for 14 days; only live generations and paths remain.
   nix.gc = {
@@ -25,8 +25,8 @@
 
   # The worker can create several GiB of dead build outputs between daily GC
   # runs. Check frequently, but only collect when root has crossed the
-  # high-water mark, preserving useful build cache while retaining about 6 GiB
-  # of headroom on the 24 GiB root filesystem.
+  # 75% high-water mark, preserving useful build cache while keeping headroom
+  # proportional to the root filesystem's size.
   systemd.services.nix-gc-on-root-pressure = {
     description = "Collect unreachable Nix paths when Magpie root is under pressure";
     path = with pkgs; [ coreutils gawk nix ];
