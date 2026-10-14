@@ -5,6 +5,7 @@ let
   host = config.networking.hostName;
   cfg = config.alcachofa.remoteDeploy;
   postSwitchHealthchecks = lib.concatStringsSep " " (map lib.escapeShellArg cfg.postSwitchHealthchecks);
+  postSwitchHttpChecks = lib.concatStringsSep " " (map lib.escapeShellArg cfg.postSwitchHttpChecks);
   labSwitch = pkgs.writeShellScript "lab-switch" ''
     # Deliberately NOT `set -e`: a failed switch must never abort this script
     # before recovery runs, or a half-applied switch (services stopped, not
@@ -16,6 +17,7 @@ let
     nix_store=/run/current-system/sw/bin/nix-store
     systemctl=/run/current-system/sw/bin/systemctl
     healthchecks=(${postSwitchHealthchecks})
+    http_checks=(${postSwitchHttpChecks})
 
     read -r command sha cache_name cache_key expected_path extra <<<"''${SSH_ORIGINAL_COMMAND:-}"
     if [[ "''${SSH_ORIGINAL_COMMAND:-}" == lab-switch ]]; then
@@ -67,9 +69,13 @@ let
     fi
 
     units_healthy() {
-      local unit
+      local unit url
       for unit in "''${healthchecks[@]}"; do
         "$systemctl" is-active --quiet "$unit" || return 1
+      done
+      for url in "''${http_checks[@]}"; do
+        ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 10 \
+          --output /dev/null "$url" || return 1
       done
       return 0
     }
@@ -118,7 +124,7 @@ let
       restore_previous
     fi
 
-    if [ "''${#healthchecks[@]}" -eq 0 ]; then
+    if [ "''${#healthchecks[@]}" -eq 0 ] && [ "''${#http_checks[@]}" -eq 0 ]; then
       exit "$rc"
     fi
 
@@ -137,6 +143,11 @@ let
       echo "health-checked units still down after rollback; starting them directly" >&2
       rc=1
       start_units
+      sleep 5
+      if ! units_healthy; then
+        echo "health checks still failing after service recovery on ${host}" >&2
+        "$systemctl" status --no-pager "''${healthchecks[@]}" >&2 || true
+      fi
     fi
 
     exit "$rc"
@@ -183,6 +194,11 @@ in
     type = lib.types.listOf lib.types.str;
     default = [ ];
     description = "Systemd units that must be active after a remote deploy switch; otherwise the deploy rolls back.";
+  };
+  options.alcachofa.remoteDeploy.postSwitchHttpChecks = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [ ];
+    description = "HTTP endpoints that must respond successfully after a remote deploy switch.";
   };
 
   config.users.users.root.openssh.authorizedKeys.keys = [

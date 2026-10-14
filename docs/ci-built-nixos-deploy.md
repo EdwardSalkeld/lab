@@ -7,6 +7,11 @@ Fourth then asks each host to switch to the exact commit and store path that CI
 built. The host fetches the closure with local builds disabled, checks the
 resulting path, and retains the existing rollback and service health checks.
 A missing cache object or mismatched path fails before activation.
+Magpie also checks the worker API, handler metrics and broker metrics after
+switching. A `Type=simple` service can briefly report active before supervisor
+startup fails, so systemd status alone is insufficient. Failed HTTP checks
+trigger the same rollback as failed unit checks; final recovery is checked
+again and reports unit status if the service still cannot answer.
 Hosts use `nix-store --realise` on the exact output path to fetch its signed runtime closure:
 some NixOS scaffolding disables normal derivation substitution, so a cache-only
 `nix build` is not sufficient even when the published output exists. This also

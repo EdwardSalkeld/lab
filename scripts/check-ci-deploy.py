@@ -2,6 +2,7 @@
 """Exercise deployment refusal and recovery paths without changing a host."""
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -75,6 +76,8 @@ case "$name" in
       fi
     fi
     ;;
+  curl) [[ "${TEST_HTTP_FAIL:-0}" == 0 ]] || exit 1 ;;
+  flock) [[ "${TEST_LOCK_FAIL:-0}" == 0 ]] || exit 1 ;;
   activate) [[ "${TEST_SWITCH_FAIL:-0}" == 0 ]] || exit 1 ;;
   restore) [[ "${TEST_RECOVERY_FAIL:-0}" == 0 ]] || exit 1 ;;
   hostname) echo partridge ;;
@@ -85,7 +88,7 @@ case "$name" in
 esac
 ''')
     stub.chmod(0o755)
-    for name in ("nix", "nix-store", "nix-env", "nixos-rebuild", "systemctl", "activate", "restore", "hostname", "readlink"):
+    for name in ("nix", "nix-store", "nix-env", "nixos-rebuild", "systemctl", "curl", "flock", "activate", "restore", "hostname", "readlink"):
         (temp / name).symlink_to(stub)
     scripts = {}
     for name, text in (("switch", switch), ("bootstrap", bootstrap)):
@@ -93,6 +96,9 @@ esac
         text = text.replace('"$actual_path/bin/switch-to-configuration"', f'"{temp}/activate"')
         text = text.replace('"$previous/bin/switch-to-configuration"', f'"{temp}/activate"')
         if name == "switch":
+            # Exercise HTTP readiness even though Partridge has no endpoints.
+            text = text.replace("http_checks=()", "http_checks=(http://127.0.0.1:9465/api/items)")
+            text = re.sub(r"/nix/store/[^/]+/bin/curl", str(temp / "curl"), text)
             text = text.replace(f'"{temp}/activate"', f'"{temp}/restore"')
             text = text.replace('"$previous/sw/bin/nix-env"', f'"{temp}/nix-env"')
             text = text.replace('"$previous/sw/bin/systemctl"', f'"{temp}/systemctl"')
@@ -126,6 +132,7 @@ esac
     assert f"--realise {previous} --option builders  --option max-jobs 0" in calls
     assert calls.index("--add-root") < calls.index("nixos-rebuild switch")
     assert "restore switch" not in calls and "nix-env" not in calls
+    assert "curl --fail --silent --show-error --max-time 10 --output /dev/null http://127.0.0.1:9465/api/items" in calls
     for request in ("", "lab-switch bad test key path", pinned + " extra",
                     f"lab-switch {sha} other {key} {expected}",
                     f"lab-switch {sha} {cache} test.cachix.org-1:AAAA= {expected}"):
@@ -143,6 +150,7 @@ esac
 
     restore_profile = f"nix-env --profile /nix/var/nix/profiles/system --set {previous}"
     for overrides in ({"TEST_SWITCH_FAIL": "1"}, {"TEST_HEALTH_FAIL": "1"},
+                      {"TEST_HTTP_FAIL": "1"},
                       {"TEST_HEALTH_UNTIL_RECOVERY": "1"},
                       {"TEST_SWITCH_FAIL": "1", "TEST_HEALTH_FAIL": "1"},
                       # Re-deploying the same closure must not select an older generation.
@@ -154,8 +162,11 @@ esac
         assert calls.count(profile) == 1 and calls.count("restore switch") == 1
         assert calls.index(profile) < calls.index("restore switch")
         assert "--rollback" not in calls and calls.count("nixos-rebuild") == 1
-        if "TEST_HEALTH_FAIL" not in overrides:
+        if "TEST_HEALTH_FAIL" not in overrides and "TEST_HTTP_FAIL" not in overrides:
             assert "systemctl start " not in calls
+        if "TEST_HTTP_FAIL" in overrides:
+            assert "systemctl start " in calls
+            assert "health checks still failing after service recovery" in result.stderr
     for overrides, diagnostic in (
         ({"TEST_RECOVERY_FAIL": "1"}, "activating the previous system also failed"),
         ({"TEST_PROFILE_FAIL": "1"}, "restoring the previous system profile failed"),
@@ -167,6 +178,8 @@ esac
         assert "systemctl start " in calls, "last-resort service recovery was skipped"
 
     args = ["partridge", sha, cache, key, expected]
+    result, calls = run("bootstrap", ["switch", *args, previous], TEST_LOCK_FAIL="1")
+    assert result.returncode != 0 and "nix-env" not in calls
     result, calls = run("bootstrap", ["plan", *args])
     assert result.returncode == 0, result.stderr
     assert "nix store diff-closures" in calls
