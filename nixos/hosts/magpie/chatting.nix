@@ -139,6 +139,9 @@ in
       ];
       EnvironmentFile = config.sops.templates."chatting-worker.env".path;
       ExecStart = "${workerBin} --config ${workerConfigPath}";
+      # Supervisors own running executors and reconnect to the next manager.
+      # A worker restart must signal only the manager, not its whole cgroup.
+      KillMode = "process";
       WorkingDirectory = "/var/lib/worker";
       NoNewPrivileges = true;
       PrivateTmp = true;
