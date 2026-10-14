@@ -85,6 +85,13 @@
     "chatting-handler.service"
     "chatting-worker.service"
   ];
+  # Type=simple can be active while the worker is still opening supervisor
+  # sockets. Check the API that starts only after supervisor discovery.
+  alcachofa.remoteDeploy.postSwitchHttpChecks = [
+    "http://127.0.0.1:9465/api/items"
+    "http://127.0.0.1:9464/metrics"
+    "http://127.0.0.1:9877/metrics"
+  ];
 
   users.users.edward = {
     extraGroups = [
