@@ -18,10 +18,14 @@
     "chatting/smtp_password".key = "smtp_password";
     "chatting/telegram_bot_token".key = "telegram_bot_token";
     "chatting/memory_secret_passphrase".key = "memory_secret_passphrase";
-    # Personal mailbox triage. Must exist in secrets/chatting.json before this
-    # evaluates: sops-nix fails activation on a declared key it cannot find.
-    # Ticketing is off until linear_team_id is set, so it needs no key here yet.
-    "chatting/personal_jmap_token".key = "personal_jmap_token";
+    # Personal mailbox triage. Its own file, like the Jev key: adding a value
+    # to an existing sops file needs its data key, and so the private key of a
+    # recipient, while a new file needs only their public keys. Ticketing is
+    # off until linear_team_id is set, so it needs no key here yet.
+    "chatting/personal_jmap_token" = {
+      sopsFile = ./secrets/chatting-personal.json;
+      key = "personal_jmap_token";
+    };
     "chatting/typesafe_api_key" = {
       sopsFile = ./secrets/chatting-jev.json;
       key = "typesafe_api_key";

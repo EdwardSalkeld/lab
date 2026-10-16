@@ -10,7 +10,7 @@ Background and the staged rollout are in the chatting repo at
 
 ## 1. Fastmail
 
-**Folders.** Create the three the config names. They do not have to be these,
+**Folders.** Done. Create the three the config names. They do not have to be these,
 but the names in `chatting-config.nix` must match exactly, and an ambiguous
 name fails handler startup rather than guessing:
 
@@ -21,10 +21,11 @@ name fails handler startup rather than guessing:
 Review deliberately has no folder, so mail the workflow could not classify
 stays in the inbox and the inbox becomes the queue worth looking at.
 
-**API token.** Settings → Privacy & Security → Connected apps & API tokens →
-New API token, type **JMAP**, scope **Email**. Read-only is enough to watch it
-run in dry-run, but filing needs write, so issue the real one without
-read-only. Copy it before closing the dialog; it is not shown again.
+**API token.** Done. Settings → Privacy & Security → Connected apps & API
+tokens → New API token, type **JMAP**, scope **Email**, not read-only, since
+filing needs write. Verified against the live account: all three folders above
+resolve unambiguously and a no-op `Email/set` is accepted, so the token can
+file mail.
 
 ## 2. Telegram
 
@@ -38,15 +39,17 @@ Message the existing bot, then read `chat.id` from
 `https://api.telegram.org/bot<TOKEN>/getUpdates`. The bot token itself is
 already deployed as `chatting/telegram_bot_token` and is reused.
 
-## 3. Secrets
+## 3. Secrets — done
 
-One new value in `nixos/hosts/magpie/secrets/chatting.json`:
+`personal_jmap_token` is encrypted in
+`nixos/hosts/magpie/secrets/chatting-personal.json`, readable by Ed's two keys,
+the vault backup key and magpie's host key.
 
-- `personal_jmap_token`
-
-**It must exist before the host evaluates.** sops-nix fails activation on a
-declared key it cannot find, so adding the Nix without the value breaks the
-deploy for everything on magpie, not just chatting.
+It is a file of its own rather than another entry in `chatting.json` because
+adding a value to an existing sops file needs that file's data key, and so the
+private key of one of its recipients. Creating a new file needs only their
+public keys, which is why this could be done without unlocking anything. The
+Jev key lives in its own file for the same reason.
 
 ## 4. Fill in the config
 
