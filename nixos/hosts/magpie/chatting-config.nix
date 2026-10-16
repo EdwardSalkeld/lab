@@ -108,9 +108,11 @@ let
     # Opt-in personal mailbox triage, separate from the bot mailbox above and
     # from the executor.
     #
-    # Reading the mailbox starts here. Dry run below keeps every external
-    # effect suppressed, but the classifier still runs, so mail reaches the
-    # model providers from the first poll.
+    # This is live: classified mail is filed into the folders below and
+    # notified. What protects the mail already classified is not this setting
+    # but the effect ledger, which never replays an effect recorded as a
+    # preview. Acting changes what happens to mail from here, not what
+    # happened to mail already seen.
     personal_inbox = {
       enabled = true;
       # Must differ from the handler's own db_path. /var/lib/handler is already
@@ -119,13 +121,13 @@ let
       account = "personal";
       jmap_token_env = "CHATTING_PERSONAL_JMAP_TOKEN";
       # Classify what is already in the inbox, to judge the categories against
-      # real mail rather than one test message. It only takes effect on a first
-      # baseline, so the stored state has to be cleared for it to do anything;
-      # the rollout doc has the command. Dry run below keeps it to previews.
+      # real mail rather than one test message. This only applies while the
+      # workflow is establishing its first baseline, and one is already
+      # recorded, so it does nothing until that stored state is deleted. Mail
+      # it classified while the workflow was in preview stays a preview and is
+      # not acted on now.
       backfill = true;
-      # Suppresses every external effect while still calling the classifier, so
-      # previews can be inspected before anything is sent or filed.
-      dry_run = true;
+      dry_run = false;
       # Create these in Fastmail before enabling: an unknown or ambiguous name
       # fails startup rather than silently leaving mail unfiled. Review has no
       # folder on purpose, so the inbox becomes the queue of mail the workflow
@@ -145,6 +147,9 @@ let
       orders_telegram_target = "-5495815712";
       action_telegram_target = "-5495815712";
       digest_telegram_target = "-5495815712";
+      # Real mail has a long uncertain tail, so this is the dial for how much
+      # of it to accept rather than hold. Everything held stays in the inbox.
+      confidence_threshold = 0.8;
       digest_at = "08:00";
       timezone = "Europe/London";
       # Ticketing is off while the team is empty: action mail is still alerted
