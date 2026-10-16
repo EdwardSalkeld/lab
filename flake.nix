@@ -33,7 +33,7 @@
     };
     # bbmb is release-pinned; change the ref to move it.
     bbmb = {
-      url = "github:EdwardSalkeld/bbmb/v9";
+      url = "github:EdwardSalkeld/bbmb/v10";
       flake = false;
     };
   };
@@ -66,13 +66,13 @@
       };
       bbmbServer = pkgs.buildGo127Module {
         pname = "bbmb-server";
-        version = "v9";
+        version = "v10";
         src = bbmbSrc;
         modRoot = "server";
         vendorHash = null;
         subPackages = [ "." ];
         doCheck = false;
-        # Upstream bbmb v9 requires Go 1.27.
+        # Upstream bbmb requires Go 1.27.
         postInstall = ''
           mv "$out/bin/server" "$out/bin/bbmb-server"
         '';
