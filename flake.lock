@@ -20,11 +20,11 @@
     "chatting": {
       "flake": false,
       "locked": {
-        "lastModified": 1792044061,
-        "narHash": "sha256-FHyfjng9FLrIqE2y/652HfVwkGR9ZyGw+i4fvNuJQDg=",
+        "lastModified": 1792144543,
+        "narHash": "sha256-rEbLC2roXHXrQs2GhajY5GceZA+SRkc7zajBBkbRwY4=",
         "owner": "EdwardSalkeld",
         "repo": "chatting",
-        "rev": "08d31388c128c1152857ffe046488ed8870d7b71",
+        "rev": "9d1fe6a76a82f95cd34142bac12c038f40600c3e",
         "type": "github"
       },
       "original": {
