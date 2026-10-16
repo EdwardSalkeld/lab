@@ -136,6 +136,14 @@ in
       Environment = [
         "HOME=/var/lib/worker"
         "CHATTING_CONFIG_DIR=/etc/chatting"
+        # Personal mailbox classification runs as a thread of this worker,
+        # sharing its TypeSafe key. It stays off until the cache path is set.
+        # /var/lib/worker is already in ReadWritePaths.
+        "CHATTING_PERSONAL_CACHE_PATH=/var/lib/worker/personal-inbox-cache.db"
+        # Summaries go through the logged-in Codex CLI, which is started with
+        # --ignore-user-config and so does not see the model named in
+        # codex-config.toml. Name it here or Codex picks its own default.
+        "CHATTING_PERSONAL_SUMMARY_MODEL=gpt-6-sol"
       ];
       EnvironmentFile = config.sops.templates."chatting-worker.env".path;
       ExecStart = "${workerBin} --config ${workerConfigPath}";

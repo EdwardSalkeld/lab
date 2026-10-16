@@ -18,6 +18,10 @@
     "chatting/smtp_password".key = "smtp_password";
     "chatting/telegram_bot_token".key = "telegram_bot_token";
     "chatting/memory_secret_passphrase".key = "memory_secret_passphrase";
+    # Personal mailbox triage. Both must exist in secrets/chatting.json before
+    # this evaluates: sops-nix fails activation on a declared key it cannot find.
+    "chatting/personal_jmap_token".key = "personal_jmap_token";
+    "chatting/personal_linear_key".key = "personal_linear_key";
     "chatting/typesafe_api_key" = {
       sopsFile = ./secrets/chatting-jev.json;
       key = "typesafe_api_key";
@@ -32,6 +36,8 @@
       CHATTING_IMAP_PASSWORD=${config.sops.placeholder."chatting/imap_password"}
       CHATTING_SMTP_PASSWORD=${config.sops.placeholder."chatting/smtp_password"}
       CHATTING_TELEGRAM_BOT_TOKEN=${config.sops.placeholder."chatting/telegram_bot_token"}
+      CHATTING_PERSONAL_JMAP_TOKEN=${config.sops.placeholder."chatting/personal_jmap_token"}
+      CHATTING_PERSONAL_LINEAR_KEY=${config.sops.placeholder."chatting/personal_linear_key"}
     '';
   };
 

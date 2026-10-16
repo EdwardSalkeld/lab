@@ -104,6 +104,48 @@ let
       "EdwardSalkeld/*"
     ];
     github_context_refs = null;
+
+    # Opt-in personal mailbox triage, separate from the bot mailbox above and
+    # from the executor. Left disabled until the Fastmail folders exist and the
+    # destinations below are filled in; see
+    # chatting/docs/connectors/personal-inbox.md for the staged rollout.
+    personal_inbox = {
+      enabled = false;
+      # Must differ from the handler's own db_path. /var/lib/handler is already
+      # in the unit's ReadWritePaths.
+      db_path = "/var/lib/handler/personal-inbox.db";
+      account = "personal";
+      jmap_token_env = "CHATTING_PERSONAL_JMAP_TOKEN";
+      # Start from the current state rather than the whole mailbox.
+      backfill = false;
+      # Suppresses every external effect while still calling the classifier, so
+      # previews can be inspected before anything is sent or filed.
+      dry_run = true;
+      # Create these in Fastmail before enabling: an unknown or ambiguous name
+      # fails startup rather than silently leaving mail unfiled. Review has no
+      # folder on purpose, so the inbox becomes the queue of mail the workflow
+      # could not classify.
+      folders = {
+        news = "Triage/News";
+        order = "Triage/Orders";
+        action = "Triage/Actions";
+        review = "";
+      };
+      # Action mail stays unread even once filed.
+      mark_read = [
+        "news"
+        "order"
+      ];
+      mail_link_template = "https://app.fastmail.com/mail/{folder}/{thread}.{email}?u={account}";
+      orders_telegram_target = "REPLACE_WITH_ORDERS_CHAT_ID";
+      action_telegram_target = "REPLACE_WITH_ACTION_CHAT_ID";
+      digest_telegram_target = "REPLACE_WITH_DIGEST_CHAT_ID";
+      digest_at = "08:00";
+      timezone = "Europe/London";
+      linear_key_env = "CHATTING_PERSONAL_LINEAR_KEY";
+      linear_team_id = "REPLACE_WITH_LINEAR_TEAM_UUID";
+      linear_project_id = "";
+    };
   };
 
   workerConfig = {
