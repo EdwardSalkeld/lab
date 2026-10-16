@@ -108,13 +108,11 @@ let
     # Opt-in personal mailbox triage, separate from the bot mailbox above and
     # from the executor.
     #
-    # Do not deploy this block until the chatting release on magpie understands
-    # it. The handler rejects a config key it does not recognise and refuses to
-    # start, so deploying ahead of that release takes the bot mailbox down too,
-    # not just this. One release carrying personal_inbox support has to land
-    # first.
+    # Reading the mailbox starts here. Dry run below keeps every external
+    # effect suppressed, but the classifier still runs, so mail reaches the
+    # model providers from the first poll.
     personal_inbox = {
-      enabled = false;
+      enabled = true;
       # Must differ from the handler's own db_path. /var/lib/handler is already
       # in the unit's ReadWritePaths.
       db_path = "/var/lib/handler/personal-inbox.db";

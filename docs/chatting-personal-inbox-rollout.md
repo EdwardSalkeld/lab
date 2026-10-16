@@ -1,10 +1,10 @@
 # Chatting personal inbox: deployment checklist
 
-> **Merge order matters.** The handler refuses to start on a config key it does
-> not recognise, so `personal_inbox` must not reach magpie before a chatting
-> release that understands it. Deploying early takes the existing bot mailbox
-> down with it. Land the chatting side on its main and let a release build
-> before merging this.
+> **Dry run is not "off".** Enabling the connector starts reading the mailbox
+> immediately. Dry run suppresses every external effect — nothing is sent,
+> moved or ticketed — but the classifier still runs, so mail is sent to
+> TypeSafe and to Codex from the first poll. That is the decision this step
+> actually makes.
 
 Everything magpie needs before the personal mailbox workflow can be switched on.
 The Nix side of this is already in `nixos/hosts/magpie/`; the rest is values
@@ -68,6 +68,8 @@ is a daily round-up at a wall-clock time, not a per-message delay.
 1. `enabled = true` with `dry_run = true`. Mail is read and classified, nothing
    is sent, moved or ticketed. Note that dry-run suppresses effects, not model
    calls: your mail reaches TypeSafe and Codex from the first poll.
+   With `backfill = false` it starts from the current state, so only mail
+   arriving after the deploy is ingested.
 2. Inspect what it would have done, on the handler's loopback admin server:
    `curl -s http://127.0.0.1:9467/api/personal-inbox | jq`. Read `steps` for
    per-stage health, and `effect_counts` for anything needing reconciliation.
