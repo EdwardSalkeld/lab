@@ -104,6 +104,55 @@ let
       "EdwardSalkeld/*"
     ];
     github_context_refs = null;
+
+    # Opt-in personal mailbox triage, separate from the bot mailbox above and
+    # from the executor.
+    #
+    # Do not deploy this block until the chatting release on magpie understands
+    # it. The handler rejects a config key it does not recognise and refuses to
+    # start, so deploying ahead of that release takes the bot mailbox down too,
+    # not just this. One release carrying personal_inbox support has to land
+    # first.
+    personal_inbox = {
+      enabled = false;
+      # Must differ from the handler's own db_path. /var/lib/handler is already
+      # in the unit's ReadWritePaths.
+      db_path = "/var/lib/handler/personal-inbox.db";
+      account = "personal";
+      jmap_token_env = "CHATTING_PERSONAL_JMAP_TOKEN";
+      # Start from the current state rather than the whole mailbox.
+      backfill = false;
+      # Suppresses every external effect while still calling the classifier, so
+      # previews can be inspected before anything is sent or filed.
+      dry_run = true;
+      # Create these in Fastmail before enabling: an unknown or ambiguous name
+      # fails startup rather than silently leaving mail unfiled. Review has no
+      # folder on purpose, so the inbox becomes the queue of mail the workflow
+      # could not classify.
+      folders = {
+        news = "Triage/News";
+        order = "Triage/Orders";
+        action = "Triage/Actions";
+        review = "";
+      };
+      # Action mail stays unread even once filed.
+      mark_read = [
+        "news"
+        "order"
+      ];
+      mail_link_template = "https://app.fastmail.com/mail/{folder}/{thread}.{email}?u={account}";
+      orders_telegram_target = "-5495815712";
+      action_telegram_target = "-5495815712";
+      digest_telegram_target = "-5495815712";
+      digest_at = "08:00";
+      timezone = "Europe/London";
+      # Ticketing is off while the team is empty: action mail is still alerted
+      # and filed, it just raises no issue. Wire it up once the rest is known
+      # to work, by adding the team here and personal_linear_key to the secrets.
+      linear_key_env = "CHATTING_PERSONAL_LINEAR_KEY";
+      linear_team_id = "";
+      linear_project_id = "";
+    };
   };
 
   workerConfig = {

@@ -18,6 +18,14 @@
     "chatting/smtp_password".key = "smtp_password";
     "chatting/telegram_bot_token".key = "telegram_bot_token";
     "chatting/memory_secret_passphrase".key = "memory_secret_passphrase";
+    # Personal mailbox triage. Its own file, like the Jev key: adding a value
+    # to an existing sops file needs its data key, and so the private key of a
+    # recipient, while a new file needs only their public keys. Ticketing is
+    # off until linear_team_id is set, so it needs no key here yet.
+    "chatting/personal_jmap_token" = {
+      sopsFile = ./secrets/chatting-personal.json;
+      key = "personal_jmap_token";
+    };
     "chatting/typesafe_api_key" = {
       sopsFile = ./secrets/chatting-jev.json;
       key = "typesafe_api_key";
@@ -32,6 +40,7 @@
       CHATTING_IMAP_PASSWORD=${config.sops.placeholder."chatting/imap_password"}
       CHATTING_SMTP_PASSWORD=${config.sops.placeholder."chatting/smtp_password"}
       CHATTING_TELEGRAM_BOT_TOKEN=${config.sops.placeholder."chatting/telegram_bot_token"}
+      CHATTING_PERSONAL_JMAP_TOKEN=${config.sops.placeholder."chatting/personal_jmap_token"}
     '';
   };
 
