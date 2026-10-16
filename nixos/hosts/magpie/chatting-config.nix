@@ -118,8 +118,11 @@ let
       db_path = "/var/lib/handler/personal-inbox.db";
       account = "personal";
       jmap_token_env = "CHATTING_PERSONAL_JMAP_TOKEN";
-      # Start from the current state rather than the whole mailbox.
-      backfill = false;
+      # Classify what is already in the inbox, to judge the categories against
+      # real mail rather than one test message. It only takes effect on a first
+      # baseline, so the stored state has to be cleared for it to do anything;
+      # the rollout doc has the command. Dry run below keeps it to previews.
+      backfill = true;
       # Suppresses every external effect while still calling the classifier, so
       # previews can be inspected before anything is sent or filed.
       dry_run = true;
