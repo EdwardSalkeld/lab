@@ -38,33 +38,26 @@ Message the existing bot, then read `chat.id` from
 `https://api.telegram.org/bot<TOKEN>/getUpdates`. The bot token itself is
 already deployed as `chatting/telegram_bot_token` and is reused.
 
-## 3. Linear
+## 3. Secrets
 
-A team UUID, optionally a project UUID, and a personal API key with access to
-them. Action mail creates an issue there.
-
-## 4. Secrets
-
-Two new values in `nixos/hosts/magpie/secrets/chatting.json`:
+One new value in `nixos/hosts/magpie/secrets/chatting.json`:
 
 - `personal_jmap_token`
-- `personal_linear_key`
 
-**These must exist before the host evaluates.** sops-nix fails activation on a
-declared key it cannot find, so adding the Nix without the values breaks the
+**It must exist before the host evaluates.** sops-nix fails activation on a
+declared key it cannot find, so adding the Nix without the value breaks the
 deploy for everything on magpie, not just chatting.
 
-## 5. Fill in the config
+## 4. Fill in the config
 
-In `nixos/hosts/magpie/chatting-config.nix`, under `personal_inbox`, replace:
-
-- `orders_telegram_target`, `action_telegram_target`, `digest_telegram_target`
-- `linear_team_id`
+In `nixos/hosts/magpie/chatting-config.nix`, under `personal_inbox`, replace
+`orders_telegram_target`, `action_telegram_target` and
+`digest_telegram_target`.
 
 Check `digest_at` and `timezone` suit you — the digest is a daily round-up at a
 wall-clock time, not a per-message delay.
 
-## 6. Turn it on, in stages
+## 5. Turn it on, in stages
 
 1. `enabled = true` with `dry_run = true`. Mail is read and classified, nothing
    is sent, moved or ticketed. Note that dry-run suppresses effects, not model
@@ -76,6 +69,18 @@ wall-clock time, not a per-message delay.
    mail. Previews from stage 1 stay previews and are never replayed.
 4. Leave the `folders` map in place throughout — filing only starts once dry
    run is off.
+
+## Later, optional: Linear ticketing
+
+Action mail raises a Linear issue as well as alerting, but only once a team is
+configured. Until then it is alerted and filed like everything else, which is
+deliberately the smallest thing that works.
+
+To add it: a team UUID (and optionally a project), a Linear personal key with
+access to them added to the secrets as `personal_linear_key`, that placeholder
+restored in the handler env template, and `linear_team_id` filled in. A
+configured team whose key is missing logs that ticketing is disabled and
+carries on rather than failing startup.
 
 ## Already handled
 

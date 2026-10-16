@@ -142,8 +142,11 @@ let
       digest_telegram_target = "REPLACE_WITH_DIGEST_CHAT_ID";
       digest_at = "08:00";
       timezone = "Europe/London";
+      # Ticketing is off while the team is empty: action mail is still alerted
+      # and filed, it just raises no issue. Wire it up once the rest is known
+      # to work, by adding the team here and personal_linear_key to the secrets.
       linear_key_env = "CHATTING_PERSONAL_LINEAR_KEY";
-      linear_team_id = "REPLACE_WITH_LINEAR_TEAM_UUID";
+      linear_team_id = "";
       linear_project_id = "";
     };
   };
