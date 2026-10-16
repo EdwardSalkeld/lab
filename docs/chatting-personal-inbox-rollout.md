@@ -1,5 +1,11 @@
 # Chatting personal inbox: deployment checklist
 
+> **Merge order matters.** The handler refuses to start on a config key it does
+> not recognise, so `personal_inbox` must not reach magpie before a chatting
+> release that understands it. Deploying early takes the existing bot mailbox
+> down with it. Land the chatting side on its main and let a release build
+> before merging this.
+
 Everything magpie needs before the personal mailbox workflow can be switched on.
 The Nix side of this is already in `nixos/hosts/magpie/`; the rest is values
 only you can get. The connector itself ships disabled, so merging the Nix is
@@ -27,7 +33,7 @@ filing needs write. Verified against the live account: all three folders above
 resolve unambiguously and a no-op `Email/set` is accepted, so the token can
 file mail.
 
-## 2. Telegram
+## 2. Telegram — done
 
 Chat ids for the three destinations. They can all be the same chat to start:
 
@@ -51,14 +57,11 @@ private key of one of its recipients. Creating a new file needs only their
 public keys, which is why this could be done without unlocking anything. The
 Jev key lives in its own file for the same reason.
 
-## 4. Fill in the config
+## 4. Fill in the config — done
 
-In `nixos/hosts/magpie/chatting-config.nix`, under `personal_inbox`, replace
-`orders_telegram_target`, `action_telegram_target` and
-`digest_telegram_target`.
-
-Check `digest_at` and `timezone` suit you — the digest is a daily round-up at a
-wall-clock time, not a per-message delay.
+All three Telegram targets point at one chat to begin with; split them later by
+giving each its own id. Check `digest_at` and `timezone` suit you — the digest
+is a daily round-up at a wall-clock time, not a per-message delay.
 
 ## 5. Turn it on, in stages
 

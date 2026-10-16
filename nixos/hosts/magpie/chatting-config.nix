@@ -106,9 +106,13 @@ let
     github_context_refs = null;
 
     # Opt-in personal mailbox triage, separate from the bot mailbox above and
-    # from the executor. Left disabled until the Fastmail folders exist and the
-    # destinations below are filled in; see
-    # chatting/docs/connectors/personal-inbox.md for the staged rollout.
+    # from the executor.
+    #
+    # Do not deploy this block until the chatting release on magpie understands
+    # it. The handler rejects a config key it does not recognise and refuses to
+    # start, so deploying ahead of that release takes the bot mailbox down too,
+    # not just this. One release carrying personal_inbox support has to land
+    # first.
     personal_inbox = {
       enabled = false;
       # Must differ from the handler's own db_path. /var/lib/handler is already
@@ -137,9 +141,9 @@ let
         "order"
       ];
       mail_link_template = "https://app.fastmail.com/mail/{folder}/{thread}.{email}?u={account}";
-      orders_telegram_target = "REPLACE_WITH_ORDERS_CHAT_ID";
-      action_telegram_target = "REPLACE_WITH_ACTION_CHAT_ID";
-      digest_telegram_target = "REPLACE_WITH_DIGEST_CHAT_ID";
+      orders_telegram_target = "-5495815712";
+      action_telegram_target = "-5495815712";
+      digest_telegram_target = "-5495815712";
       digest_at = "08:00";
       timezone = "Europe/London";
       # Ticketing is off while the team is empty: action mail is still alerted
