@@ -78,6 +78,33 @@ is a daily round-up at a wall-clock time, not a per-message delay.
 4. Leave the `folders` map in place throughout — filing only starts once dry
    run is off.
 
+## Backfilling to judge the categories
+
+One test message proves the plumbing and tells you nothing about whether the
+categories are any good. Setting `backfill = true` classifies what is already
+in the inbox instead, as previews.
+
+It only applies on a first baseline, so once the connector has run it does
+nothing on its own. Clear the stored state and the next cycle sweeps, within
+about ten seconds and with no restart:
+
+```
+sudo sqlite3 /var/lib/handler/personal-inbox.db \
+  "delete from inbox_meta where key='email_state'"
+```
+
+Messages already held keep the classification they have, so this re-reads the
+mailbox rather than duplicating anything. Up to 500 messages are taken.
+
+Two things to expect:
+
+- Previews are never replayed, so backfilled mail is never filed or alerted
+  even after dry run is turned off. It is an inspection exercise.
+- The digest is not a replay, and has not run for that mail yet. It sweeps
+  every routine message with no digest id, whatever its age, so the first
+  digest after dry run is off will cover the backlog — up to sixty of them in
+  one message. Expected, but a surprise if you are not expecting it.
+
 ## Later, optional: Linear ticketing
 
 Action mail raises a Linear issue as well as alerting, but only once a team is
