@@ -96,7 +96,6 @@ let
     ];
 
     context_refs = contextRefs;
-    auxiliary_ingress_context_refs = null;
 
     github_assignee_login = "billyacachofa";
     github_repositories = [
