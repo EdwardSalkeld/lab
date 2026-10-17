@@ -8,6 +8,12 @@ let
   workerBin = "${chattingRuntimePackage}/bin/chatting-worker";
 in
 {
+  # Supervisors and executors outlive the manager unit. Keep their temporary
+  # files outside systemd's per-start private /tmp, with no age-based cleanup.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/worker/chatting-tmp 0700 worker worker -"
+  ];
+
   systemd.targets.chatting = {
     description = "Chatting split runtime";
     wantedBy = [ "multi-user.target" ];
@@ -135,6 +141,7 @@ in
       Group = "worker";
       Environment = [
         "HOME=/var/lib/worker"
+        "TMPDIR=/var/lib/worker/chatting-tmp"
         "CHATTING_CONFIG_DIR=/etc/chatting"
         # Personal mailbox classification runs as a thread of this worker,
         # sharing its TypeSafe key. It stays off until the cache path is set.
@@ -152,11 +159,17 @@ in
       KillMode = "process";
       WorkingDirectory = "/var/lib/worker";
       NoNewPrivileges = true;
-      PrivateTmp = true;
+      # PrivateTmp is torn down on manager stop even with KillMode=process.
+      # Surviving processes would lose finish sockets and writable temp space.
+      PrivateTmp = false;
       ProtectHome = true;
       ProtectSystem = "strict";
       ReadOnlyPaths = [ workerConfigPath ];
       ReadWritePaths = [
+        # ProtectSystem=strict otherwise makes shared /tmp read-only once
+        # PrivateTmp is disabled. Some tools ignore the persistent TMPDIR.
+        "/tmp"
+        "/var/tmp"
         "/var/lib/worker"
         "/srv/chatting/workspace"
         "/srv/chatting/workspaces"
