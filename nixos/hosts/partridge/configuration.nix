@@ -8,6 +8,7 @@
     ./hardware-configuration.nix
     ./exercise-tracker.nix
     ./family-tunnel.nix
+    ./gramps-web.nix
     ./loki.nix
     ./linear-export.nix
     ./octopus-dl.nix

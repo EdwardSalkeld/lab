@@ -1,0 +1,22 @@
+name: Gramps Web smoke test
+
+on:
+  pull_request:
+    paths:
+      - 'nixos/hosts/partridge/gramps-web*'
+      - 'scripts/check-gramps-web.py'
+      - '.github/workflows/gramps-web.yml'
+
+jobs:
+  gramps-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            http2 = false
+      - name: Check PostgreSQL startup and app workflow
+        run: python3 scripts/check-gramps-web.py
