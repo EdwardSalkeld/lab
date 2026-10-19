@@ -22,6 +22,19 @@ This applies to every repo-managed NixOS host. It does not change Terraform's
 execution location. GitHub Actions remains the build machine; Fourth remains
 the deploy orchestrator.
 
+## Pull request cache access
+
+The PR host-build matrix reads the same public cache using
+`LAB_NIX_CACHE_NAME`, with `cachix/cachix-action` in read-only mode
+(`skipPush: true`) and no authentication token. Every selected host can reuse
+cached outputs for both the PR build and its comparison build of `main`.
+Deploy remains the cache publisher; there is no separate cache-warming
+workflow or Kite-only GitHub Actions Nix store cache.
+
+Deploy publishes runtime closures, so build-only dependencies may still need
+to be built when a PR changes an output. PR builds retain normal source-build
+fallback for cache misses.
+
 ## Setup needed before merging
 
 1. Create a **public** Cachix cache for Lab. Record its cache name and public

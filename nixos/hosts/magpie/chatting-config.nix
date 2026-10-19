@@ -128,16 +128,14 @@ let
       backfill = true;
       dry_run = false;
       # Create these in Fastmail before enabling: an unknown or ambiguous name
-      # fails startup rather than silently leaving mail unfiled. Review has no
-      # folder on purpose, so the inbox becomes the queue of mail the workflow
-      # could not classify.
+      # fails startup rather than silently leaving mail unfiled. Action and
+      # Review have no destination folder: both stay in the inbox until handled.
       folders = {
         news = "Triage/News";
         order = "Triage/Orders";
-        action = "Triage/Actions";
         review = "";
       };
-      # Action mail stays unread even once filed.
+      # Action and Review mail stay unread in the inbox.
       mark_read = [
         "news"
         "order"
@@ -151,8 +149,8 @@ let
       confidence_threshold = 0.8;
       digest_at = "08:00";
       timezone = "Europe/London";
-      # Ticketing is off while the team is empty: action mail is still alerted
-      # and filed, it just raises no issue. Wire it up once the rest is known
+      # Ticketing is off while the team is empty: action mail is still alerted,
+      # it just raises no issue. Wire it up once the rest is known
       # to work, by adding the team here and personal_linear_key to the secrets.
       linear_key_env = "CHATTING_PERSONAL_LINEAR_KEY";
       linear_team_id = "";
