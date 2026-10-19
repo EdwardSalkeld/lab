@@ -167,6 +167,8 @@ let
     sleep_seconds = 1.0;
     # The work item session view renders Codex's JSON event stream live.
     codex_command = "codex exec --json --dangerously-bypass-approvals-and-sandbox";
+    # Match exec's access: replies need workspace files and worker DB writes.
+    app_server_sandbox_mode = "danger-full-access";
     codex_working_dir = workspaceDir;
     workspace_root = workspacesDir;
     handler_egress_url = "http://127.0.0.1:9467/egress";
