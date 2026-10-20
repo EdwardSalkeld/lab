@@ -33,7 +33,6 @@ let
     # Prometheus now scrapes through nginx, so this need not leave the host.
     metrics_host = "127.0.0.1";
     poll_interval_seconds = 30;
-    poll_timeout_seconds = 2;
     allowed_egress_channels = [
       "email"
       "telegram"
@@ -57,7 +56,6 @@ let
     smtp_username = "edsalkeld@fastmail.com";
     smtp_password_env = "CHATTING_SMTP_PASSWORD";
     smtp_from = "billy@alcachofa.faith";
-    smtp_starttls = false;
 
     telegram_enabled = true;
     telegram_bot_token_env = "CHATTING_TELEGRAM_BOT_TOKEN";
@@ -102,7 +100,6 @@ let
       "brokensbone/*"
       "EdwardSalkeld/*"
     ];
-    github_context_refs = null;
 
     # Opt-in personal mailbox triage, separate from the bot mailbox above and
     # from the executor.
