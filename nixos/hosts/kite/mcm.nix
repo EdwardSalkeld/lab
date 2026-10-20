@@ -1,4 +1,9 @@
-{ config, lib, mediaCollectionManagerPackages, ... }:
+{
+  config,
+  lib,
+  mediaCollectionManagerPackages,
+  ...
+}:
 
 let
   cfg = config.alcachofa.kite.mcm;
@@ -26,6 +31,8 @@ let
       # The MCM worker owns the weekday radio handoff: load the dated programme at 07:00
       # and start the untouched queue at 09:00, both in Europe/London.
       MCM_MPD_HOST = "127.0.0.1";
+      MCM_NAVIDROME_URL = "https://navidrome.alcachofa.faith";
+      MCM_NAVIDROME_USERNAME = "billy";
       MCM_IMPORT_INBOX_PATH = cfg.importInbox;
       MCM_MUSIC_DIR = cfg.musicDir;
       MCM_TV_ROOT = cfg.tvRoot;
@@ -99,6 +106,13 @@ in
       mode = "0400";
     };
     sops.secrets = {
+      "mcm/navidrome_password" = {
+        sopsFile = ./secrets/mcm-navidrome.yaml;
+        key = "password";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
       "wantlist/spotify_client_id" = {
         sopsFile = ./secrets/wantlist.yaml;
         key = "spotify_client_id";
@@ -183,6 +197,7 @@ in
       mode = "0400";
       content = ''
         MCM_DATABASE_URL=${config.sops.placeholder."wantlist/database_url"}
+        MCM_NAVIDROME_PASSWORD=${config.sops.placeholder."mcm/navidrome_password"}
         MCM_SPOTIFY_CLIENT_ID=${config.sops.placeholder."wantlist/spotify_client_id"}
         MCM_SPOTIFY_CLIENT_SECRET=${config.sops.placeholder."wantlist/spotify_client_secret"}
         MCM_SPOTIFY_REDIRECT_URI=${config.sops.placeholder."wantlist/spotify_redirect_uri"}
