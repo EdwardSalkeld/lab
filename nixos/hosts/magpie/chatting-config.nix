@@ -32,6 +32,7 @@ let
     bbmb_address = "127.0.0.1:9876";
     # Prometheus now scrapes through nginx, so this need not leave the host.
     metrics_host = "127.0.0.1";
+    webhook_http_port = 9468;
     poll_interval_seconds = 30;
     allowed_egress_channels = [
       "email"
