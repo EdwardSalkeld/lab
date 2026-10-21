@@ -147,6 +147,8 @@ in
         # sharing its TypeSafe key. It stays off until the cache path is set.
         # /var/lib/worker is already in ReadWritePaths.
         "CHATTING_PERSONAL_CACHE_PATH=/var/lib/worker/personal-inbox-cache.db"
+        # Personal triage feedback is data in memory, refreshed per new mail.
+        "CHATTING_PERSONAL_RULES_REPO=/srv/chatting/workspace/memory"
         # Summaries go through the logged-in Codex CLI, which is started with
         # --ignore-user-config and so does not see the model named in
         # codex-config.toml. Name it here or Codex picks its own default.
