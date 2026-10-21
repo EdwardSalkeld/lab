@@ -61,7 +61,7 @@
         runtimeInputs = [ chattingWorkerPython ];
         text = ''
           export PYTHONPATH=${chattingSrc}''${PYTHONPATH:+:$PYTHONPATH}
-          exec python -m app.main_worker "$@"
+          exec python -m app.worker.main "$@"
         '';
       };
       bbmbServer = pkgs.buildGo127Module {
