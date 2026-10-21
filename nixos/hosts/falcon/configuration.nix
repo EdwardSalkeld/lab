@@ -1,10 +1,16 @@
-{ lib, pkgs, tailscalePackage ? pkgs.tailscale, ... }:
+{
+  lib,
+  pkgs,
+  tailscalePackage ? pkgs.tailscale,
+  ...
+}:
 
 {
   imports = [
     ./hardware-configuration.nix
     ./freshrss.nix
     ./navidrome.nix
+    ./webhooks.nix
     ./web.nix
   ];
 
@@ -18,11 +24,20 @@
       interface = "eth0";
     };
     interfaces.eth0 = {
-      ipv6.addresses = [{ address = "2a01:4f8:c17:d035::1"; prefixLength = 64; }];
+      ipv6.addresses = [
+        {
+          address = "2a01:4f8:c17:d035::1";
+          prefixLength = 64;
+        }
+      ];
     };
     firewall = {
       # HTTP is retained for ACME HTTP-01 validation and the HTTPS redirect.
-      allowedTCPPorts = [ 22 80 443 ];
+      allowedTCPPorts = [
+        22
+        80
+        443
+      ];
       # Prometheus runs on Partridge over the tailnet; never expose host
       # metrics on Falcon's public interface.
       interfaces.tailscale0.allowedTCPPorts = [ 9100 ];
@@ -82,13 +97,24 @@
   };
   security.sudo.wheelNeedsPassword = false;
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
   nix.gc = {
     automatic = true;
     dates = "weekly";
     options = "--delete-older-than 14d";
   };
-  environment.systemPackages = with pkgs; [ curl git htop jq ripgrep vim wget ];
+  environment.systemPackages = with pkgs; [
+    curl
+    git
+    htop
+    jq
+    ripgrep
+    vim
+    wget
+  ];
 
   system.stateVersion = "26.05";
 }
