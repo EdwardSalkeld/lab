@@ -33,6 +33,7 @@ let
     # Prometheus now scrapes through nginx, so this need not leave the host.
     metrics_host = "127.0.0.1";
     poll_interval_seconds = 30;
+    github_webhook_secret_env = "CHATTING_GITHUB_WEBHOOK_SECRET";
     allowed_egress_channels = [
       "email"
       "telegram"

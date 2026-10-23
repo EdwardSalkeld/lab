@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   domain = "hooks.alcachofa.faith";
@@ -24,8 +29,10 @@ in
       limit_req_status 429;
       access_log off;
     '';
-    locations."/".return = "404";
-    locations."= /webhooks/test" = {
+    locations = {
+      "/".return = "404";
+    }
+    // lib.genAttrs [ "= /webhooks/test" "= /webhooks/github" ] (_: {
       proxyPass = "https://magpie.ts.alcachofa.faith";
       extraConfig = ''
         if ($request_method != POST) { return 405; }
@@ -40,6 +47,6 @@ in
         proxy_send_timeout 15s;
         proxy_next_upstream off;
       '';
-    };
+    });
   };
 }

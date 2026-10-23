@@ -1,6 +1,6 @@
 # TLS front end for the chatting UIs. The handler shares its port with
 # /metrics, so there is no separate vhost for the metrics.
-{ config, ... }:
+{ config, lib, ... }:
 
 let
   workerDomain = "chatting-worker.int.alcachofa.faith";
@@ -61,8 +61,10 @@ in
           client_body_timeout 10s;
           access_log off;
         '';
-        locations."/".return = "404";
-        locations."= /webhooks/test" = {
+        locations = {
+          "/".return = "404";
+        }
+        // lib.genAttrs [ "= /webhooks/test" "= /webhooks/github" ] (_: {
           proxyPass = "http://127.0.0.1:9468";
           extraConfig = ''
             if ($request_method != POST) { return 405; }
@@ -71,7 +73,7 @@ in
             proxy_send_timeout 15s;
             proxy_next_upstream off;
           '';
-        };
+        });
       };
       ${workerDomain} = {
         forceSSL = true;
