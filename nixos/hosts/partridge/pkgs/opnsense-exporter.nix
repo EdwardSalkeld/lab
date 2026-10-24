@@ -7,13 +7,13 @@
 }:
 buildGo127Module rec {
   pname = "opnsense-exporter";
-  version = "0.0.17";
+  version = "0.0.19";
 
   src = fetchFromGitHub {
     owner = "AthennaMind";
     repo = "opnsense-exporter";
     rev = "v${version}";
-    hash = "sha256-3J33H2k8W5K02YCqzRp7vLJoy26Qpcf60lvhKifwAqw=";
+    hash = "sha256-5N8C3ji2V9WRnC6y22kaNtwLlol8BBJXAIiEX/xkEcQ=";
   };
 
   # The upstream repo vendors its dependencies.
