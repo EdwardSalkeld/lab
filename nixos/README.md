@@ -303,6 +303,49 @@ sudo systemctl start restic-backups-partridge-postgres.service
 sudo restic-partridge-postgres snapshots
 ```
 
+## Kite Data Backups
+
+Kite owns the off-site archive for its data disk. Native NixOS Restic archives
+`/data/full` to the existing Backblaze B2 repository using the encrypted
+`nixos/hosts/kite/secrets/kite-backup.yaml` credentials imported from Fourth. This
+implements the off-site part of [house#120](https://github.com/brokensbone/house/issues/120).
+Fourth remains outside Lab control and continues to pull the local recovery
+copy itself; Kite never opens a connection to Fourth.
+
+The weekly schedule is unchanged: backup Monday 06:30, prune Tuesday 04:00,
+and a check reading 10% of repository data Wednesday 05:15, all Europe/London.
+Retention remains three latest, seven daily, five weekly and twelve monthly
+snapshots. The `*.tmp` exclusion and `dataplan` tag are preserved.
+
+The backup unit privately bind-mounts `/data/full` read-only at `/mnt/volumes`
+and keeps the logical snapshot host `docker`. Those are the legacy archive's
+identity, not the machine running the job. Keeping them allows automatic
+parent selection and retention to continue across the move. Restic's
+repository-wide content deduplication also works across hosts; the first Kite
+run may reread files because the source disk's inode/ctime metadata differs
+from Fourth's rsynced copy. It uploads only content absent from the repository.
+The unit requires the `/data` mount and never initializes a new repository.
+
+Pruning is scoped to that host/path/tag and skips until Kite has completed a
+successful backup. Its timer has no catch-up run during initial activation.
+Grafana includes both Kite's journal and Fourth's historical container logs
+through the hand-off; rsync monitoring remains unchanged.
+
+After deployment, run and verify the first backup before retiring Fourth's
+`backup`, `prune` and `check` containers. Check the snapshot and retention plan,
+restore a small file, and confirm the completion marker reaches Loki:
+
+```sh
+sudo systemctl start restic-backups-kite-full.service
+sudo restic-kite-full snapshots --host docker --path /mnt/volumes --tag dataplan
+sudo restic-kite-full forget --dry-run --host docker --path /mnt/volumes --tag dataplan \
+  --keep-last 3 --keep-daily 7 --keep-weekly 5 --keep-monthly 12
+```
+
+Keep Fourth's rsync pull running; moving the local copy transport is a separate
+part of house#120. Restoring the old containers with the preserved Fourth
+credentials remains the rollback path until the migration is verified.
+
 ## Loki on `partridge`
 
 Loki runs in single-node filesystem mode on port `3100`, backed by a dedicated

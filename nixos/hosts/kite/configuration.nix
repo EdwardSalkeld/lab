@@ -6,6 +6,7 @@
     ./web.nix
     ./photoview.nix
     ./mcm.nix
+    ./backups.nix
   ];
 
   networking.hostName = "kite";
@@ -53,6 +54,9 @@
   };
 
   alcachofa.kite.mcm.enable = true;
+
+  # Own the off-site archive; Fourth still pulls the local recovery copy.
+  alcachofa.kite.backups.enable = true;
 
   systemd.tmpfiles.rules = [
     "d /var/lib/jellyfin/cache 0750 jellyfin jellyfin -"
