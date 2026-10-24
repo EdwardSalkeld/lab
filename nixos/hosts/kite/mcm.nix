@@ -1,4 +1,9 @@
-{ config, lib, mediaCollectionManagerPackages, ... }:
+{
+  config,
+  lib,
+  mediaCollectionManagerPackages,
+  ...
+}:
 
 let
   cfg = config.alcachofa.kite.mcm;
@@ -23,6 +28,11 @@ let
       # The migrated Beets DB still stores this historical prefix. MCM translates
       # it only while building its read-only MPD track cache; it never exposes it.
       MCM_LEGACY_MUSIC_DIR = "/home/edward/.config/beets/library";
+      # The MCM worker owns the weekday radio handoff: load the dated programme at 07:00
+      # and start the untouched queue at 09:00, both in Europe/London.
+      MCM_MPD_HOST = "127.0.0.1";
+      MCM_NAVIDROME_URL = "https://navidrome.alcachofa.faith";
+      MCM_NAVIDROME_USERNAME = "billy";
       MCM_IMPORT_INBOX_PATH = cfg.importInbox;
       MCM_MUSIC_DIR = cfg.musicDir;
       MCM_TV_ROOT = cfg.tvRoot;
@@ -96,6 +106,13 @@ in
       mode = "0400";
     };
     sops.secrets = {
+      "mcm/navidrome_password" = {
+        sopsFile = ./secrets/mcm-navidrome.yaml;
+        key = "password";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
       "wantlist/spotify_client_id" = {
         sopsFile = ./secrets/wantlist.yaml;
         key = "spotify_client_id";
@@ -166,6 +183,13 @@ in
         group = "data";
         mode = "0400";
       };
+      "wantlist/typesafe_api_key" = {
+        sopsFile = ./secrets/wantlist.yaml;
+        key = "typesafe_api_key";
+        owner = "edward";
+        group = "data";
+        mode = "0400";
+      };
     };
     sops.templates."mcm.env" = {
       owner = "edward";
@@ -173,6 +197,7 @@ in
       mode = "0400";
       content = ''
         MCM_DATABASE_URL=${config.sops.placeholder."wantlist/database_url"}
+        MCM_NAVIDROME_PASSWORD=${config.sops.placeholder."mcm/navidrome_password"}
         MCM_SPOTIFY_CLIENT_ID=${config.sops.placeholder."wantlist/spotify_client_id"}
         MCM_SPOTIFY_CLIENT_SECRET=${config.sops.placeholder."wantlist/spotify_client_secret"}
         MCM_SPOTIFY_REDIRECT_URI=${config.sops.placeholder."wantlist/spotify_redirect_uri"}
@@ -183,6 +208,7 @@ in
         MCM_TRANSMISSION_SSH_USER=${config.sops.placeholder."wantlist/transmission_ssh_user"}
         MCM_TRANSMISSION_SSH_KEY=${config.sops.secrets."wantlist/transmission_ssh_key".path}
         MCM_NOTIFICATION_WEBHOOK_URL=${config.sops.placeholder."wantlist/notification_webhook_url"}
+        MCM_TYPESAFE_API_KEY=${config.sops.placeholder."wantlist/typesafe_api_key"}
       '';
     };
 

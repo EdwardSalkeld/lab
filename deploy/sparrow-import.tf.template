@@ -1,0 +1,11 @@
+# Sparrow (CT 76300 on sol) was explicitly retired and deleted out of band.
+# Forget its old state without asking the provider to delete an absent CT.
+# Keep outside terraform/: tfsec cannot parse Terraform state migration blocks.
+# Retain the old filename for dispatchers executing plan scripts from main.
+removed {
+  from = proxmox_virtual_environment_container.sparrow
+
+  lifecycle {
+    destroy = false
+  }
+}

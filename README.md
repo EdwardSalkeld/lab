@@ -9,6 +9,11 @@ Proxmox hosts:
 - `sol`: primary Proxmox host
 - `luna`: standalone Proxmox host
 
+Luna's host-side, non-NixOS network recovery watchdog is maintained in
+[`proxmox/luna/network-watchdog`](proxmox/luna/network-watchdog/). It is a
+guarded manual install because the Proxmox host itself is Debian, not one of
+this repository's NixOS configurations.
+
 Repo-managed NixOS VMs:
 
 - `partridge` on `sol`: monitoring, Grafana, Loki, and PostgreSQL
@@ -25,5 +30,7 @@ Start here:
 - `AGENTS.md` for current operational notes.
 - `terraform/README.md` for Terraform commands.
 - `nixos/README.md` for NixOS host configuration and deploy commands.
+- [Chatting on Lab](docs/chatting.md) for runtime upgrades, services, retention and webhook ingress.
+- `scripts/magpie-codex-reauth.sh` to restore chatting's Codex login on magpie.
 - `docs/wren-playbook.md` for the reusable pattern to recreate a disposable
   zero-touch Debian VM from scratch.

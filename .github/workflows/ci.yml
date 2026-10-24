@@ -31,12 +31,16 @@ jobs:
               - 'flake.nix'
               - 'nixos/**'
               - 'tools/**'
+              - 'scripts/bootstrap-ci-deploy.sh'
+              - 'scripts/check-ci-deploy.py'
             nix_shared:
               - '.github/workflows/**'
               - '.sops.yaml'
               - 'flake.nix'
               - 'nixos/modules/**'
               - 'tools/**'
+              - 'scripts/bootstrap-ci-deploy.sh'
+              - 'scripts/check-ci-deploy.py'
             nix_lock:
               - 'flake.lock'
             nix_kite:
@@ -203,6 +207,8 @@ jobs:
             fallback = true
       - name: flake check
         run: nix flake check --no-update-lock-file
+      - name: deployment refusal and recovery checks
+        run: python3 scripts/check-ci-deploy.py
 
   nixos_build:
     name: nixos-build (${{ matrix.host }})
@@ -226,14 +232,12 @@ jobs:
             # fall back to building from source if a substitute still fails.
             http2 = false
             fallback = true
-      - name: restore Kite Nix store cache
-        if: matrix.host == 'kite'
-        uses: nix-community/cache-nix-action@v7
+      - name: configure read-only Lab cache
+        uses: cachix/cachix-action@v17
         with:
-          primary-key: nix-kite-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-kite-${{ runner.os }}-
-          # PRs consume the cache but do not populate the shared main cache.
-          save: false
+          name: ${{ vars.LAB_NIX_CACHE_NAME }}
+          # Deploy publishes the shared cache; PRs only consume it.
+          skipPush: true
       - name: build ${{ matrix.host }}
         run: nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel -o /tmp/pr-system
       - name: build main ${{ matrix.host }}

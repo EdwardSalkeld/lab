@@ -18,6 +18,22 @@
     "chatting/smtp_password".key = "smtp_password";
     "chatting/telegram_bot_token".key = "telegram_bot_token";
     "chatting/memory_secret_passphrase".key = "memory_secret_passphrase";
+    "chatting/github_webhook_secret" = {
+      sopsFile = ./secrets/chatting-github.json;
+      key = "github_webhook_secret";
+    };
+    # Personal mailbox triage. Its own file, like the Jev key: adding a value
+    # to an existing sops file needs its data key, and so the private key of a
+    # recipient, while a new file needs only their public keys. Ticketing is
+    # off until linear_team_id is set, so it needs no key here yet.
+    "chatting/personal_jmap_token" = {
+      sopsFile = ./secrets/chatting-personal.json;
+      key = "personal_jmap_token";
+    };
+    "chatting/typesafe_api_key" = {
+      sopsFile = ./secrets/chatting-jev.json;
+      key = "typesafe_api_key";
+    };
   };
 
   sops.templates."chatting-handler.env" = {
@@ -28,6 +44,8 @@
       CHATTING_IMAP_PASSWORD=${config.sops.placeholder."chatting/imap_password"}
       CHATTING_SMTP_PASSWORD=${config.sops.placeholder."chatting/smtp_password"}
       CHATTING_TELEGRAM_BOT_TOKEN=${config.sops.placeholder."chatting/telegram_bot_token"}
+      CHATTING_PERSONAL_JMAP_TOKEN=${config.sops.placeholder."chatting/personal_jmap_token"}
+      CHATTING_GITHUB_WEBHOOK_SECRET=${config.sops.placeholder."chatting/github_webhook_secret"}
     '';
   };
 
@@ -37,6 +55,7 @@
     mode = "0400";
     content = ''
       BILLY_MEMORY_SECRET_PASSPHRASE=${config.sops.placeholder."chatting/memory_secret_passphrase"}
+      TYPESAFE_API_KEY=${config.sops.placeholder."chatting/typesafe_api_key"}
     '';
   };
 }

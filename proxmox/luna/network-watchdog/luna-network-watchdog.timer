@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Luna network recovery watchdog every 15 seconds
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15s
+AccuracySec=1s
+Persistent=false
+Unit=luna-network-watchdog.service
+
+[Install]
+WantedBy=timers.target

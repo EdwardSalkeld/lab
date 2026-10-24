@@ -20,9 +20,14 @@
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
 
+  # The labelled ext4 root is the final partition on the magpie-root disk.
+  # Consume future Proxmox disk expansions on boot, then grow the filesystem.
+  boot.growPartition = true;
+
   fileSystems."/" = {
     device = "/dev/disk/by-label/nixos";
     fsType = "ext4";
+    autoResize = true;
   };
 
   fileSystems."/boot" = {
@@ -43,8 +48,16 @@
     ];
   };
 
+  # Keep per-item workspaces on the dedicated workspace disk while giving
+  # them a short, visible path alongside the shared workspace.
+  fileSystems."/srv/chatting/workspaces" = {
+    device = "/srv/chatting/workspace/workspaces";
+    fsType = "none";
+    options = [ "bind" "x-systemd.requires-mounts-for=/srv/chatting/workspace" ];
+  };
+
   # Dedicated disk for Docker/CI storage (terraform magpie scsi2, serial
-  # `magpie-ci`), kept off the 24 GB OS root so CI image churn can't fill it.
+  # `magpie-ci`), kept off the OS root so CI image churn can't fill it.
   # Formatted once with `mkfs.ext4 -L dockerdata`; see forgejo-runner.nix.
   # nofail so magpie still boots before the disk is attached/formatted — Docker
   # is only switched on once the runner's token secret exists.

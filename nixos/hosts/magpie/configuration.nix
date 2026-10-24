@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, codexPackage, ... }:
 
 {
   imports = [
@@ -15,7 +15,7 @@
   networking.networkmanager.enable = true;
   alcachofa.journalToLoki.enable = true;
 
-  # Magpie's small root disk fills quickly with Nix build/store churn from the
+  # Magpie's root disk fills quickly with Nix build/store churn from the
   # worker. Remove every unreachable store path at the daily run rather than
   # retaining it for 14 days; only live generations and paths remain.
   nix.gc = {
@@ -25,8 +25,8 @@
 
   # The worker can create several GiB of dead build outputs between daily GC
   # runs. Check frequently, but only collect when root has crossed the
-  # high-water mark, preserving useful build cache while retaining about 6 GiB
-  # of headroom on the 24 GiB root filesystem.
+  # 75% high-water mark, preserving useful build cache while keeping headroom
+  # proportional to the root filesystem's size.
   systemd.services.nix-gc-on-root-pressure = {
     description = "Collect unreachable Nix paths when Magpie root is under pressure";
     path = with pkgs; [ coreutils gawk nix ];
@@ -85,6 +85,13 @@
     "chatting-handler.service"
     "chatting-worker.service"
   ];
+  # Type=simple can be active while the worker is still opening supervisor
+  # sockets. Check the API that starts only after supervisor discovery.
+  alcachofa.remoteDeploy.postSwitchHttpChecks = [
+    "http://127.0.0.1:9465/api/items"
+    "http://127.0.0.1:9464/metrics"
+    "http://127.0.0.1:9877/metrics"
+  ];
 
   users.users.edward = {
     extraGroups = [
@@ -92,8 +99,9 @@
       "systemd-journal"
       "wheel"
     ];
-    packages = with pkgs; [
-      tree
+    packages = [
+      codexPackage
+      pkgs.tree
     ];
   };
 
@@ -124,6 +132,10 @@
     "d /srv/chatting 0755 root root -"
     "d /srv/chatting/repo 0755 root root -"
     "d /srv/chatting/workspace 0750 worker worker -"
+    # The backing directory lives on the workspace disk and is bind-mounted
+    # at /srv/chatting/workspaces for per-item workspaces.
+    "d /srv/chatting/workspace/workspaces 0750 worker worker -"
+    "d /srv/chatting/workspaces 0750 worker worker -"
     # Shared drop point for Telegram attachments: the handler downloads into
     # it, the worker (a different OS user) reads them back. 0755 so the worker
     # can traverse; handler owns it so it can write. Pre-created here rather

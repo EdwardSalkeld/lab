@@ -120,6 +120,7 @@ in
     description = "FreshRSS SQLite backup";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
+    path = [ pkgs.gzip ];
     environment.DATA_PATH = dataDir;
     script = ''
       config_file=${dataDir}/config.php
