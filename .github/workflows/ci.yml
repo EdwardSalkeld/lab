@@ -33,6 +33,7 @@ jobs:
               - 'tools/**'
               - 'scripts/bootstrap-ci-deploy.sh'
               - 'scripts/check-ci-deploy.py'
+              - 'scripts/check-kite-backups.py'
             nix_shared:
               - '.github/workflows/**'
               - '.sops.yaml'
@@ -41,6 +42,7 @@ jobs:
               - 'tools/**'
               - 'scripts/bootstrap-ci-deploy.sh'
               - 'scripts/check-ci-deploy.py'
+              - 'scripts/check-kite-backups.py'
             nix_lock:
               - 'flake.lock'
             nix_kite:
@@ -209,6 +211,8 @@ jobs:
         run: nix flake check --no-update-lock-file
       - name: deployment refusal and recovery checks
         run: python3 scripts/check-ci-deploy.py
+      - name: Kite backup continuity and mount guards
+        run: python3 scripts/check-kite-backups.py
 
   nixos_build:
     name: nixos-build (${{ matrix.host }})

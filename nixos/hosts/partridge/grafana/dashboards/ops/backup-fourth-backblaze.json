@@ -53,6 +53,16 @@
           "expr": "{host=\"fourth\", source=\"docker\", container_name=\"/docker-backup-1\"} |= `Finished backup at`",
           "queryType": "range",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "ce6j6e2q9rapsa"
+          },
+          "editorMode": "builder",
+          "expr": "{host=\"kite\", source=\"journal\", systemd_unit=\"restic-backups-kite-full.service\"} |= `Finished backup at`",
+          "queryType": "range",
+          "refId": "KiteA"
         }
       ],
       "title": "Last finished",
@@ -90,6 +100,16 @@
           "expr": "{host=\"fourth\", source=\"docker\", container_name=\"/docker-backup-1\"} |= ``",
           "queryType": "range",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "ce6j6e2q9rapsa"
+          },
+          "editorMode": "builder",
+          "expr": "{host=\"kite\", source=\"journal\", systemd_unit=\"restic-backups-kite-full.service\"} |= ``",
+          "queryType": "range",
+          "refId": "KiteA"
         }
       ],
       "title": "Full Logs",
@@ -157,6 +177,16 @@
           "expr": "{host=\"fourth\", source=\"docker\", container_name=\"/docker-backup-1\"} |= `Finished backup at` | pattern `Finished backup at <bk_time> after <bk_dur> seconds` ",
           "queryType": "range",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "ce6j6e2q9rapsa"
+          },
+          "editorMode": "code",
+          "expr": "{host=\"kite\", source=\"journal\", systemd_unit=\"restic-backups-kite-full.service\"} |= `Finished backup at` | pattern `Finished backup at <bk_time> after <bk_dur> seconds` ",
+          "queryType": "range",
+          "refId": "KiteA"
         }
       ],
       "title": "Backup Duration",
@@ -258,6 +288,16 @@
           "expr": "{host=\"fourth\", source=\"docker\", container_name=\"/docker-backup-1\"} |= `Finished backup at` | pattern `Finished backup at <bk_time> after <bk_dur> seconds` ",
           "queryType": "range",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "ce6j6e2q9rapsa"
+          },
+          "editorMode": "code",
+          "expr": "{host=\"kite\", source=\"journal\", systemd_unit=\"restic-backups-kite-full.service\"} |= `Finished backup at` | pattern `Finished backup at <bk_time> after <bk_dur> seconds` ",
+          "queryType": "range",
+          "refId": "KiteA"
         }
       ],
       "title": "Backup Dates",
@@ -307,7 +347,7 @@
   "timeRangeUpdatedDuringEditOrView": false,
   "timepicker": {},
   "timezone": "browser",
-  "title": "Backup (Fourth->Backblaze)",
+  "title": "Backup (Kite->Backblaze)",
   "uid": "ops-backup-fourth-backblaze",
   "version": 1,
   "weekStart": ""

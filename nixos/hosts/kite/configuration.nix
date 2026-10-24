@@ -55,10 +55,8 @@
 
   alcachofa.kite.mcm.enable = true;
 
-  # house#120 migration preparation. Keep this off until the encrypted
-  # Restic/B2 secret has been added; the activation sequence is documented in
-  # nixos/README.md. Fourth continues to pull its local recovery copy.
-  alcachofa.kite.backups.enable = false;
+  # Own the off-site archive; Fourth still pulls the local recovery copy.
+  alcachofa.kite.backups.enable = true;
 
   systemd.tmpfiles.rules = [
     "d /var/lib/jellyfin/cache 0750 jellyfin jellyfin -"
