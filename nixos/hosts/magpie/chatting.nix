@@ -130,7 +130,7 @@ in
       pkgs.git
       pkgs.nodejs
       pkgs.openssh
-      pkgs.python3
+      pkgs.python314
       pkgs.ripgrep
       pkgs.rsync
       pkgs.sqlite

@@ -55,13 +55,20 @@
         subPackages = [ "cmd/chatting-handler" ];
         doCheck = false;
       };
-      chattingWorkerPython = pkgs.python3.withPackages (ps: [ ps.croniter ]);
+      chattingWorkerPython = pkgs.python314.withPackages (ps: [ ps.croniter ]);
       chattingWorker = pkgs.writeShellApplication {
         name = "chatting-worker";
         runtimeInputs = [ chattingWorkerPython ];
         text = ''
           export PYTHONPATH=${chattingSrc}''${PYTHONPATH:+:$PYTHONPATH}
           exec python -m app.worker.main "$@"
+        '';
+        derivationArgs.postCheck = ''
+          # Check the app with the interpreter shipped by this wrapper before
+          # a system switch can install it. Shell checks alone miss Python errors.
+          export PYTHONPYCACHEPREFIX="$TMPDIR/pycache"
+          ${chattingWorkerPython}/bin/python -m compileall -q ${chattingSrc}/app
+          "$target" --help > /dev/null
         '';
       };
       bbmbServer = pkgs.buildGo127Module {

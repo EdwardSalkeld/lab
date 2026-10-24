@@ -22,17 +22,20 @@ the `chatting` flake input. Merging and switching that PR is the deploy.
 
 ### Python runtime upgrades
 
-Chatting PR #319 moves its development and CI baseline to Python 3.14.x and
-requires Python 3.14 or newer. The following steps prepare Lab for that version;
-this documentation change does not change the installed runtime.
+Chatting requires Python 3.14 or newer. Lab selects Python 3.14 explicitly for
+both the worker wrapper and the worker service's helper commands. The worker
+package build compiles the app and runs the installed wrapper with `--help`,
+so incompatible syntax or missing startup dependencies fail before deployment.
 
-Lab selects its interpreter independently of these files. Bumping only the
-`chatting` flake input does not upgrade Python. To deploy on 3.14.x:
+Lab selects its interpreter independently of Chatting's project configuration.
+Bumping only the `chatting` flake input does not upgrade Python. When upgrading
+the interpreter in future:
 
 - In lab's `flake.nix`, use
-  `chattingWorkerPython = pkgs.python314.withPackages (ps: [ ps.croniter ]);`.
+  update `chattingWorkerPython`, currently
+  `pkgs.python314.withPackages (ps: [ ps.croniter ]);`.
 - In `nixos/hosts/magpie/chatting.nix`, select `pkgs.python314` in the worker
-  service's `path` as well, keeping executor helper commands on the same minor
+  service's `path` to match, keeping executor helper commands on the same minor
   version. Changing Magpie's `environment.systemPackages` entry is optional for
   interactive shells.
 - Build `.#chatting-worker` and Magpie's system configuration, then deploy
