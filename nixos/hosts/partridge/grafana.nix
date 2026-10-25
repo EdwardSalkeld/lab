@@ -5,6 +5,7 @@ let
   grafanaPort = 3001;
   octopusStaleDataThresholdDays = 4;
   alertsContactPointName = "Alcachofa Alerts";
+  backupEventsContactPointName = "Alcachofa Backup Events";
   alertsTelegramChatId = "-5594899826";
   grafanaFailureNotify = pkgs.writeShellScript "grafana-failure-notify" ''
     set -euo pipefail
@@ -842,19 +843,30 @@ let
     service = "backup";
     host = "kite";
   };
-  backblazeDurationAlert = mkLokiThresholdAlert {
+  backblazeDurationAlert = (mkLokiThresholdAlert {
     uid = "fourth-backblaze-duration";
     title = "Kite to Backblaze backup duration is high";
-    expr = ''max(max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur [8d]) or max_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur [8d]))'';
+    # Preserve completion time as the run identity. A short event window prevents
+    # old slow runs from firing for days; separate groups notify for adjacent runs.
+    expr = ''max by (bk_time) (max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]) or max_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]))'';
     threshold = 600;
-    for = "5m";
+    for = "0s";
     summary = "Kite to Backblaze backup exceeded ten minutes";
-    description = "An off-site backup in the last eight days took more than 600 seconds, including the legacy Fourth history during migration.";
+    description = ''The off-site backup completed at {{ $labels.bk_time }} took {{ $values.B.Value }} seconds (threshold: 600 seconds).'';
     severity = "warning";
     panelId = 3;
     dashboardUid = "ops-backup-fourth-backblaze";
     service = "backup";
     host = "kite";
+  }) // {
+    notification_settings = {
+      receiver = backupEventsContactPointName;
+      group_by = [ "grafana_folder" "alertname" "bk_time" ];
+      group_wait = "0s";
+      group_interval = "1m";
+      # Longer than the 15m event lifetime, including missing-series eviction.
+      repeat_interval = "24h";
+    };
   };
   rsyncRecencyAlert = {
     uid = "fourth-rsync-recency";
@@ -1386,8 +1398,8 @@ in
 
     provision.alerting.contactPoints.settings = {
       apiVersion = 1;
-      contactPoints = [
-        {
+      contactPoints = let
+        standard = {
           orgId = 1;
           name = alertsContactPointName;
           receivers = [
@@ -1416,6 +1428,17 @@ in
               };
             }
           ];
+        };
+      in [
+        standard
+        {
+          orgId = 1;
+          name = backupEventsContactPointName;
+          # Event expiry is not a recovery; send only the firing notification.
+          receivers = builtins.map (receiver: receiver // {
+            uid = "${receiver.uid}-backup-events";
+            disableResolveMessage = true;
+          }) standard.receivers;
         }
       ];
     };
