@@ -118,7 +118,7 @@ variable "magpie_root_disk_size" {
 variable "magpie_workspace_disk_size" {
   description = "Workspace disk size for magpie in GiB"
   type        = number
-  default     = 5
+  default     = 15
 }
 
 variable "magpie_ci_disk_size" {

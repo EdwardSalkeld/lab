@@ -42,6 +42,7 @@
   fileSystems."/srv/chatting/workspace" = {
     device = "/dev/disk/by-label/workspace";
     fsType = "ext4";
+    autoResize = true;
     options = [
       "nofail"
       "x-systemd.device-timeout=1s"
