@@ -38,7 +38,20 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, sops-nix, octopus-dl, linear-export, exercise-tracker, chatting, media-collection-manager, bbmb, ... }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixpkgs-unstable,
+      sops-nix,
+      octopus-dl,
+      linear-export,
+      exercise-tracker,
+      chatting,
+      media-collection-manager,
+      bbmb,
+      ...
+    }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -160,73 +173,75 @@
           );
         in
         {
-          bitwarden-mirror-go-tests = pkgs.runCommand "bitwarden-mirror-go-tests"
-            {
-              nativeBuildInputs = [ pkgs.go ];
-              src = ./tools/bitwarden-mirror;
-            }
-            ''
-              cp -R "$src" source
-              chmod -R u+w source
-              cd source
-              export HOME="$TMPDIR"
-              export GOCACHE="$TMPDIR/go-cache"
-              go test ./...
-              touch "$out"
-            '';
+          bitwarden-mirror-go-tests =
+            pkgs.runCommand "bitwarden-mirror-go-tests"
+              {
+                nativeBuildInputs = [ pkgs.go ];
+                src = ./tools/bitwarden-mirror;
+              }
+              ''
+                cp -R "$src" source
+                chmod -R u+w source
+                cd source
+                export HOME="$TMPDIR"
+                export GOCACHE="$TMPDIR/go-cache"
+                go test ./...
+                touch "$out"
+              '';
 
-          grafana-alerting-lint = pkgs.runCommand "grafana-alerting-lint"
-            {
-              nativeBuildInputs = [
-                pkgs.go
-                partridgeConfig.services.grafana.package
-              ];
-              src = ./tools/grafana-alerting-lint;
-              templatesJson = partridgeGrafanaTemplates;
-              contactPointsJson = partridgeGrafanaContactPoints;
-            }
-            ''
-              cp -R "$src" source
-              chmod -R u+w source
-              cd source
-              export HOME="$TMPDIR"
-              export GOCACHE="$TMPDIR/go-cache"
-              go run . "$templatesJson" "$contactPointsJson"
+          grafana-alerting-lint =
+            pkgs.runCommand "grafana-alerting-lint"
+              {
+                nativeBuildInputs = [
+                  pkgs.go
+                  partridgeConfig.services.grafana.package
+                ];
+                src = ./tools/grafana-alerting-lint;
+                templatesJson = partridgeGrafanaTemplates;
+                contactPointsJson = partridgeGrafanaContactPoints;
+              }
+              ''
+                cp -R "$src" source
+                chmod -R u+w source
+                cd source
+                export HOME="$TMPDIR"
+                export GOCACHE="$TMPDIR/go-cache"
+                go run . "$templatesJson" "$contactPointsJson"
 
-              mkdir -p grafana-smoke/provisioning/alerting
-              mkdir -p grafana-smoke/provisioning/dashboards
-              mkdir -p grafana-smoke/provisioning/datasources
-              mkdir -p grafana-smoke/provisioning/plugins
-              mkdir -p grafana-smoke/data
-              mkdir -p grafana-smoke/logs
-              mkdir -p grafana-smoke/plugins
-              cp "$templatesJson" grafana-smoke/provisioning/alerting/templates.json
-              cp "$contactPointsJson" grafana-smoke/provisioning/alerting/contactpoints.json
+                mkdir -p grafana-smoke/provisioning/alerting
+                mkdir -p grafana-smoke/provisioning/dashboards
+                mkdir -p grafana-smoke/provisioning/datasources
+                mkdir -p grafana-smoke/provisioning/plugins
+                mkdir -p grafana-smoke/data
+                mkdir -p grafana-smoke/logs
+                mkdir -p grafana-smoke/plugins
+                cp "$templatesJson" grafana-smoke/provisioning/alerting/templates.json
+                cp "$contactPointsJson" grafana-smoke/provisioning/alerting/contactpoints.json
 
-              export GF_PATHS_PROVISIONING="$PWD/grafana-smoke/provisioning"
-              export GF_PATHS_DATA="$PWD/grafana-smoke/data"
-              export GF_PATHS_LOGS="$PWD/grafana-smoke/logs"
-              export GF_PATHS_PLUGINS="$PWD/grafana-smoke/plugins"
-              export GRAFANA_TELEGRAM_BOT_TOKEN=dummy
+                export GF_PATHS_PROVISIONING="$PWD/grafana-smoke/provisioning"
+                export GF_PATHS_DATA="$PWD/grafana-smoke/data"
+                export GF_PATHS_LOGS="$PWD/grafana-smoke/logs"
+                export GF_PATHS_PLUGINS="$PWD/grafana-smoke/plugins"
+                export GRAFANA_TELEGRAM_BOT_TOKEN=dummy
 
-              set +e
-              ${pkgs.coreutils}/bin/timeout 20s \
-                ${partridgeConfig.services.grafana.package}/bin/grafana server \
-                --homepath ${partridgeConfig.services.grafana.package}/share/grafana \
-                --config ${partridgeConfig.services.grafana.package}/share/grafana/conf/defaults.ini \
-                > grafana-smoke/stdout.log 2> grafana-smoke/stderr.log
-              status=$?
-              set -e
+                set +e
+                ${pkgs.coreutils}/bin/timeout 20s \
+                  ${partridgeConfig.services.grafana.package}/bin/grafana server \
+                  --homepath ${partridgeConfig.services.grafana.package}/share/grafana \
+                  --config ${partridgeConfig.services.grafana.package}/share/grafana/conf/defaults.ini \
+                  > grafana-smoke/stdout.log 2> grafana-smoke/stderr.log
+                status=$?
+                set -e
 
-              if [ "$status" -ne 124 ]; then
-                cat grafana-smoke/stdout.log
-                cat grafana-smoke/stderr.log
-                echo "Grafana alerting smoke test failed with exit status $status" >&2
-                exit 1
-              fi
+                if [ "$status" -ne 124 ]; then
+                  cat grafana-smoke/stdout.log
+                  cat grafana-smoke/stderr.log
+                  echo "Grafana alerting smoke test failed with exit status $status" >&2
+                  exit 1
+                fi
 
-              touch "$out"
-            '';
+                touch "$out"
+              '';
         };
 
       nixosConfigurations = {

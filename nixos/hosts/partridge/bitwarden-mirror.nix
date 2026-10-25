@@ -1,4 +1,9 @@
-{ config, pkgs, bitwardenMirrorPackage, ... }:
+{
+  config,
+  pkgs,
+  bitwardenMirrorPackage,
+  ...
+}:
 
 let
   user = "bitwarden-mirror";

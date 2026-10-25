@@ -166,7 +166,10 @@ in
       PrivateTmp = true;
       ProtectHome = true;
       ProtectSystem = "strict";
-      ReadWritePaths = [ dataDir backupDir ];
+      ReadWritePaths = [
+        dataDir
+        backupDir
+      ];
     };
   };
 

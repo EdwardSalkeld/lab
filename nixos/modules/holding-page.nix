@@ -3,7 +3,12 @@
 # on a default nginx page gives no clue which machine answered.
 #
 # Sourcing and preparing a plate for a new host: docs/host-landing-pages.md
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.alcachofa.holdingPage;

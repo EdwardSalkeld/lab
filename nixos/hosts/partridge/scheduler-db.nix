@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   dbName = "scheduler";
@@ -54,11 +59,11 @@ in
       Group = "postgres";
     };
     script = ''
-      writer_password="$(tr -d '\n' < ${writerPasswordFile})"
+            writer_password="$(tr -d '\n' < ${writerPasswordFile})"
 
-      ${psql} -v ON_ERROR_STOP=1 --set=writer_password="$writer_password" --dbname=postgres <<'SQL'
-      ALTER ROLE ${writerRole} WITH LOGIN PASSWORD :'writer_password';
-SQL
+            ${psql} -v ON_ERROR_STOP=1 --set=writer_password="$writer_password" --dbname=postgres <<'SQL'
+            ALTER ROLE ${writerRole} WITH LOGIN PASSWORD :'writer_password';
+      SQL
     '';
   };
 }

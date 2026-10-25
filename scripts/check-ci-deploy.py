@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise deployment refusal and recovery paths without changing a host."""
+
 import json
 import os
 import re
@@ -13,11 +14,16 @@ def output(*args):
 
 
 root = Path(__file__).resolve().parents[1]
-context = json.loads(output(
-    "nix", "eval", "--json",
-    f"{root}#nixosConfigurations.partridge.config.users.users.root.openssh.authorizedKeys.keys",
-    "--apply", "keys: builtins.getContext (builtins.head keys)",
-))
+context = json.loads(
+    output(
+        "nix",
+        "eval",
+        "--json",
+        f"{root}#nixosConfigurations.partridge.config.users.users.root.openssh.authorizedKeys.keys",
+        "--apply",
+        "keys: builtins.getContext (builtins.head keys)",
+    )
+)
 remote_drv = next(iter(context))
 
 
@@ -36,10 +42,14 @@ bootstrap = (root / "scripts/bootstrap-ci-deploy.sh").read_text()
 expected = "/nix/store/" + "a" * 32 + "-nixos-system-partridge"
 previous = "/nix/store/" + "b" * 32 + "-nixos-system-partridge"
 sha = "c" * 40
-config = json.loads(output(
-    "nix", "eval", "--json",
-    f"{root}#nixosConfigurations.partridge.config.alcachofa.remoteDeploy",
-))
+config = json.loads(
+    output(
+        "nix",
+        "eval",
+        "--json",
+        f"{root}#nixosConfigurations.partridge.config.alcachofa.remoteDeploy",
+    )
+)
 cache = config["cacheName"]
 key = config["cachePublicKey"]
 
@@ -47,7 +57,7 @@ with tempfile.TemporaryDirectory(prefix="check-ci-deploy-") as directory:
     temp = Path(directory)
     log = temp / "calls"
     stub = temp / "stub"
-    stub.write_text('''#!/usr/bin/env bash
+    stub.write_text("""#!/usr/bin/env bash
 name=${0##*/}
 printf '%s' "$name" >> "$TEST_LOG"
 printf ' %s' "$@" >> "$TEST_LOG"
@@ -86,24 +96,44 @@ case "$name" in
     echo "$TEST_PREVIOUS"
     ;;
 esac
-''')
+""")
     stub.chmod(0o755)
-    for name in ("nix", "nix-store", "nix-env", "nixos-rebuild", "systemctl", "curl", "flock", "activate", "restore", "hostname", "readlink"):
+    for name in (
+        "nix",
+        "nix-store",
+        "nix-env",
+        "nixos-rebuild",
+        "systemctl",
+        "curl",
+        "flock",
+        "activate",
+        "restore",
+        "hostname",
+        "readlink",
+    ):
         (temp / name).symlink_to(stub)
     scripts = {}
     for name, text in (("switch", switch), ("bootstrap", bootstrap)):
         text = text.replace("/run/current-system/sw/bin/", f"{temp}/")
-        text = text.replace('"$actual_path/bin/switch-to-configuration"', f'"{temp}/activate"')
-        text = text.replace('"$previous/bin/switch-to-configuration"', f'"{temp}/activate"')
+        text = text.replace(
+            '"$actual_path/bin/switch-to-configuration"', f'"{temp}/activate"'
+        )
+        text = text.replace(
+            '"$previous/bin/switch-to-configuration"', f'"{temp}/activate"'
+        )
         if name == "switch":
             # Exercise HTTP readiness even though Partridge has no endpoints.
-            text = text.replace("http_checks=()", "http_checks=(http://127.0.0.1:9465/api/items)")
+            text = text.replace(
+                "http_checks=()", "http_checks=(http://127.0.0.1:9465/api/items)"
+            )
             text = re.sub(r"/nix/store/[^/]+/bin/curl", str(temp / "curl"), text)
             text = text.replace(f'"{temp}/activate"', f'"{temp}/restore"')
             text = text.replace('"$previous/sw/bin/nix-env"', f'"{temp}/nix-env"')
             text = text.replace('"$previous/sw/bin/systemctl"', f'"{temp}/systemctl"')
-            text = text.replace("/run/lab-switch-recovery.XXXXXX", str(temp / "recovery.XXXXXX"))
-        text = text.replace('"$EUID" != 0', '0 != 0')
+            text = text.replace(
+                "/run/lab-switch-recovery.XXXXXX", str(temp / "recovery.XXXXXX")
+            )
+        text = text.replace('"$EUID" != 0', "0 != 0")
         text = text.replace("/run/lock/lab-bootstrap.lock", str(temp / "lock"))
         text = text.replace("sleep 5", ":")
         scripts[name] = temp / name
@@ -112,19 +142,25 @@ esac
 
     def run(name, args=(), request="", **overrides):
         log.write_text("")
-        env = dict(os.environ, PATH=f"{temp}:{os.environ['PATH']}",
-                   TEST_LOG=str(log), TEST_PATH=expected, TEST_PREVIOUS=previous,
-                   SSH_ORIGINAL_COMMAND=request)
+        env = dict(
+            os.environ,
+            PATH=f"{temp}:{os.environ['PATH']}",
+            TEST_LOG=str(log),
+            TEST_PATH=expected,
+            TEST_PREVIOUS=previous,
+            SSH_ORIGINAL_COMMAND=request,
+        )
         env.update(overrides)
-        result = subprocess.run(["bash", str(scripts[name]), *args], env=env,
-                                text=True, capture_output=True)
+        result = subprocess.run(
+            ["bash", str(scripts[name]), *args], env=env, text=True, capture_output=True
+        )
         assert not list(temp.glob("recovery.*")), "recovery root leaked"
         return result, log.read_text()
 
     pinned = f"lab-switch {sha} {cache} {key} {expected}"
     result, calls = run("switch", request=pinned)
     assert result.returncode == 0, result.stderr
-    assert "--option max-jobs 0" in calls and '--option builders ' in calls
+    assert "--option max-jobs 0" in calls and "--option builders " in calls
     assert "--option require-sigs true" in calls
     assert f"nix-store --realise {expected}" in calls and "nix build" not in calls
     assert expected not in calls.splitlines()[0]  # evaluated flake, then path check
@@ -132,10 +168,17 @@ esac
     assert f"--realise {previous} --option builders  --option max-jobs 0" in calls
     assert calls.index("--add-root") < calls.index("nixos-rebuild switch")
     assert "restore switch" not in calls and "nix-env" not in calls
-    assert "curl --fail --silent --show-error --max-time 10 --output /dev/null http://127.0.0.1:9465/api/items" in calls
-    for request in ("", "lab-switch bad test key path", pinned + " extra",
-                    f"lab-switch {sha} other {key} {expected}",
-                    f"lab-switch {sha} {cache} test.cachix.org-1:AAAA= {expected}"):
+    assert (
+        "curl --fail --silent --show-error --max-time 10 --output /dev/null http://127.0.0.1:9465/api/items"
+        in calls
+    )
+    for request in (
+        "",
+        "lab-switch bad test key path",
+        pinned + " extra",
+        f"lab-switch {sha} other {key} {expected}",
+        f"lab-switch {sha} {cache} test.cachix.org-1:AAAA= {expected}",
+    ):
         result, calls = run("switch", request=request)
         assert result.returncode != 0 and not calls, (request, calls)
     for overrides in ({"TEST_FETCH_FAIL": "1"}, {"TEST_PATH": previous}):
@@ -149,12 +192,15 @@ esac
         assert result.returncode != 0 and "nixos-rebuild" not in calls
 
     restore_profile = f"nix-env --profile /nix/var/nix/profiles/system --set {previous}"
-    for overrides in ({"TEST_SWITCH_FAIL": "1"}, {"TEST_HEALTH_FAIL": "1"},
-                      {"TEST_HTTP_FAIL": "1"},
-                      {"TEST_HEALTH_UNTIL_RECOVERY": "1"},
-                      {"TEST_SWITCH_FAIL": "1", "TEST_HEALTH_FAIL": "1"},
-                      # Re-deploying the same closure must not select an older generation.
-                      {"TEST_SWITCH_FAIL": "1", "TEST_PREVIOUS": expected}):
+    for overrides in (
+        {"TEST_SWITCH_FAIL": "1"},
+        {"TEST_HEALTH_FAIL": "1"},
+        {"TEST_HTTP_FAIL": "1"},
+        {"TEST_HEALTH_UNTIL_RECOVERY": "1"},
+        {"TEST_SWITCH_FAIL": "1", "TEST_HEALTH_FAIL": "1"},
+        # Re-deploying the same closure must not select an older generation.
+        {"TEST_SWITCH_FAIL": "1", "TEST_PREVIOUS": expected},
+    ):
         result, calls = run("switch", request=pinned, **overrides)
         prior = overrides.get("TEST_PREVIOUS", previous)
         profile = f"nix-env --profile /nix/var/nix/profiles/system --set {prior}"
@@ -171,8 +217,13 @@ esac
         ({"TEST_RECOVERY_FAIL": "1"}, "activating the previous system also failed"),
         ({"TEST_PROFILE_FAIL": "1"}, "restoring the previous system profile failed"),
     ):
-        result, calls = run("switch", request=pinned, TEST_SWITCH_FAIL="1",
-                            TEST_HEALTH_FAIL="1", **overrides)
+        result, calls = run(
+            "switch",
+            request=pinned,
+            TEST_SWITCH_FAIL="1",
+            TEST_HEALTH_FAIL="1",
+            **overrides,
+        )
         assert result.returncode != 0 and diagnostic in result.stderr
         assert restore_profile in calls and calls.count("restore switch") == 1
         assert "systemctl start " in calls, "last-resort service recovery was skipped"

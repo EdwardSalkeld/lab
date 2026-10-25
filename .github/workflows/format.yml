@@ -1,0 +1,44 @@
+name: Formatting
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            http2 = false
+      - name: Check Nix formatting
+        run: nix run --no-update-lock-file --inputs-from . nixpkgs#nixfmt-tree -- --ci
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.17.2"
+          args: "format --check"
+          src: "."
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: tools/bitwarden-mirror/go.mod
+          cache: false
+      - name: Check Go formatting
+        run: |
+          gofmt -d tools
+          test -z "$(gofmt -l tools)"

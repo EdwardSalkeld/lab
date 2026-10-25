@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   stateDir = "/var/lib/webtrees";
@@ -16,15 +21,19 @@ let
   };
   configFile = pkgs.writeText "webtrees-config.ini.php" (
     "; <?php return; ?> DO NOT DELETE THIS LINE\n"
-    + lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: "${name}=${builtins.toJSON value}") connection)
+    + lib.concatStringsSep "\n" (
+      lib.mapAttrsToList (name: value: "${name}=${builtins.toJSON value}") connection
+    )
     + "\n"
   );
-  bootstrapSettings = pkgs.writeText "webtrees-bootstrap.json" (builtins.toJSON {
-    username = "edward";
-    name = "Edward Salkeld";
-    email = "edsalkeld@fastmail.com";
-    language = "en-US";
-  });
+  bootstrapSettings = pkgs.writeText "webtrees-bootstrap.json" (
+    builtins.toJSON {
+      username = "edward";
+      name = "Edward Salkeld";
+      email = "edsalkeld@fastmail.com";
+      language = "en-US";
+    }
+  );
   source = pkgs.fetchzip {
     url = "https://github.com/fisharebest/webtrees/releases/download/2.2.6/webtrees-2.2.6.zip";
     hash = "sha256-9DI86LOADdaEbwR3L/3/xuXvrSL96DYAkNdzpQ7b9OU=";
@@ -74,7 +83,10 @@ in
   # must fail only webtrees. Ordering after shared setup avoids catalog races.
   systemd.services.webtrees-db-setup = {
     description = "Provision the webtrees database independently";
-    after = [ "postgresql.service" "postgresql-setup.service" ];
+    after = [
+      "postgresql.service"
+      "postgresql-setup.service"
+    ];
     requires = [ "postgresql.service" ];
     serviceConfig = {
       Type = "oneshot";

@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.alcachofa.kite.backups;
@@ -57,7 +62,11 @@ in
       paths = [ archivePath ];
       inherit environmentFile;
       initialize = false;
-      extraBackupArgs = [ "--host=${archiveHost}" "--tag=dataplan" "--verbose" ];
+      extraBackupArgs = [
+        "--host=${archiveHost}"
+        "--tag=dataplan"
+        "--verbose"
+      ];
       exclude = [ "*.tmp" ];
       timerConfig = {
         OnCalendar = "Mon *-*-* 06:30:00 Europe/London";

@@ -2,6 +2,32 @@
 
 Home infrastructure learning lab for Proxmox + NixOS.
 
+## Formatting
+
+Run from the repository root with Nix, uv and Go installed:
+
+```sh
+nix run --no-update-lock-file --inputs-from . nixpkgs#nixfmt-tree
+uvx --from ruff==0.17.2 ruff format .
+gofmt -w tools
+```
+
+The independent CI checks use these commands:
+
+```sh
+nix run --no-update-lock-file --inputs-from . nixpkgs#nixfmt-tree -- --ci
+uvx --from ruff==0.17.2 ruff format --check .
+gofmt -d tools
+test -z "$(gofmt -l tools)"
+```
+
+Nix formatting uses nixfmt through the standard nixfmt-tree wrapper, from the
+repository's locked nixpkgs input. Ruff covers Python helpers and tests; gofmt
+covers the Go helpers in `tools/`. CI uses the Go version in
+`tools/bitwarden-mirror/go.mod`. Keep the Ruff version here and in
+`.github/workflows/format.yml` in sync. The existing Terraform formatting check
+continues to run in the main CI workflow.
+
 ## Current Topology
 
 Proxmox hosts:

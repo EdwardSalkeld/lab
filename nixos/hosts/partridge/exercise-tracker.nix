@@ -61,22 +61,22 @@ in
     # loop on every activation is safe. Grafana reads this database for the
     # Fitness dashboard, so the grafana role gets read-only access too.
     script = ''
-      for migration in ${exerciseTrackerPackage}/share/exercise-tracker/sql/migrations/*.sql; do
-        ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} -f "$migration"
-      done
+            for migration in ${exerciseTrackerPackage}/share/exercise-tracker/sql/migrations/*.sql; do
+              ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} -f "$migration"
+            done
 
-      ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} <<'SQL'
-      GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${user};
-      GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${user};
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${user};
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT USAGE, SELECT ON SEQUENCES TO ${user};
+            ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} <<'SQL'
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${user};
+            GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${user};
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public
+              GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${user};
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public
+              GRANT USAGE, SELECT ON SEQUENCES TO ${user};
 
-      GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${grafanaRole};
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT SELECT ON TABLES TO ${grafanaRole};
-SQL
+            GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${grafanaRole};
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public
+              GRANT SELECT ON TABLES TO ${grafanaRole};
+      SQL
     '';
   };
 

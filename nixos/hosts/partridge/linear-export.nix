@@ -1,4 +1,9 @@
-{ config, pkgs, linearExportPackage, ... }:
+{
+  config,
+  pkgs,
+  linearExportPackage,
+  ...
+}:
 
 let
   user = "linearexport";
@@ -58,22 +63,22 @@ in
     # the "tuple concurrently updated" race. A per-table grant touches only this
     # table's row, so no ordering against the other units is needed.
     script = ''
-      ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} <<'SQL'
-      CREATE TABLE IF NOT EXISTS linear_issues (
-        id          text PRIMARY KEY,
-        title       text,
-        status      text,
-        project     text,
-        cycle       text,
-        description text,
-        labels      jsonb,
-        comments    jsonb,
-        history     jsonb,
-        created_at  timestamptz,
-        updated_at  timestamptz
-      );
-      GRANT SELECT, INSERT, UPDATE ON TABLE linear_issues TO ${user};
-SQL
+            ${psql} -v ON_ERROR_STOP=1 --dbname=${dbName} <<'SQL'
+            CREATE TABLE IF NOT EXISTS linear_issues (
+              id          text PRIMARY KEY,
+              title       text,
+              status      text,
+              project     text,
+              cycle       text,
+              description text,
+              labels      jsonb,
+              comments    jsonb,
+              history     jsonb,
+              created_at  timestamptz,
+              updated_at  timestamptz
+            );
+            GRANT SELECT, INSERT, UPDATE ON TABLE linear_issues TO ${user};
+      SQL
     '';
   };
 

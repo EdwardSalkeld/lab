@@ -54,7 +54,10 @@
   fileSystems."/srv/chatting/workspaces" = {
     device = "/srv/chatting/workspace/workspaces";
     fsType = "none";
-    options = [ "bind" "x-systemd.requires-mounts-for=/srv/chatting/workspace" ];
+    options = [
+      "bind"
+      "x-systemd.requires-mounts-for=/srv/chatting/workspace"
+    ];
   };
 
   # Dedicated disk for Docker/CI storage (terraform magpie scsi2, serial
