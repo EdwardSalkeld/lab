@@ -61,7 +61,7 @@ pattern.
 - Name: `magpie`
 - Node: `sol`
 - Root disk: 36 GiB on `local-lvm`
-- Workspace disk: 5 GiB on `local-lvm`
+- Workspace disk: 15 GiB on `local-lvm`
 - Network bridge: `vmbr0`
 
 `magpie` is managed by the root Nix flake as `.#magpie`. It is now the base
@@ -73,6 +73,33 @@ The QEMU guest agent is intentionally disabled while `magpie` is an ISO-booted
 installer VM. Enabling it before NixOS is installed makes Proxmox/Terraform wait
 on guest-agent reboot commands that cannot succeed yet. Enable it after the VM
 has a real NixOS install with `qemu-guest-agent` running.
+
+### Growing Magpie's workspace disk
+
+The 15 GiB default increases `scsi1` from 5 GiB by 10 GiB. The filesystem had
+only 164 MiB available on 2026-10-25. Check whether the `alcachofa/house`
+workspace overrides `magpie_workspace_disk_size`, and review the Terraform
+plan for an in-place disk expansion. Sol's 141.23 GiB thin pool was 49.02%
+used on that date (about 72 GiB physically free); recheck before applying.
+
+The workspace is ext4 on the whole disk labelled `workspace`, with serial
+`magpie-workspace`. `/srv/chatting/workspaces` is a bind mount of its
+`workspaces` directory, so growing this one filesystem fixes both alerts.
+No partition growth is required. Terraform grows the virtual disk; NixOS
+`autoResize` enables filesystem growth on a subsequent mount. To make the
+extra space usable immediately after Terraform applies, verify the enlarged
+disk and run the online ext4 resize on Magpie:
+
+```sh
+lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS,SERIAL
+findmnt -n -o SOURCE /srv/chatting/workspace
+sudo resize2fs /dev/disk/by-label/workspace
+df -h /srv/chatting/workspace /srv/chatting/workspaces
+```
+
+An already-active filesystem growth service may not rerun on a NixOS switch.
+The online command above avoids needing a reboot or unmount. Check that the
+chatting handler and worker remain active after resizing.
 
 ### Growing Magpie's root disk
 
