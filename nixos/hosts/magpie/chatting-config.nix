@@ -34,6 +34,7 @@ let
     metrics_host = "127.0.0.1";
     poll_interval_seconds = 30;
     github_webhook_secret_env = "CHATTING_GITHUB_WEBHOOK_SECRET";
+    github_webhook_delivery_enabled = true;
     allowed_egress_channels = [
       "email"
       "telegram"
@@ -97,10 +98,9 @@ let
     context_refs = contextRefs;
 
     github_assignee_login = "billyacachofa";
-    github_repositories = [
-      "brokensbone/*"
-      "EdwardSalkeld/*"
-    ];
+    # The GitHub App now delivers assignments and PR feedback. Running the old
+    # polling connector too would create duplicate tasks for those events.
+    github_repositories = [ ];
 
     # Opt-in personal mailbox triage, separate from the bot mailbox above and
     # from the executor.

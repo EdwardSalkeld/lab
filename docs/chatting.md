@@ -106,10 +106,36 @@ The GitHub signing secret is supplied by a SOPS-rendered environment file.
 App behavior and webhook filtering are documented upstream; installed App
 registration details follow.
 
-The initial App subscribes only to `release` with read-only Contents permission.
-Install it on one selected repository to limit traffic. GitHub may also send
-ping and installation lifecycle events; these are authenticated and logged in
-the same way. The subscription covers release actions, not just publication.
+### Live GitHub task delivery
+
+Lab enables `github_webhook_delivery_enabled` and empties `github_repositories`
+to disable the previous assignment/review polling connector. GitHub email
+notifications for Billy's account were disabled separately by Edward. GitHub
+App installation coverage is managed in GitHub; it is independent of these
+handler settings.
+
+The pinned Chatting version includes assignment-to-watch support (#324).
+Registered PR feedback returns to its owning work item; new assignments/tag-ins
+get a dedicated GitHub item. Own actions and routine workflow progress/success
+remain filtered. The separate experimental CI ownership proposal is not included
+in this rollout: workflow events lacking PR context still remain held, without
+automatic worker investigation. Releases remain opt-in and are not enabled here.
+
+After deployment, correlate a new externally generated assignment/comment with
+its `github_webhook_received` receipt, `mode: queued`, and the resulting webhook
+task in the work-item activity view. Confirm the expected work item/workspace
+and app-server session are used. No synthetic actionable events are needed.
+Logging-only historical events are not replayed automatically. Set delivery back
+to false to pause webhook tasks; restore the polling selectors as well if
+switching back to polling. Pausing does not discard already pending tasks.
+
+### App registration
+
+As checked on 2026-10-26, BillyBotApp subscribes to issues, issue comments, pull
+requests, reviews, review comments/threads, workflow runs and releases. Its
+Contents, Issues and Pull requests permissions are read-only. GitHub may also
+send ping and installation lifecycle events, which are authenticated and logged.
+The original bootstrap manifest below describes the earlier release-only setup.
 
 [github-app-manifest.json](github-app-manifest.json) contains the registration
 settings. `public: true` allows the BillyAcachofa-owned app to be installed on
