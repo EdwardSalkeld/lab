@@ -204,7 +204,6 @@ let
   prometheusDatasourceUid = "fdp9rmnopl3wgf";
   lokiDatasourceUid = "ce6j6e2q9rapsa";
   fourthRsyncLogSelector = ''{host="fourth", source="file", filename="/host/edward/data-sync.log"}'';
-  fourthBackblazeLogSelector = ''{host="fourth", source="docker", container_name="/docker-backup-1"}'';
   kiteBackblazeLogSelector = ''{host="kite", source="journal", systemd_unit="restic-backups-kite-full.service"}'';
   # Single rule over up; Grafana fans it out into one alert instance per scrape
   # target, labelled by `instance`/`job`. up == 0 means the scrape failed (host,
@@ -836,9 +835,9 @@ let
     panelId = 2;
   };
   backblazeCompletionAlert = mkLokiThresholdAlert {
-    uid = "fourth-backblaze-completion";
+    uid = "kite-backblaze-completion";
     title = "Kite to Backblaze backup has not completed";
-    expr = ''sum(count_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" [8d]) or count_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" [8d]))'';
+    expr = ''sum(count_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" [8d]))'';
     evaluator = {
       params = [ 1 ];
       type = "lt";
@@ -846,27 +845,27 @@ let
     noDataState = "Alerting";
     for = "5m";
     summary = "Kite to Backblaze backup is overdue";
-    description = "Neither the Kite backup service nor the legacy Fourth backup container has logged a successful completion in eight days.";
+    description = "restic-backups-kite-full.service on kite has not logged a successful completion in eight days. Check the unit's journal on kite.";
     severity = "critical";
     panelId = 1;
-    dashboardUid = "ops-backup-fourth-backblaze";
+    dashboardUid = "ops-backup-kite-backblaze";
     service = "backup";
     host = "kite";
   };
   backblazeDurationAlert =
     (mkLokiThresholdAlert {
-      uid = "fourth-backblaze-duration";
+      uid = "kite-backblaze-duration";
       title = "Kite to Backblaze backup duration is high";
       # Preserve completion time as the run identity. A short event window prevents
       # old slow runs from firing for days; separate groups notify for adjacent runs.
-      expr = ''max by (bk_time) (max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]) or max_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]))'';
+      expr = ''max by (bk_time) (max_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]))'';
       threshold = 600;
       for = "0s";
       summary = "Kite to Backblaze backup exceeded ten minutes";
       description = "The off-site backup completed at {{ $labels.bk_time }} took {{ $values.B.Value }} seconds (threshold: 600 seconds).";
       severity = "warning";
       panelId = 3;
-      dashboardUid = "ops-backup-fourth-backblaze";
+      dashboardUid = "ops-backup-kite-backblaze";
       service = "backup";
       host = "kite";
     })
@@ -1303,6 +1302,14 @@ in
         {
           orgId = 1;
           uid = "df14h5t71ue4gc";
+        }
+        {
+          orgId = 1;
+          uid = "fourth-backblaze-completion";
+        }
+        {
+          orgId = 1;
+          uid = "fourth-backblaze-duration";
         }
       ];
       groups = [
