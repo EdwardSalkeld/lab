@@ -20,7 +20,6 @@
     ./vaultwarden.nix
     ./mcm-db.nix
     ./web.nix
-    ./webtrees.nix
   ];
 
   networking.hostName = "partridge";
