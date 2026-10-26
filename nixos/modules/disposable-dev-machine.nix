@@ -1,7 +1,8 @@
 { pkgs, ... }:
 
 {
-  nixpkgs.config.allowUnfreePredicate = pkg:
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
     builtins.elem (pkgs.lib.getName pkg) [
       "terraform"
     ];

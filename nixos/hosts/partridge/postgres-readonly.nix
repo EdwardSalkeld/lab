@@ -4,7 +4,10 @@ let
   role = "billy_ro";
   # Databases Billy is allowed to read. Deliberately excludes forgejo, grafana
   # and postgres, whose tables hold credential hashes and session tokens.
-  readableDbs = [ "scheduler" "exercise_tracker" ];
+  readableDbs = [
+    "scheduler"
+    "exercise_tracker"
+  ];
   lanCidr = "10.4.1.0/24";
   lanInterface = "ens18";
   psql = "${config.services.postgresql.package}/bin/psql";
@@ -31,9 +34,7 @@ in
   # the LAN subnet, as defence in depth on top of the table grants. Appended
   # after the rules defined in scheduler-db.nix.
   services.postgresql.authentication = lib.mkAfter (
-    lib.concatMapStringsSep "\n"
-      (db: "host ${db} ${role} ${lanCidr} scram-sha-256")
-      readableDbs
+    lib.concatMapStringsSep "\n" (db: "host ${db} ${role} ${lanCidr} scram-sha-256") readableDbs
   );
 
   systemd.services.postgres-readonly-setup = {
@@ -70,7 +71,8 @@ in
       ALTER ROLE ${role} WITH LOGIN PASSWORD :'readonly_password';
       SQL
 
-    '' + lib.concatMapStringsSep "\n" (db: ''
+    ''
+    + lib.concatMapStringsSep "\n" (db: ''
       ${psql} -v ON_ERROR_STOP=1 --dbname=${db} <<'SQL'
       GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${role};
       ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ${role};

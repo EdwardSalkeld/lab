@@ -29,7 +29,11 @@
   # proportional to the root filesystem's size.
   systemd.services.nix-gc-on-root-pressure = {
     description = "Collect unreachable Nix paths when Magpie root is under pressure";
-    path = with pkgs; [ coreutils gawk nix ];
+    path = with pkgs; [
+      coreutils
+      gawk
+      nix
+    ];
     serviceConfig.Type = "oneshot";
     script = ''
       root_usage="$(df -P / | awk 'NR == 2 { sub(/%$/, "", $5); print $5 }')"

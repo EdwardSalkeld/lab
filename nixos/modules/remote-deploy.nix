@@ -1,10 +1,17 @@
 # Lets fourth trigger a pinned switch of a CI-built system. The forced key has
 # no shell access and only accepts a commit and its expected output.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   host = config.networking.hostName;
   cfg = config.alcachofa.remoteDeploy;
-  postSwitchHealthchecks = lib.concatStringsSep " " (map lib.escapeShellArg cfg.postSwitchHealthchecks);
+  postSwitchHealthchecks = lib.concatStringsSep " " (
+    map lib.escapeShellArg cfg.postSwitchHealthchecks
+  );
   postSwitchHttpChecks = lib.concatStringsSep " " (map lib.escapeShellArg cfg.postSwitchHttpChecks);
   labSwitch = pkgs.writeShellScript "lab-switch" ''
     # Deliberately NOT `set -e`: a failed switch must never abort this script

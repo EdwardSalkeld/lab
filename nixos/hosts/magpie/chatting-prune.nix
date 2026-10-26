@@ -16,7 +16,12 @@ let
   retentionDays = 30;
 
   mkPrune =
-    { name, user, database, sql }:
+    {
+      name,
+      user,
+      database,
+      sql,
+    }:
     {
       "chatting-prune-${name}" = {
         description = "Prune old rows from the chatting ${name} SQLite DB";

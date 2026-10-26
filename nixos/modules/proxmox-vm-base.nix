@@ -1,4 +1,9 @@
-{ lib, pkgs, tailscalePackage ? pkgs.tailscale, ... }:
+{
+  lib,
+  pkgs,
+  tailscalePackage ? pkgs.tailscale,
+  ...
+}:
 
 {
   nix.settings.experimental-features = [

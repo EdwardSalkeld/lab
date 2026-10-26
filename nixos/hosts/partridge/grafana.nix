@@ -1,4 +1,9 @@
-{ config, pkgs, grafanaPackage, ... }:
+{
+  config,
+  pkgs,
+  grafanaPackage,
+  ...
+}:
 
 let
   grafanaDomain = "grafana.alcachofa.faith";
@@ -90,7 +95,12 @@ let
     {{ end }}{{ end }}
   '';
   mkOctopusFreshnessAlert =
-    { uid, title, usageType, panelId }:
+    {
+      uid,
+      title,
+      usageType,
+      panelId,
+    }:
     {
       inherit uid title;
       condition = "C";
@@ -843,31 +853,37 @@ let
     service = "backup";
     host = "kite";
   };
-  backblazeDurationAlert = (mkLokiThresholdAlert {
-    uid = "fourth-backblaze-duration";
-    title = "Kite to Backblaze backup duration is high";
-    # Preserve completion time as the run identity. A short event window prevents
-    # old slow runs from firing for days; separate groups notify for adjacent runs.
-    expr = ''max by (bk_time) (max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]) or max_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]))'';
-    threshold = 600;
-    for = "0s";
-    summary = "Kite to Backblaze backup exceeded ten minutes";
-    description = ''The off-site backup completed at {{ $labels.bk_time }} took {{ $values.B.Value }} seconds (threshold: 600 seconds).'';
-    severity = "warning";
-    panelId = 3;
-    dashboardUid = "ops-backup-fourth-backblaze";
-    service = "backup";
-    host = "kite";
-  }) // {
-    notification_settings = {
-      receiver = backupEventsContactPointName;
-      group_by = [ "grafana_folder" "alertname" "bk_time" ];
-      group_wait = "0s";
-      group_interval = "1m";
-      # Longer than the 15m event lifetime, including missing-series eviction.
-      repeat_interval = "24h";
+  backblazeDurationAlert =
+    (mkLokiThresholdAlert {
+      uid = "fourth-backblaze-duration";
+      title = "Kite to Backblaze backup duration is high";
+      # Preserve completion time as the run identity. A short event window prevents
+      # old slow runs from firing for days; separate groups notify for adjacent runs.
+      expr = ''max by (bk_time) (max_over_time(${fourthBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]) or max_over_time(${kiteBackblazeLogSelector} |= "Finished backup at" | pattern "Finished backup at <bk_time> after <bk_dur> seconds" | unwrap bk_dur | __error__="" [15m]))'';
+      threshold = 600;
+      for = "0s";
+      summary = "Kite to Backblaze backup exceeded ten minutes";
+      description = "The off-site backup completed at {{ $labels.bk_time }} took {{ $values.B.Value }} seconds (threshold: 600 seconds).";
+      severity = "warning";
+      panelId = 3;
+      dashboardUid = "ops-backup-fourth-backblaze";
+      service = "backup";
+      host = "kite";
+    })
+    // {
+      notification_settings = {
+        receiver = backupEventsContactPointName;
+        group_by = [
+          "grafana_folder"
+          "alertname"
+          "bk_time"
+        ];
+        group_wait = "0s";
+        group_interval = "1m";
+        # Longer than the 15m event lifetime, including missing-series eviction.
+        repeat_interval = "24h";
+      };
     };
-  };
   rsyncRecencyAlert = {
     uid = "fourth-rsync-recency";
     title = "Rsync Log Recency";
@@ -887,7 +903,7 @@ let
             uid = lokiDatasourceUid;
           };
           editorMode = "code";
-          expr = ''count_over_time(${fourthRsyncLogSelector} | drop detected_level [36h])'';
+          expr = "count_over_time(${fourthRsyncLogSelector} | drop detected_level [36h])";
           intervalMs = 1000;
           maxDataPoints = 43200;
           queryType = "range";
@@ -969,7 +985,13 @@ let
   # instance/mountpoint). Warning fires only in the 5–10% band; critical takes
   # over below 5%, so a filling disk escalates rather than double-alerting.
   mkDiskSpaceAlert =
-    { uid, title, severity, evaluator, thresholdText }:
+    {
+      uid,
+      title,
+      severity,
+      evaluator,
+      thresholdText,
+    }:
     {
       inherit uid title;
       condition = "C";
@@ -988,7 +1010,7 @@ let
               uid = prometheusDatasourceUid;
             };
             editorMode = "code";
-            expr = ''node_filesystem_avail_bytes${diskFsSelector} / node_filesystem_size_bytes${diskFsSelector}'';
+            expr = "node_filesystem_avail_bytes${diskFsSelector} / node_filesystem_size_bytes${diskFsSelector}";
             instant = true;
             intervalMs = 1000;
             maxDataPoints = 43200;
@@ -1398,49 +1420,55 @@ in
 
     provision.alerting.contactPoints.settings = {
       apiVersion = 1;
-      contactPoints = let
-        standard = {
-          orgId = 1;
-          name = alertsContactPointName;
-          receivers = [
-            {
-              uid = "benye0c2pvif4a";
-              name = "Email Alcachofa";
-              type = "email";
-              disableResolveMessage = false;
-              settings = {
-                addresses = "edsalkeld@fastmail.com";
-                singleEmail = false;
-              };
-            }
-            {
-              uid = "telegram-alerts";
-              name = "Telegram Alerts";
-              type = "telegram";
-              disableResolveMessage = false;
-              settings = {
-                bottoken = "$GRAFANA_TELEGRAM_BOT_TOKEN";
-                chatid = alertsTelegramChatId;
-                uploadImage = false;
-                message = ''{{ template "alcachofa.message" . }}'';
-                parse_mode = "None";
-                disable_web_page_preview = true;
-              };
-            }
-          ];
-        };
-      in [
-        standard
-        {
-          orgId = 1;
-          name = backupEventsContactPointName;
-          # Event expiry is not a recovery; send only the firing notification.
-          receivers = builtins.map (receiver: receiver // {
-            uid = "${receiver.uid}-backup-events";
-            disableResolveMessage = true;
-          }) standard.receivers;
-        }
-      ];
+      contactPoints =
+        let
+          standard = {
+            orgId = 1;
+            name = alertsContactPointName;
+            receivers = [
+              {
+                uid = "benye0c2pvif4a";
+                name = "Email Alcachofa";
+                type = "email";
+                disableResolveMessage = false;
+                settings = {
+                  addresses = "edsalkeld@fastmail.com";
+                  singleEmail = false;
+                };
+              }
+              {
+                uid = "telegram-alerts";
+                name = "Telegram Alerts";
+                type = "telegram";
+                disableResolveMessage = false;
+                settings = {
+                  bottoken = "$GRAFANA_TELEGRAM_BOT_TOKEN";
+                  chatid = alertsTelegramChatId;
+                  uploadImage = false;
+                  message = ''{{ template "alcachofa.message" . }}'';
+                  parse_mode = "None";
+                  disable_web_page_preview = true;
+                };
+              }
+            ];
+          };
+        in
+        [
+          standard
+          {
+            orgId = 1;
+            name = backupEventsContactPointName;
+            # Event expiry is not a recovery; send only the firing notification.
+            receivers = builtins.map (
+              receiver:
+              receiver
+              // {
+                uid = "${receiver.uid}-backup-events";
+                disableResolveMessage = true;
+              }
+            ) standard.receivers;
+          }
+        ];
     };
 
     provision.alerting.templates.settings = {

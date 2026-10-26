@@ -9,7 +9,7 @@ import unittest
 
 
 WATCHDOG = Path(__file__).resolve().parents[1] / "luna-network-watchdog"
-MOCK = r'''#!/usr/bin/env python3
+MOCK = r"""#!/usr/bin/env python3
 import json
 import os
 from pathlib import Path
@@ -30,7 +30,7 @@ elif name == "ip" and sys.argv[1:3] == ["link", "set"]:
     (root / "reset").touch()
 elif name == "systemctl":
     sys.exit(settings["reboot_status"])
-'''
+"""
 
 
 class WatchdogTests(unittest.TestCase):
@@ -54,15 +54,30 @@ class WatchdogTests(unittest.TestCase):
             "lock_file": self.root / "lock",
         }.items():
             lines = script.splitlines()
-            script = "\n".join(
-                f"readonly {variable}={path}" if line.startswith(f"readonly {variable}=")
-                else line for line in lines
-            ) + "\n"
+            script = (
+                "\n".join(
+                    f"readonly {variable}={path}"
+                    if line.startswith(f"readonly {variable}=")
+                    else line
+                    for line in lines
+                )
+                + "\n"
+            )
         self.script = self.root / "watchdog"
         self.script.write_text(script)
         self.bin = self.root / "bin"
         self.bin.mkdir()
-        for command in ("ping", "ip", "ethtool", "journalctl", "logger", "date", "sleep", "systemctl", "sync"):
+        for command in (
+            "ping",
+            "ip",
+            "ethtool",
+            "journalctl",
+            "logger",
+            "date",
+            "sleep",
+            "systemctl",
+            "sync",
+        ):
             mock = self.bin / command
             mock.write_text(MOCK)
             mock.chmod(0o755)
@@ -71,20 +86,32 @@ class WatchdogTests(unittest.TestCase):
         (self.root / "settings.json").write_text(json.dumps(self.settings))
         result = subprocess.run(
             ["bash", str(self.script)],
-            env={**os.environ, "PATH": f"{self.bin}:{os.environ['PATH']}",
-                 "WATCHDOG_TEST_ROOT": str(self.root)},
-            capture_output=True, text=True, timeout=10,
+            env={
+                **os.environ,
+                "PATH": f"{self.bin}:{os.environ['PATH']}",
+                "WATCHDOG_TEST_ROOT": str(self.root),
+            },
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         self.assertIn(result.returncode, (0, 1), result.stderr)
         return result.returncode
 
     def commands(self):
         path = self.root / "commands.jsonl"
-        return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+        return (
+            [json.loads(line) for line in path.read_text().splitlines()]
+            if path.exists()
+            else []
+        )
 
     def recovery_commands(self):
-        return [cmd for cmd in self.commands()
-                if cmd[0] == "systemctl" or cmd[:3] == ["ip", "link", "set"]]
+        return [
+            cmd
+            for cmd in self.commands()
+            if cmd[0] == "systemctl" or cmd[:3] == ["ip", "link", "set"]
+        ]
 
     def threshold(self):
         for _ in range(3):
@@ -109,7 +136,9 @@ class WatchdogTests(unittest.TestCase):
         self.assertEqual(recovery[2][:2], ["systemctl", "reboot"])
         self.assertEqual(len(recovery), 3)
         self.assertTrue(list((self.root / "logs").glob("*-network-failure.log")))
-        self.assertEqual((self.state / "last_automatic_recovery_epoch").read_text().strip(), "200000")
+        self.assertEqual(
+            (self.state / "last_automatic_recovery_epoch").read_text().strip(), "200000"
+        )
 
     def test_repeated_failures_are_capped_until_expiry(self):
         self.threshold()

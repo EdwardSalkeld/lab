@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 # Docker-mode Forgejo Actions runner, co-located on magpie. magpie is the "dev"
 # host and sits 99% idle inside its 8 GB envelope, so in-house CI for private

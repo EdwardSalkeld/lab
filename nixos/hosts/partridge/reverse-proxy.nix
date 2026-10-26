@@ -42,17 +42,15 @@ in
   config = lib.mkIf (cfg.routes != { }) {
     security.acme.certs.${cfg.acmeHost}.extraDomainNames = lib.attrNames cfg.routes;
 
-    services.nginx.virtualHosts = lib.mapAttrs
-      (_domain: route: {
-        forceSSL = true;
-        useACMEHost = cfg.acmeHost;
-        locations."/" = {
-          proxyPass = "http://${route.host}:${toString route.port}";
-          extraConfig = lib.optionalString (route.allowedCIDRs != [ ]) (
-            (lib.concatMapStringsSep "\n" (cidr: "allow ${cidr};") route.allowedCIDRs) + "\ndeny all;"
-          );
-        };
-      })
-      cfg.routes;
+    services.nginx.virtualHosts = lib.mapAttrs (_domain: route: {
+      forceSSL = true;
+      useACMEHost = cfg.acmeHost;
+      locations."/" = {
+        proxyPass = "http://${route.host}:${toString route.port}";
+        extraConfig = lib.optionalString (route.allowedCIDRs != [ ]) (
+          (lib.concatMapStringsSep "\n" (cidr: "allow ${cidr};") route.allowedCIDRs) + "\ndeny all;"
+        );
+      };
+    }) cfg.routes;
   };
 }

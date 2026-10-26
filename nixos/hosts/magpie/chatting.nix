@@ -1,4 +1,10 @@
-{ config, pkgs, chattingRuntimePackage, codexPackage, ... }:
+{
+  config,
+  pkgs,
+  chattingRuntimePackage,
+  codexPackage,
+  ...
+}:
 
 let
   handlerConfigPath = "/etc/chatting/handler.json";
