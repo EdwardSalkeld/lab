@@ -53,6 +53,9 @@ again.
 
 Start here:
 
+- [Zulip](docs/zulip.md): dedicated Debian application VM on Luna, using
+  Partridge's PostgreSQL and existing database backups.
+
 - `AGENTS.md` for current operational notes.
 - `terraform/README.md` for Terraform commands.
 - `nixos/README.md` for NixOS host configuration and deploy commands.
