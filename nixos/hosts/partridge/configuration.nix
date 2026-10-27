@@ -21,6 +21,7 @@
     ./mcm-db.nix
     ./web.nix
     ./webtrees.nix
+    ./zulip.nix
   ];
 
   networking.hostName = "partridge";

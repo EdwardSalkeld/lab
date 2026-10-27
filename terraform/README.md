@@ -4,6 +4,11 @@ This Terraform root manages VMs on Proxmox.
 
 Active resources:
 
+- `proxmox_virtual_environment_download_file.zulip_debian` and
+  `proxmox_virtual_environment_vm.zulip`: pinned Debian cloud image and dedicated
+  2-vCPU/3-GiB/40-GiB Zulip guest on Luna. Application bootstrap is explicit;
+  see [Zulip rollout](../docs/zulip.md). The database lives on Partridge.
+
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
