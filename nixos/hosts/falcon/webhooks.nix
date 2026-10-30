@@ -33,8 +33,13 @@ in
       "/".return = "404";
     }
     // lib.genAttrs [ "= /webhooks/test" "= /webhooks/github" ] (_: {
-      proxyPass = "https://magpie.ts.alcachofa.faith";
+      # A variable defers the lookup to request time. A literal hostname is
+      # resolved when nginx starts, which fails while a switch is restarting
+      # tailscaled and takes nginx (and the switch) down with it.
+      proxyPass = "https://$webhooks_upstream";
       extraConfig = ''
+        resolver 100.100.100.100 valid=60s;
+        set $webhooks_upstream magpie.ts.alcachofa.faith;
         if ($request_method != POST) { return 405; }
         limit_req zone=webhook_ingress burst=20 nodelay;
         proxy_ssl_name ${domain};
