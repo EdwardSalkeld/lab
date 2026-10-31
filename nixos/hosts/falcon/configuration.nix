@@ -68,8 +68,6 @@
     openFirewall = false;
   };
 
-  alcachofa.journalToLoki.enable = true;
-
   alcachofa.remoteDeploy.postSwitchHealthchecks = [
     "alloy.service"
     "nginx.service"

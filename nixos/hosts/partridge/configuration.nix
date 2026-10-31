@@ -23,15 +23,9 @@
   ];
 
   networking.hostName = "partridge";
-  # Keep local journal retention bounded on the small root filesystem.
-  services.journald.extraConfig = ''
-    SystemMaxUse=500M
-    SystemMaxFileSize=64M
-  '';
   networking.networkmanager.enable = true;
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
   alcachofa.journalToLoki = {
-    enable = true;
     endpoint = "http://127.0.0.1:3100/loki/api/v1/push";
   };
   alcachofa.remoteDeploy.postSwitchHealthchecks = [ "grafana.service" ];

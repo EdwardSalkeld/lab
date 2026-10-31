@@ -11,7 +11,6 @@
 
   networking.hostName = "kite";
   networking.networkmanager.enable = true;
-  alcachofa.journalToLoki.enable = true;
   services.tailscale = {
     enable = true;
     openFirewall = true;
