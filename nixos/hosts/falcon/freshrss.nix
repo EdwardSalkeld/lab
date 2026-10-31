@@ -4,6 +4,17 @@ let
   domain = "freshrss-docker.falcon.alcachofa.faith";
   dataDir = "/var/lib/freshrss";
   backupDir = "/var/backups/freshrss";
+  # Stable nixpkgs still has 1.29.1. Keep Falcon on the security release
+  # until the channel catches up, using the existing native PHP packaging.
+  freshrss = pkgs.freshrss.overrideAttrs (_old: rec {
+    version = "1.30.4";
+    src = pkgs.fetchFromGitHub {
+      owner = "FreshRSS";
+      repo = "FreshRSS";
+      rev = version;
+      hash = "sha256-KOPMC/ckmaVWTGZiHG/GdMJz+t/9F7PkK8mDHP75DDI=";
+    };
+  });
 in
 {
   # FreshRSS state is restored from the pre-NixOS archive. Do not use the
@@ -37,6 +48,10 @@ in
     user = "freshrss";
     group = "freshrss";
     phpEnv.DATA_PATH = dataDir;
+    # Match upstream 1.30.4's session hardening for the native PHP pool.
+    phpOptions = ''
+      session.upload_progress.enabled = Off
+    '';
     settings = {
       "listen.owner" = "nginx";
       "listen.group" = "nginx";
@@ -59,7 +74,7 @@ in
     recommendedTlsSettings = true;
 
     virtualHosts.${domain} = {
-      root = "${pkgs.freshrss}/p";
+      root = "${freshrss}/p";
       enableACME = true;
       forceSSL = true;
 
@@ -90,8 +105,8 @@ in
       Type = "oneshot";
       User = "freshrss";
       Group = "freshrss";
-      WorkingDirectory = pkgs.freshrss;
-      ExecStart = "${pkgs.freshrss}/app/actualize_script.php";
+      WorkingDirectory = freshrss;
+      ExecStart = "${freshrss}/app/actualize_script.php";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectHome = true;
@@ -135,7 +150,7 @@ in
           rename($temporary, $path);
         }
       ' "$config_file"
-      ${pkgs.freshrss}/cli/export-sqlite-auto.php
+      ${freshrss}/cli/export-sqlite-auto.php
       ${pkgs.findutils}/bin/find ${dataDir}/users -path '*/sqlite-backups/*.sqlite' \
         -type f -exec ${pkgs.coreutils}/bin/chmod 0600 {} +
 
@@ -160,7 +175,7 @@ in
       Type = "oneshot";
       User = "freshrss";
       Group = "freshrss";
-      WorkingDirectory = pkgs.freshrss;
+      WorkingDirectory = freshrss;
       UMask = "0077";
       NoNewPrivileges = true;
       PrivateTmp = true;
