@@ -23,6 +23,11 @@
   ];
 
   networking.hostName = "partridge";
+  # Keep local journal retention bounded on the small root filesystem.
+  services.journald.extraConfig = ''
+    SystemMaxUse=500M
+    SystemMaxFileSize=64M
+  '';
   networking.networkmanager.enable = true;
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
   alcachofa.journalToLoki = {
