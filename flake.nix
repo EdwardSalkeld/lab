@@ -173,10 +173,26 @@
           );
         in
         {
+          lab-python = pkgs.runCommand "lab-python-check" { } (
+            pkgs.lib.concatMapStringsSep "\n" (host: ''
+              ${self.nixosConfigurations.${host}.config.system.path}/bin/python3 -c '
+              import sys
+              assert sys.version_info[:2] == (3, 14), sys.version
+              '
+            '') (builtins.attrNames self.nixosConfigurations)
+            + ''
+              # Exercise the reply helper through Magpie's default profile too.
+              export PYTHONPATH=${chattingSrc}
+              export PYTHONDONTWRITEBYTECODE=1
+              ${self.nixosConfigurations.magpie.config.system.path}/bin/python3 -c 'import app.main_reply'
+              touch "$out"
+            ''
+          );
+
           router-syslog =
             pkgs.runCommand "router-syslog-check"
               {
-                nativeBuildInputs = [ pkgs.python3 ];
+                nativeBuildInputs = [ pkgs.python314 ];
                 routerConfig =
                   pkgs.writeText "router-syslog.alloy"
                     partridgeConfig.environment.etc."alloy/router-syslog.alloy".text;

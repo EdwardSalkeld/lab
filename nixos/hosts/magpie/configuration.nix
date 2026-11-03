@@ -169,7 +169,6 @@
     # MPD over the network, without an interactive SSH session there.
     mpc
     nodejs
-    python3
     ripgrep
     rsync
     sqlite
