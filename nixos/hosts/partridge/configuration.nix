@@ -16,6 +16,7 @@
     ./postgres-readonly.nix
     ./prometheus.nix
     ./reverse-proxy.nix
+    ./router-syslog.nix
     ./scheduler-db.nix
     ./vaultwarden.nix
     ./mcm-db.nix

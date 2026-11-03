@@ -173,6 +173,21 @@
           );
         in
         {
+          router-syslog =
+            pkgs.runCommand "router-syslog-check"
+              {
+                nativeBuildInputs = [ pkgs.python3 ];
+                routerConfig =
+                  pkgs.writeText "router-syslog.alloy"
+                    partridgeConfig.environment.etc."alloy/router-syslog.alloy".text;
+              }
+              ''
+                python3 ${./scripts/check-router-syslog.py} \
+                  --alloy ${partridgeConfig.services.alloy.package}/bin/alloy \
+                  --config "$routerConfig"
+                touch "$out"
+              '';
+
           bitwarden-mirror-go-tests =
             pkgs.runCommand "bitwarden-mirror-go-tests"
               {
