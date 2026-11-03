@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Recover Luna's onboard NIC only after sustained loss of both the LAN gateway
-# and an external address. This is an availability backstop, not a NIC fix.
+# Recover Luna's onboard NIC only after sustained loss of off-host LAN peers,
+# the gateway and an external address.
 set -Eeuo pipefail
 
 readonly config_file=/etc/default/luna-network-watchdog
@@ -12,6 +12,9 @@ interface=nic0
 probe_interface=vmbr0
 gateway=10.4.1.1
 external_address=1.1.1.1
+# Sol and its VMs are reachable without traversing the bridging router. Keep
+# defaults here too: install.sh intentionally preserves existing config files.
+lan_peers=(10.4.1.32 10.4.1.30 10.4.1.31)
 failure_threshold=3
 reboot_cooldown_seconds=86400
 link_reset_wait_seconds=10
@@ -37,8 +40,15 @@ probe() {
 }
 
 network_healthy() {
-  # Either reachable target proves the host is not isolated.
-  probe "$gateway" || probe "$external_address"
+  # Any off-host response proves NIC connectivity, even if the router is down.
+  # Use IPs and bind to the bridge to avoid DNS and alternate-route dependency.
+  local address
+  for address in "${lan_peers[@]}" "$gateway" "$external_address"; do
+    if probe "$address"; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 failure_file="$state_dir/consecutive_failures"
@@ -56,7 +66,7 @@ failures=$((failures + 1))
 printf '%s\n' "$failures" >"$failure_file"
 sync -f "$failure_file" 2>/dev/null || true
 
-log "gateway ${gateway} and external ${external_address} failed (${failures}/${failure_threshold})"
+log "LAN peers ${lan_peers[*]}, gateway ${gateway} and external ${external_address} failed (${failures}/${failure_threshold})"
 if (( failures < failure_threshold )); then
   exit 0
 fi
@@ -96,6 +106,13 @@ evidence_file="$log_dir/${timestamp}-network-failure.log"
   journalctl -k -b --since '-10 min' --no-pager | grep -Ei 'e1000e|nic0|hardware unit hang|watchdog' || true
 } >"$evidence_file" 2>&1
 log "saved network failure evidence to ${evidence_file}"
+
+# Evidence collection takes time. Recheck before disrupting a recovered link.
+if network_healthy; then
+  rm -f "$failure_file"
+  log "connectivity recovered before link reset; skipping recovery"
+  exit 0
+fi
 
 # Persist before touching the NIC, even if recovery or the reboot request fails.
 printf '%s\n' "$now" >"$recovery_file"
