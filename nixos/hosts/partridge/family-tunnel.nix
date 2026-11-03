@@ -20,7 +20,7 @@ in
     description = "Temporary family tunnel hello-world origin";
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${pkgs.python3}/bin/python3 -m http.server 8787 --bind 127.0.0.1 --directory ${helloWorld}";
+      ExecStart = "${pkgs.python314}/bin/python3 -m http.server 8787 --bind 127.0.0.1 --directory ${helloWorld}";
       DynamicUser = true;
       ProtectSystem = "strict";
       ProtectHome = true;

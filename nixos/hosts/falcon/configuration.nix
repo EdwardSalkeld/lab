@@ -7,6 +7,7 @@
 
 {
   imports = [
+    ../../modules/python.nix
     ./hardware-configuration.nix
     ./freshrss.nix
     ./navidrome.nix

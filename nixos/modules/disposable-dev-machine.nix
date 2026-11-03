@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  imports = [ ./python.nix ];
+
   nixpkgs.config.allowUnfreePredicate =
     pkg:
     builtins.elem (pkgs.lib.getName pkg) [
@@ -79,7 +81,6 @@
     pkg-config
     postgresql
     pulumi
-    python3
     restic
     ripgrep
     stow

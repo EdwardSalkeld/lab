@@ -173,25 +173,26 @@
           );
         in
         {
-          magpie-chatting-shell-python = pkgs.runCommand "magpie-chatting-shell-python-check" { } ''
-            # This is the profile exposed as /run/current-system/sw, which
-            # login shells select after rebuilding PATH. Test the actual
-            # profile, not only the worker's explicitly wrapped interpreter.
-            export PYTHONPATH=${chattingSrc}
-            export PYTHONDONTWRITEBYTECODE=1
-            ${self.nixosConfigurations.magpie.config.system.path}/bin/python3 -c '
-            import sys
-            assert sys.version_info >= (3, 14), sys.version
-            import croniter
-            import app.main_reply
-            '
-            touch "$out"
-          '';
+          lab-python = pkgs.runCommand "lab-python-check" { } (
+            pkgs.lib.concatMapStringsSep "\n" (host: ''
+              ${self.nixosConfigurations.${host}.config.system.path}/bin/python3 -c '
+              import sys
+              assert sys.version_info[:2] == (3, 14), sys.version
+              '
+            '') (builtins.attrNames self.nixosConfigurations)
+            + ''
+              # Exercise the reply helper through Magpie's default profile too.
+              export PYTHONPATH=${chattingSrc}
+              export PYTHONDONTWRITEBYTECODE=1
+              ${self.nixosConfigurations.magpie.config.system.path}/bin/python3 -c 'import app.main_reply'
+              touch "$out"
+            ''
+          );
 
           router-syslog =
             pkgs.runCommand "router-syslog-check"
               {
-                nativeBuildInputs = [ pkgs.python3 ];
+                nativeBuildInputs = [ pkgs.python314 ];
                 routerConfig =
                   pkgs.writeText "router-syslog.alloy"
                     partridgeConfig.environment.etc."alloy/router-syslog.alloy".text;
@@ -298,7 +299,6 @@
         magpie = nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
-            inherit chattingWorkerPython;
             chattingRuntimePackage = chattingRuntime;
             codexPackage = pkgsUnstable.codex;
             tailscalePackage = pkgsUnstable.tailscale;
