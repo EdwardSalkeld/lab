@@ -1,5 +1,5 @@
 [Unit]
-Description=Recover Luna networking after sustained dual-probe failure
+Description=Recover Luna networking after sustained loss of all off-host probes
 After=network-online.target
 Wants=network-online.target
 

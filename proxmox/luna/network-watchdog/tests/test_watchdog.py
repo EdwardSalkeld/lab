@@ -9,6 +9,7 @@ import unittest
 
 
 WATCHDOG = Path(__file__).resolve().parents[1] / "luna-network-watchdog"
+LAN_PEERS = ("10.4.1.32", "10.4.1.30", "10.4.1.31")
 MOCK = r"""#!/usr/bin/env python3
 import json
 import os
@@ -25,7 +26,16 @@ if name == "date":
 elif name == "ping":
     after_reset = (root / "reset").exists()
     probes = settings["after"] if after_reset else settings["before"]
-    sys.exit(0 if probes[sys.argv[-1]] else 1)
+    address = sys.argv[-1]
+    ready_after = settings.get("reachable_after_probe", {}).get(address)
+    if ready_after is not None:
+        calls = sum(
+            1 for line in (root / "commands.jsonl").read_text().splitlines()
+            if (cmd := json.loads(line))[0] == "ping" and cmd[-1] == address
+        )
+        if calls >= ready_after:
+            sys.exit(0)
+    sys.exit(0 if probes.get(address, False) else 1)
 elif name == "ip" and sys.argv[1:3] == ["link", "set"]:
     (root / "reset").touch()
 elif name == "systemctl":
@@ -140,6 +150,34 @@ class WatchdogTests(unittest.TestCase):
             (self.state / "last_automatic_recovery_epoch").read_text().strip(), "200000"
         )
 
+    def test_each_lan_peer_prevents_reset_and_reboot_during_router_outage(self):
+        # Exercise upgrading with an old preserved config, not just no config.
+        (self.root / "config").write_text(
+            "gateway=10.4.1.1\nexternal_address=1.1.1.1\n"
+        )
+        for address in LAN_PEERS:
+            with self.subTest(address=address):
+                self.settings["before"] = {address: True}
+                (self.state / "consecutive_failures").write_text("5\n")
+                self.assertEqual(self.run_watchdog(), 0)
+                self.assertFalse((self.state / "consecutive_failures").exists())
+                self.assertFalse(
+                    (self.state / "last_automatic_recovery_epoch").exists()
+                )
+                self.assertEqual(self.recovery_commands(), [])
+                self.assertIn(
+                    ["ping", "-I", "vmbr0", "-n", "-q", "-c", "1", "-W", "3", address],
+                    self.commands(),
+                )
+
+    def test_lan_peer_recovery_before_reset_prevents_any_disruption(self):
+        (self.state / "consecutive_failures").write_text("2\n")
+        self.settings["reachable_after_probe"] = {LAN_PEERS[0]: 2}
+        self.assertEqual(self.run_watchdog(), 0)
+        self.assertEqual(self.recovery_commands(), [])
+        self.assertFalse((self.state / "consecutive_failures").exists())
+        self.assertFalse((self.state / "last_automatic_recovery_epoch").exists())
+
     def test_repeated_failures_are_capped_until_expiry(self):
         self.threshold()
         original = self.recovery_commands()
@@ -157,7 +195,7 @@ class WatchdogTests(unittest.TestCase):
         self.assertEqual(self.run_watchdog(), 1)
 
     def test_recovery_on_either_probe_avoids_reboot_and_remains_capped(self):
-        for address in ("10.4.1.1", "1.1.1.1"):
+        for address in (*LAN_PEERS, "10.4.1.1", "1.1.1.1"):
             with self.subTest(address=address):
                 for path in self.state.iterdir():
                     path.unlink()

@@ -1,0 +1,20 @@
+name: Luna network watchdog
+
+on:
+  pull_request:
+    paths:
+      - 'proxmox/luna/network-watchdog/**'
+      - '.github/workflows/luna-network-watchdog.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check shell syntax
+        run: bash -n proxmox/luna/network-watchdog/{luna-network-watchdog,luna-network-watchdog.conf,install.sh}
+      - name: Check recovery decisions with mocked host commands
+        run: python3 -m unittest discover -s proxmox/luna/network-watchdog/tests -v
