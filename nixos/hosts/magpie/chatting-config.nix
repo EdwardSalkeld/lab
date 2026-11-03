@@ -63,6 +63,7 @@ let
     telegram_bot_token_env = "CHATTING_TELEGRAM_BOT_TOKEN";
     telegram_api_base_url = "https://api.telegram.org";
     telegram_poll_timeout_seconds = 20;
+    telegram_workspace_forum_chat_id = "-1004372890338"; # ThreadTest
     telegram_allowed_chat_ids = [
       "8605042448"
       "-4974044081"
