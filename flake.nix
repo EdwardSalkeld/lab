@@ -173,6 +173,21 @@
           );
         in
         {
+          magpie-chatting-shell-python = pkgs.runCommand "magpie-chatting-shell-python-check" { } ''
+            # This is the profile exposed as /run/current-system/sw, which
+            # login shells select after rebuilding PATH. Test the actual
+            # profile, not only the worker's explicitly wrapped interpreter.
+            export PYTHONPATH=${chattingSrc}
+            export PYTHONDONTWRITEBYTECODE=1
+            ${self.nixosConfigurations.magpie.config.system.path}/bin/python3 -c '
+            import sys
+            assert sys.version_info >= (3, 14), sys.version
+            import croniter
+            import app.main_reply
+            '
+            touch "$out"
+          '';
+
           router-syslog =
             pkgs.runCommand "router-syslog-check"
               {
@@ -283,6 +298,7 @@
         magpie = nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
+            inherit chattingWorkerPython;
             chattingRuntimePackage = chattingRuntime;
             codexPackage = pkgsUnstable.codex;
             tailscalePackage = pkgsUnstable.tailscale;

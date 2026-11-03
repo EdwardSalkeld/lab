@@ -1,4 +1,9 @@
-{ pkgs, codexPackage, ... }:
+{
+  pkgs,
+  codexPackage,
+  chattingWorkerPython,
+  ...
+}:
 
 {
   imports = [
@@ -169,7 +174,9 @@
     # MPD over the network, without an interactive SSH session there.
     mpc
     nodejs
-    python3
+    # Login shells rebuild PATH from system packages, dropping the worker's
+    # interpreter prefix. Keep their Python and dependencies identical too.
+    chattingWorkerPython
     ripgrep
     rsync
     sqlite
