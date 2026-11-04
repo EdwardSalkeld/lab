@@ -805,18 +805,18 @@ let
       isPaused = false;
     };
   # APScheduler logs the outcome even when the journal priority remains info.
-  # Three hourly exceptions without a successful poll in the same window warrant
+  # Three ten-minute poll exceptions without a success in the window warrant
   # attention. A successful poll removes the series immediately on evaluation;
   # NoData stays OK because service/target-down alerts cover a stopped worker.
   mcmTransmissionPollLogs = ''{host="kite", source="journal", systemd_unit="mcm-worker.service"} |= "apscheduler.executors.default:Job" |= "poll_transmission_once ("'';
   mcmTransmissionFailuresAlert = mkLokiThresholdAlert {
     uid = "mcm-transmission-repeated-failures";
     title = "MCM Transmission polling repeatedly fails";
-    expr = ''sum(count_over_time(${mcmTransmissionPollLogs} |= "raised an exception" [3h15m])) unless sum(count_over_time(${mcmTransmissionPollLogs} |= "executed successfully" [3h15m]))'';
+    expr = ''sum(count_over_time(${mcmTransmissionPollLogs} |= "raised an exception" [35m])) unless sum(count_over_time(${mcmTransmissionPollLogs} |= "executed successfully" [35m]))'';
     threshold = 2;
     for = "0s";
     summary = "MCM cannot poll Transmission";
-    description = "At least three Transmission polling jobs on kite failed in 3h15m, with no successful poll in that window. Download completion tracking may be stalled. Check mcm-worker.service logs and the remote Transmission RPC server/listener, reachability and configured endpoint. A successful poll clears this alert at the next evaluation.";
+    description = "At least three Transmission polling jobs on kite failed in 35m, with no successful poll in that window. Polls run every ten minutes. Download completion tracking may be stalled. Check mcm-worker.service logs and the remote Transmission RPC server/listener, reachability and configured endpoint. A successful poll clears this alert at the next evaluation.";
     severity = "warning";
     host = "kite";
     service = "mcm";

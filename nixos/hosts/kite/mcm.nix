@@ -247,6 +247,9 @@ in
 
     systemd.services.mcm-worker = common // {
       description = "Media Collection Manager worker";
+      environment = common.environment // {
+        MCM_TRANSMISSION_POLL_SECONDS = "600";
+      };
       after = common.after ++ [ "mcm-migrate.service" ];
       requires = [ "mcm-migrate.service" ];
       wantedBy = [ "multi-user.target" ];
