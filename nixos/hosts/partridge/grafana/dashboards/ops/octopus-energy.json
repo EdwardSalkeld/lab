@@ -22,6 +22,182 @@
   "links": [],
   "panels": [
     {
+      "id": 20,
+      "title": "Selected-range electricity",
+      "type": "stat",
+      "description": "Sum of stored readings in the exact selected range, with end time excluded. Check the missing-reading panel.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatth",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT SUM(consumption) AS value FROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'electricity'"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Selected-range gas (estimated)",
+      "type": "stat",
+      "description": "Sum of stored readings in the exact selected range, with end time excluded. Check the missing-reading panel. Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatth",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT SUM(consumption * 1.02264 * 40.0 / 3.6) AS value FROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Selected-range gas volume",
+      "type": "stat",
+      "description": "Sum of stored readings in the exact selected range, with end time excluded. Check the missing-reading panel.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m3",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT SUM(consumption) AS value FROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Missing half-hours",
+      "type": "stat",
+      "description": "Expected UTC half-hour slots in the selected range without a stored reading, separately for each fuel. London clock changes are included. Totals exclude these missing values; zero consumption is not a missing reading.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH expected AS (\n  SELECT slot\n  FROM generate_series(\n    to_timestamp(ceil(extract(epoch FROM $__timeFrom()::timestamptz) / 1800) * 1800),\n    $__timeTo()::timestamptz, interval '30 minutes'\n  ) AS slot\n  WHERE slot < $__timeTo()::timestamptz\n)\nSELECT\n  COUNT(*) FILTER (WHERE e.interval_start IS NULL) AS electricity,\n  COUNT(*) FILTER (WHERE g.interval_start IS NULL) AS gas\nFROM expected\nLEFT JOIN usages e ON e.interval_start = expected.slot AND e.usage_type = 'electricity'\nLEFT JOIN usages g ON g.interval_start = expected.slot AND g.usage_type = 'gas'"
+        }
+      ]
+    },
+    {
       "datasource": {
         "type": "postgres",
         "uid": "scheduler-postgres"
@@ -76,7 +252,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "kwatth"
         },
         "overrides": [
           {
@@ -109,7 +286,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 5
       },
       "id": 1,
       "options": {
@@ -135,7 +312,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT interval_start AS time, consumption\nFROM usages\nWHERE $__timeFilter(interval_start)\n  AND usage_type = 'electricity'\nORDER BY interval_start",
+          "rawSql": "SELECT interval_start AS time, consumption\nFROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n  AND usage_type = 'electricity'\nORDER BY interval_start",
           "refId": "A",
           "sql": {
             "columns": [
@@ -164,7 +341,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT interval_start AS time, consumption AS average_consumption\nFROM (\n  SELECT\n    interval_start,\n    consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'electricity'\n) t\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0\nORDER BY interval_start",
+          "rawSql": "SELECT interval_start AS time, consumption AS average_consumption\nFROM (\n  SELECT\n    interval_start,\n    consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'electricity'\n) t\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0\nORDER BY interval_start",
           "refId": "B",
           "sql": {
             "columns": [
@@ -193,7 +370,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  DATE_BIN('1 hour'::interval, interval_start, '1970-01-01'::timestamptz) AS time,\n  AVG(consumption) AS avg_stat,\n  MIN(consumption) AS min_stat,\n  MAX(consumption) AS max_stat\nFROM usages\nWHERE $__timeFilter(interval_start)\n  AND usage_type = 'electricity'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  DATE_BIN('1 hour'::interval, interval_start, '1970-01-01'::timestamptz) AS time,\n  AVG(consumption) AS avg_stat,\n  MIN(consumption) AS min_stat,\n  MAX(consumption) AS max_stat\nFROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n  AND usage_type = 'electricity'\nGROUP BY 1\nORDER BY 1",
           "refId": "C",
           "sql": {
             "columns": [
@@ -272,7 +449,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "kwatth"
         },
         "overrides": []
       },
@@ -280,7 +458,7 @@
         "h": 11,
         "w": 10,
         "x": 12,
-        "y": 0
+        "y": 5
       },
       "id": 3,
       "options": {
@@ -305,7 +483,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH base AS (\n  SELECT\n    interval_start,\n    consumption\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'electricity'\n),\nwith_cumulative AS (\n  SELECT\n    interval_start,\n    SUM(consumption) OVER (\n      ORDER BY interval_start\n      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    ) AS cumulative_consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM base\n)\nSELECT\n  interval_start AS time,\n  cumulative_consumption\nFROM with_cumulative\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0\nORDER BY interval_start",
+          "rawSql": "WITH base AS (\n  SELECT\n    interval_start,\n    consumption\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'electricity'\n),\nwith_cumulative AS (\n  SELECT\n    interval_start,\n    SUM(consumption) OVER (\n      ORDER BY interval_start\n      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    ) AS cumulative_consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM base\n)\nSELECT\n  interval_start AS time,\n  cumulative_consumption\nFROM with_cumulative\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0 OR rn = total_rows\nORDER BY interval_start",
           "refId": "A",
           "sql": {
             "columns": [
@@ -381,10 +559,11 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 909.0133333333333
               }
             ]
-          }
+          },
+          "unit": "kwatth"
         },
         "overrides": [
           {
@@ -417,7 +596,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 11
+        "y": 16
       },
       "id": 2,
       "options": {
@@ -442,7 +621,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT interval_start AS time, consumption\nFROM usages\nWHERE $__timeFilter(interval_start)\n  AND usage_type = 'gas'\nORDER BY interval_start",
+          "rawSql": "SELECT interval_start AS time, consumption * 1.02264 * 40.0 / 3.6 AS consumption\nFROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n  AND usage_type = 'gas'\nORDER BY interval_start",
           "refId": "A",
           "sql": {
             "columns": [
@@ -471,7 +650,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT interval_start AS time, consumption AS average_consumption\nFROM (\n  SELECT\n    interval_start,\n    consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'gas'\n) t\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0\nORDER BY interval_start",
+          "rawSql": "SELECT interval_start AS time, consumption * 1.02264 * 40.0 / 3.6 AS average_consumption\nFROM (\n  SELECT\n    interval_start,\n    consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'\n) t\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0\nORDER BY interval_start",
           "refId": "B",
           "sql": {
             "columns": [
@@ -492,8 +671,9 @@
           }
         }
       ],
-      "title": "Gas Usage",
-      "type": "timeseries"
+      "title": "Gas Usage (estimated)",
+      "type": "timeseries",
+      "description": "Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates."
     },
     {
       "datasource": {
@@ -547,10 +727,11 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 909.0133333333333
               }
             ]
-          }
+          },
+          "unit": "kwatth"
         },
         "overrides": []
       },
@@ -558,7 +739,7 @@
         "h": 11,
         "w": 10,
         "x": 12,
-        "y": 11
+        "y": 16
       },
       "id": 4,
       "options": {
@@ -583,7 +764,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH base AS (\n  SELECT\n    interval_start,\n    consumption\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'gas'\n),\nwith_cumulative AS (\n  SELECT\n    interval_start,\n    SUM(consumption) OVER (\n      ORDER BY interval_start\n      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    ) AS cumulative_consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM base\n)\nSELECT\n  interval_start AS time,\n  cumulative_consumption\nFROM with_cumulative\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0\nORDER BY interval_start",
+          "rawSql": "WITH base AS (\n  SELECT\n    interval_start,\n    consumption * 1.02264 * 40.0 / 3.6 AS consumption\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'\n),\nwith_cumulative AS (\n  SELECT\n    interval_start,\n    SUM(consumption) OVER (\n      ORDER BY interval_start\n      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n    ) AS cumulative_consumption,\n    ROW_NUMBER() OVER (ORDER BY interval_start) AS rn,\n    COUNT(*) OVER () AS total_rows\n  FROM base\n)\nSELECT\n  interval_start AS time,\n  cumulative_consumption\nFROM with_cumulative\nWHERE ((rn - 1) % GREATEST(CEIL(total_rows / 80.0)::int, 1)) = 0 OR rn = total_rows\nORDER BY interval_start",
           "refId": "A",
           "sql": {
             "columns": [
@@ -604,8 +785,9 @@
           }
         }
       ],
-      "title": "Cumulative Gas Usage",
-      "type": "timeseries"
+      "title": "Cumulative Gas Usage (estimated)",
+      "type": "timeseries",
+      "description": "Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates."
     },
     {
       "datasource": {
@@ -662,7 +844,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "kwatth"
         },
         "overrides": []
       },
@@ -670,7 +853,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 27
       },
       "id": 5,
       "options": {
@@ -696,7 +879,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  DATE_TRUNC('day', interval_start) AS time,\n  SUM(consumption) AS consumption\nFROM usages\nWHERE $__timeFilter(interval_start)\n  AND usage_type = 'electricity'\nGROUP BY 1\nORDER BY 1\n",
+          "rawSql": "SELECT\n  DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AT TIME ZONE 'Europe/London' AS time,\n  SUM(consumption) AS consumption\nFROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n  AND usage_type = 'electricity'\nGROUP BY 1\nORDER BY 1\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -773,14 +956,15 @@
               },
               {
                 "color": "#EAB839",
-                "value": 3
+                "value": 34.087999999999994
               },
               {
                 "color": "red",
-                "value": 5
+                "value": 56.81333333333333
               }
             ]
-          }
+          },
+          "unit": "kwatth"
         },
         "overrides": []
       },
@@ -788,7 +972,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 38
       },
       "id": 6,
       "options": {
@@ -814,7 +998,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  DATE_TRUNC('day', interval_start) AS time,\n  SUM(consumption) AS consumption\nFROM usages\nWHERE $__timeFilter(interval_start)\n  AND usage_type = 'gas'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AT TIME ZONE 'Europe/London' AS time,\n  SUM(consumption * 1.02264 * 40.0 / 3.6) AS consumption\nFROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n  AND usage_type = 'gas'\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -835,8 +1019,9 @@
           }
         }
       ],
-      "title": "Daily Gas Usage",
-      "type": "timeseries"
+      "title": "Daily Gas Usage (estimated)",
+      "type": "timeseries",
+      "description": "Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates."
     }
   ],
   "refresh": "",
@@ -850,9 +1035,10 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "browser",
+  "timezone": "Europe/London",
   "title": "Octopus Energy",
   "uid": "ops-octopus-energy",
   "version": 1,
-  "weekStart": ""
+  "weekStart": "",
+  "description": "Compare app calendar periods using London time: start midnight, end midnight after the final day (excluded). Top totals include every stored reading in the selected range; missing readings are not filled. Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates."
 }
