@@ -22,6 +22,182 @@
   "links": [],
   "panels": [
     {
+      "id": 20,
+      "title": "Selected-range electricity",
+      "type": "stat",
+      "description": "Sum of stored readings in the exact selected range, with end time excluded. Check the missing-reading panel.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatth",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT SUM(consumption) AS value FROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'electricity'"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Selected-range gas (estimated)",
+      "type": "stat",
+      "description": "Sum of stored readings in the exact selected range, with end time excluded. Check the missing-reading panel. Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatth",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT SUM(consumption * 1.02264 * 40.0 / 3.6) AS value FROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Selected-range gas volume",
+      "type": "stat",
+      "description": "Sum of stored readings in the exact selected range, with end time excluded. Check the missing-reading panel.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m3",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT SUM(consumption) AS value FROM usages\nWHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Missing half-hours",
+      "type": "stat",
+      "description": "Expected UTC half-hour slots in the selected range without a stored reading, separately for each fuel. London clock changes are included. Totals exclude these missing values; zero consumption is not a missing reading.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "scheduler-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH expected AS (\n  SELECT slot\n  FROM generate_series(\n    to_timestamp(ceil(extract(epoch FROM $__timeFrom()::timestamptz) / 1800) * 1800),\n    $__timeTo()::timestamptz, interval '30 minutes'\n  ) AS slot\n  WHERE slot < $__timeTo()::timestamptz\n)\nSELECT\n  COUNT(*) FILTER (WHERE e.interval_start IS NULL) AS electricity,\n  COUNT(*) FILTER (WHERE g.interval_start IS NULL) AS gas\nFROM expected\nLEFT JOIN usages e ON e.interval_start = expected.slot AND e.usage_type = 'electricity'\nLEFT JOIN usages g ON g.interval_start = expected.slot AND g.usage_type = 'gas'"
+        }
+      ]
+    },
+    {
       "datasource": {
         "type": "postgres",
         "uid": "scheduler-postgres"
@@ -134,7 +310,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 5
       },
       "id": 1,
       "options": {
@@ -160,7 +336,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'electricity'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) AS weekly_kwh,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_kwh\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_kwh,\n  AVG(weekly_kwh) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_kwh\nFROM full_weeks\nORDER BY time",
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'electricity'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) AS weekly_kwh,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_kwh\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_kwh,\n  AVG(weekly_kwh) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_kwh\nFROM full_weeks\nORDER BY time",
           "refId": "A",
           "sql": {
             "columns": [
@@ -182,7 +358,8 @@
         }
       ],
       "title": "Weekly Electricity Usage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Weekly charts show only weeks with seven days having at least 46 readings each; partial edge weeks are omitted. Use the top totals for arbitrary ranges."
     },
     {
       "datasource": {
@@ -236,7 +413,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 909.0133333333333
               }
             ]
           },
@@ -297,7 +474,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 5
       },
       "id": 2,
       "options": {
@@ -323,7 +500,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'gas'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) AS weekly_kwh,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_kwh\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_kwh,\n  AVG(weekly_kwh) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_kwh\nFROM full_weeks\nORDER BY time",
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption * 1.02264 * 40.0 / 3.6) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) AS weekly_kwh,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_kwh\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_kwh,\n  AVG(weekly_kwh) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_kwh\nFROM full_weeks\nORDER BY time",
           "refId": "A",
           "sql": {
             "columns": [
@@ -344,15 +521,16 @@
           }
         }
       ],
-      "title": "Weekly Gas Usage",
-      "type": "timeseries"
+      "title": "Weekly Gas Usage (estimated)",
+      "type": "timeseries",
+      "description": "Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates. Weekly charts show only weeks with seven days having at least 46 readings each; partial edge weeks are omitted. Use the top totals for arbitrary ranges."
     },
     {
       "datasource": {
         "type": "postgres",
         "uid": "scheduler-postgres"
       },
-      "description": "Rough cost at 28p/kWh, excluding standing charges.",
+      "description": "Rough cost at 28p/kWh, excluding standing charges. Weekly charts show only weeks with seven days having at least 46 readings each; partial edge weeks are omitted. Use the top totals for arbitrary ranges.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -461,7 +639,7 @@
         "h": 11,
         "w": 12,
         "x": 0,
-        "y": 11
+        "y": 16
       },
       "id": 3,
       "options": {
@@ -487,7 +665,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'electricity'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) * 0.28 AS weekly_cost_gbp,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_cost_gbp\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_cost_gbp,\n  AVG(weekly_cost_gbp) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_cost_gbp\nFROM full_weeks\nORDER BY time",
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'electricity'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) * 0.28 AS weekly_cost_gbp,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_cost_gbp\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_cost_gbp,\n  AVG(weekly_cost_gbp) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_cost_gbp\nFROM full_weeks\nORDER BY time",
           "refId": "A",
           "sql": {
             "columns": [
@@ -516,7 +694,7 @@
         "type": "postgres",
         "uid": "scheduler-postgres"
       },
-      "description": "Rough cost at 7p/kWh, excluding standing charges.",
+      "description": "Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates. Weekly charts show only weeks with seven days having at least 46 readings each; partial edge weeks are omitted. Use the top totals for arbitrary ranges.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -564,7 +742,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 909.0133333333333
               }
             ]
           },
@@ -625,7 +803,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 11
+        "y": 16
       },
       "id": 4,
       "options": {
@@ -651,7 +829,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE $__timeFilter(interval_start)\n    AND usage_type = 'gas'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) * 0.07 AS weekly_cost_gbp,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_cost_gbp\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_cost_gbp,\n  AVG(weekly_cost_gbp) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_cost_gbp\nFROM full_weeks\nORDER BY time",
+          "rawSql": "WITH daily AS (\n  SELECT\n    DATE_TRUNC('day', interval_start AT TIME ZONE 'Europe/London') AS day_local,\n    SUM(consumption * 1.02264 * 40.0 / 3.6) AS day_kwh,\n    COUNT(*) AS reading_count\n  FROM usages\n  WHERE interval_start >= $__timeFrom()::timestamptz\n    AND interval_start < $__timeTo()::timestamptz\n    AND usage_type = 'gas'\n  GROUP BY 1\n), complete_days AS (\n  SELECT day_local, day_kwh\n  FROM daily\n  WHERE reading_count >= 46\n), weekly AS (\n  SELECT\n    DATE_TRUNC('week', day_local) AT TIME ZONE 'Europe/London' AS time,\n    SUM(day_kwh) * 0.07 AS weekly_cost_gbp,\n    COUNT(*) AS complete_day_count\n  FROM complete_days\n  GROUP BY 1\n), full_weeks AS (\n  SELECT time, weekly_cost_gbp\n  FROM weekly\n  WHERE complete_day_count = 7\n)\nSELECT\n  time,\n  weekly_cost_gbp,\n  AVG(weekly_cost_gbp) OVER (\n    ORDER BY time\n    ROWS BETWEEN 3 PRECEDING AND CURRENT ROW\n  ) AS rolling_4w_avg_cost_gbp\nFROM full_weeks\nORDER BY time",
           "refId": "A",
           "sql": {
             "columns": [
@@ -672,7 +850,7 @@
           }
         }
       ],
-      "title": "Weekly Gas Cost",
+      "title": "Weekly Gas Cost (estimated)",
       "type": "timeseries"
     }
   ],
@@ -690,9 +868,10 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "browser",
+  "timezone": "Europe/London",
   "title": "Octopus Energy Weekly Trends",
   "uid": "ops-octopus-energy-weekly",
   "version": 1,
-  "weekStart": ""
+  "weekStart": "",
+  "description": "Compare app calendar periods using London time: start midnight, end midnight after the final day (excluded). Top totals include every stored reading in the selected range; missing readings are not filled. Gas is stored as m³ and converted using m³ × 1.02264 × calorific value ÷ 3.6. The default 40 MJ/m³ is an estimate, not a verified supplier value. The app/bill may differ. No standing charge is included in cost estimates."
 }
