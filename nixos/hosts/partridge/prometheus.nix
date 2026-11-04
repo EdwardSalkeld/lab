@@ -65,6 +65,14 @@ in
         ];
       }
       {
+        job_name = "chatting-worker";
+        scrape_interval = "5s";
+        scheme = "https";
+        static_configs = [
+          { targets = [ "chatting-worker.int.alcachofa.faith" ]; }
+        ];
+      }
+      {
         # Public HTTP(S) availability checks.  The target URL is retained as
         # `instance` so alerts name the affected site rather than the exporter.
         job_name = "http-probe";
