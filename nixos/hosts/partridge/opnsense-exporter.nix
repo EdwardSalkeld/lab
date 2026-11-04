@@ -54,7 +54,9 @@ in
       Group = group;
       EnvironmentFile = config.sops.templates."opnsense-exporter.env".path;
       # Disable collectors for services not running here (avoids noisy errors).
-      ExecStart = "${exporter}/bin/opnsense-exporter --web.listen-address=${listenAddr} --exporter.disable-wireguard --exporter.disable-ipsec --exporter.disable-openvpn --exporter.disable-unbound";
+      # The live service inventory has dnsmasq and no Kea service. Do not query
+      # unused Kea APIs or grant privileges just to suppress their 403 responses.
+      ExecStart = "${exporter}/bin/opnsense-exporter --web.listen-address=${listenAddr} --exporter.disable-wireguard --exporter.disable-ipsec --exporter.disable-openvpn --exporter.disable-unbound --exporter.disable-kea-dhcpv4 --exporter.disable-kea-dhcpv6";
       Restart = "on-failure";
       RestartSec = "10s";
       NoNewPrivileges = true;
