@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  lib,
   grafanaPackage,
   ...
 }:
@@ -789,9 +790,11 @@ let
       execErrState = "Error";
       inherit for;
       annotations = {
+        inherit description summary;
+      }
+      // lib.optionalAttrs (dashboardUid != null) {
         __dashboardUid__ = dashboardUid;
         __panelId__ = toString panelId;
-        inherit description summary;
       };
       labels = {
         service = service;
@@ -801,6 +804,25 @@ let
       notification_settings.receiver = alertsContactPointName;
       isPaused = false;
     };
+  # APScheduler logs the outcome even when the journal priority remains info.
+  # Three hourly exceptions without a successful poll in the same window warrant
+  # attention. A successful poll removes the series immediately on evaluation;
+  # NoData stays OK because service/target-down alerts cover a stopped worker.
+  mcmTransmissionPollLogs = ''{host="kite", source="journal", systemd_unit="mcm-worker.service"} |= "apscheduler.executors.default:Job" |= "poll_transmission_once ("'';
+  mcmTransmissionFailuresAlert = mkLokiThresholdAlert {
+    uid = "mcm-transmission-repeated-failures";
+    title = "MCM Transmission polling repeatedly fails";
+    expr = ''sum(count_over_time(${mcmTransmissionPollLogs} |= "raised an exception" [3h15m])) unless sum(count_over_time(${mcmTransmissionPollLogs} |= "executed successfully" [3h15m]))'';
+    threshold = 2;
+    for = "0s";
+    summary = "MCM cannot poll Transmission";
+    description = "At least three Transmission polling jobs on kite failed in 3h15m, with no successful poll in that window. Download completion tracking may be stalled. Check mcm-worker.service logs and the remote Transmission RPC server/listener, reachability and configured endpoint. A successful poll clears this alert at the next evaluation.";
+    severity = "warning";
+    host = "kite";
+    service = "mcm";
+    dashboardUid = null;
+    panelId = null;
+  };
   rsyncErrorPatterns = builtins.concatStringsSep "|" [
     "(?i)rsync error"
     "(?i)io error"
@@ -1407,6 +1429,7 @@ in
           interval = "5m";
           rules = [
             mcmSpotifyDisconnectedAlert
+            mcmTransmissionFailuresAlert
           ];
         }
         {
