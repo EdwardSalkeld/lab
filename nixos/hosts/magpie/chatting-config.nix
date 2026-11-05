@@ -15,6 +15,8 @@
 # through the /api/schedules API and /schedules UI, so schedule_file is retired.
 
 let
+  retentionDays = 14;
+  maintenanceCron = "0 4 * * *";
   workspaceDir = "/srv/chatting/workspace";
   workspacesDir = "/srv/chatting/workspaces";
   contextRefs = [ "repo:${workspaceDir}" ];
@@ -28,6 +30,8 @@ let
   '';
 
   handlerConfig = {
+    maintenance_cron = maintenanceCron;
+    retention_days = retentionDays;
     db_path = "/var/lib/handler/chatting-message-handler.db";
     bbmb_address = "127.0.0.1:9876";
     # Prometheus now scrapes through nginx, so this need not leave the host.

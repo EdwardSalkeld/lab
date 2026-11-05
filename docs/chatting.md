@@ -71,13 +71,38 @@ Runtime and unit changes require busy supervisors to drain before verification.
 
 ## Retention and inspection
 
-`nixos/hosts/magpie/chatting-prune.nix` deletes handler and worker database rows
-older than 30 days each week. The personal inbox database and cache are not
-pruned. The app itself has no built-in database retention.
+The handler's built-in cron scheduler runs database maintenance daily at 04:00
+server local time. The installed values live in `nixos/hosts/magpie/chatting-config.nix`:
+`retentionDays = 14;` and
+`maintenanceCron = "0 4 * * *";`. Change these variables to adjust the policy.
+
+Lab renders only `maintenance_cron` and `retention_days` for maintenance.
+Setting `maintenanceCron = null;` disables it; a valid expression enables it.
+Scheduling uses the global server timezone, with no task-specific timezone setting.
+Timezone is configured through the normal NixOS `time.timeZone` option.
+Cleanup SQL, batching, scheduling and task handling
+belong to Chatting. The previous systemd prune jobs have been removed.
+
+On each scheduled run, the handler cleans its own database and publishes a
+built-in internal task. The worker handles that task directly without launching
+Codex: it removes duplicate audit transcript fields, expires old diagnostic
+rows, and prunes acknowledged delivery history. Each service uses its own
+database permissions; the handler never opens the worker database.
+
+The diagnostic window covers activity, audit and run summaries. Pending,
+attached, active and closing worker tasks are protected. Conversation history,
+workspace/routing state, inbox payloads, token accounting and app-server retry
+journals are preserved. The same retention window covers completed delivery
+and deduplication history; pending worker sends are protected. The personal inbox
+DB and cache are not pruned.
+
+After deployment, cleanup happens at the next scheduled time. The app also
+provides `python3 -m app.main_db_maintenance` for explicit worker maintenance;
+see Chatting's database maintenance documentation. Freed pages are reused;
+compaction is separate. Maintenance counts and failures appear in service logs.
 
 ```sh
-sqlite3 /var/lib/worker/chatting-worker.db "select run_id, result_status, created_at from run_records order by created_at desc limit 20;"
-journalctl -u chatting-handler -u chatting-worker
+journalctl -u chatting-handler -u chatting-worker | grep database_maintenance
 ```
 
 ## Public webhook ingress
