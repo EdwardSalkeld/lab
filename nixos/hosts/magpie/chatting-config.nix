@@ -30,9 +30,7 @@ let
   '';
 
   handlerConfig = {
-    maintenance_enabled = true;
     maintenance_cron = maintenanceCron;
-    maintenance_timezone = "UTC";
     retention_days = retentionDays;
     db_path = "/var/lib/handler/chatting-message-handler.db";
     bbmb_address = "127.0.0.1:9876";

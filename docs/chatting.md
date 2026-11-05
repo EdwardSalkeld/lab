@@ -72,12 +72,14 @@ Runtime and unit changes require busy supervisors to drain before verification.
 ## Retention and inspection
 
 The handler's built-in cron scheduler runs database maintenance daily at 04:00
-UTC. The installed values live in `nixos/hosts/magpie/chatting-config.nix`:
+server local time. The installed values live in `nixos/hosts/magpie/chatting-config.nix`:
 `retentionDays = 14;` and
 `maintenanceCron = "0 4 * * *";`. Change these variables to adjust the policy.
 
-Lab renders only handler configuration: `maintenance_enabled`,
-`maintenance_cron`, `maintenance_timezone` and `retention_days`.
+Lab renders only `maintenance_cron` and `retention_days` for maintenance.
+Setting `maintenanceCron = null;` disables it; a valid expression enables it.
+Scheduling uses the global server timezone, with no task-specific timezone setting.
+Timezone is configured through the normal NixOS `time.timeZone` option.
 Cleanup SQL, batching, scheduling and task handling
 belong to Chatting. The previous systemd prune jobs have been removed.
 
