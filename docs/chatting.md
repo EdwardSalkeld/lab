@@ -71,51 +71,36 @@ Runtime and unit changes require busy supervisors to drain before verification.
 
 ## Retention and inspection
 
-`nixos/hosts/magpie/chatting-prune.nix` runs daily at 04:00 (worker) and 04:10
-(handler), with up to 15 minutes of jitter. The NixOS option
-`services.chatting-prune.retentionDays` defaults to **14** and controls completed
-run diagnostics: activity events, audit records and run summaries. For example,
-set `services.chatting-prune.retentionDays = 21;` to keep three weeks. Daily
-cleanup means expired rows can remain until the next day's sweep.
+The handler's built-in cron scheduler runs database maintenance daily at 04:00
+UTC. The installed values live in `nixos/hosts/magpie/chatting-config.nix`:
+`retentionDays = 14;`, `deliveryRetentionDays = 30;`, and
+`maintenanceCron = "0 4 * * *";`. Change these variables to adjust the policy.
 
-Before expiring worker diagnostics, the job removes historical stdout/stderr
-copies from audit JSON, preserving audit outcome metadata and the activity
-transcript. This idempotent cleanup repeats to catch old supervisors finishing
-after deployment. Current app code no longer writes the duplicate audit copies.
-Worker cleanup uses batches of 100 rows and protects tasks still pending,
-attached, active or closing. Conversation history, workspace/routing state,
-inbox payloads, token accounting and app-server recovery journals are preserved.
+Lab renders only handler configuration: `maintenance_enabled`,
+`maintenance_cron`, `maintenance_timezone`, `diagnostic_retention_days` and
+`delivery_retention_days`. Cleanup SQL, batching, scheduling and task handling
+belong to Chatting. The previous systemd prune jobs have been removed.
 
-Delivery/deduplication retention is independently configurable with
-`services.chatting-prune.deliveryRetentionDays` (default **30**). Worker outbox
-cleanup only removes acknowledged sends whose last update is older than that
-window, and protects unfinished inbox work. Handler deduplication/completion
-ledgers retain their separate 30-day window. The personal inbox database and
-cache are not pruned.
+On each scheduled run, the handler cleans its own database and publishes a
+built-in internal task. The worker handles that task directly without launching
+Codex: it removes duplicate audit transcript fields, expires old diagnostic
+rows, and prunes acknowledged delivery history. Each service uses its own
+database permissions; the handler never opens the worker database.
 
-The deployment includes `chatting-db-maintenance`, using the same pinned app
-source and Python interpreter as the worker. After deploying this change, the
-first scheduled sweep performs the historical cleanup. To run it immediately
-instead, start the existing service:
+The diagnostic window covers activity, audit and run summaries. Pending,
+attached, active and closing worker tasks are protected. Conversation history,
+workspace/routing state, inbox payloads, token accounting and app-server retry
+journals are preserved. Delivery/deduplication retains its independent 30-day
+window; pending worker sends are protected. The personal inbox DB and cache
+are not pruned.
 
-```sh
-sudo systemctl start chatting-prune-worker.service
-sudo journalctl -u chatting-prune-worker.service
-```
-
-For transcript removal alone, without age-based deletion:
+After deployment, cleanup happens at the next scheduled time. The app also
+provides `python3 -m app.main_db_maintenance` for explicit worker maintenance;
+see Chatting's database maintenance documentation. Freed pages are reused;
+compaction is separate. Maintenance counts and failures appear in service logs.
 
 ```sh
-sudo -u worker /run/current-system/sw/bin/chatting-db-maintenance strip-audit-transcripts --db /var/lib/worker/chatting-worker.db
-```
-
-Both operations leave freed SQLite pages available for reuse; they do not
-automatically compact the database file. The app provides maintenance commands
-but does not schedule retention itself.
-
-```sh
-sqlite3 /var/lib/worker/chatting-worker.db "select run_id, result_status, created_at from run_records order by created_at desc limit 20;"
-journalctl -u chatting-handler -u chatting-worker
+journalctl -u chatting-handler -u chatting-worker | grep database_maintenance
 ```
 
 ## Public webhook ingress

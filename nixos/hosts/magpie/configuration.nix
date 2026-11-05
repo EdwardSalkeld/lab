@@ -6,7 +6,6 @@
     ./chatting.nix
     ./chatting-config.nix
     ./chatting-secrets.nix
-    ./chatting-prune.nix
     ./forgejo-runner.nix
     ./web.nix
   ];

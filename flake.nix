@@ -84,17 +84,6 @@
           "$target" --help > /dev/null
         '';
       };
-      chattingMaintenance = pkgs.writeShellApplication {
-        name = "chatting-db-maintenance";
-        runtimeInputs = [ chattingWorkerPython ];
-        text = ''
-          export PYTHONPATH=${chattingSrc}
-          exec python -m app.main_db_maintenance "$@"
-        '';
-        derivationArgs.postCheck = ''
-          "$target" --help > /dev/null
-        '';
-      };
       bbmbServer = pkgs.buildGo127Module {
         pname = "bbmb-server";
         version = "v10";
@@ -166,7 +155,6 @@
         bitwarden-mirror = bitwardenMirror;
         chatting-handler = chattingHandler;
         chatting-runtime = chattingRuntime;
-        chatting-db-maintenance = chattingMaintenance;
         chatting-worker = chattingWorker;
         octopus-dl = octopusDl;
         linear-export = linearExport;
@@ -312,7 +300,6 @@
           inherit system;
           specialArgs = {
             chattingRuntimePackage = chattingRuntime;
-            chattingMaintenancePackage = chattingMaintenance;
             codexPackage = pkgsUnstable.codex;
             tailscalePackage = pkgsUnstable.tailscale;
           };
