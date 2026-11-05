@@ -71,9 +71,47 @@ Runtime and unit changes require busy supervisors to drain before verification.
 
 ## Retention and inspection
 
-`nixos/hosts/magpie/chatting-prune.nix` deletes handler and worker database rows
-older than 30 days each week. The personal inbox database and cache are not
-pruned. The app itself has no built-in database retention.
+`nixos/hosts/magpie/chatting-prune.nix` runs daily at 04:00 (worker) and 04:10
+(handler), with up to 15 minutes of jitter. The NixOS option
+`services.chatting-prune.retentionDays` defaults to **14** and controls completed
+run diagnostics: activity events, audit records and run summaries. For example,
+set `services.chatting-prune.retentionDays = 21;` to keep three weeks. Daily
+cleanup means expired rows can remain until the next day's sweep.
+
+Before expiring worker diagnostics, the job removes historical stdout/stderr
+copies from audit JSON, preserving audit outcome metadata and the activity
+transcript. This idempotent cleanup repeats to catch old supervisors finishing
+after deployment. Current app code no longer writes the duplicate audit copies.
+Worker cleanup uses batches of 100 rows and protects tasks still pending,
+attached, active or closing. Conversation history, workspace/routing state,
+inbox payloads, token accounting and app-server recovery journals are preserved.
+
+Delivery/deduplication retention is independently configurable with
+`services.chatting-prune.deliveryRetentionDays` (default **30**). Worker outbox
+cleanup only removes acknowledged sends whose last update is older than that
+window, and protects unfinished inbox work. Handler deduplication/completion
+ledgers retain their separate 30-day window. The personal inbox database and
+cache are not pruned.
+
+The deployment includes `chatting-db-maintenance`, using the same pinned app
+source and Python interpreter as the worker. After deploying this change, the
+first scheduled sweep performs the historical cleanup. To run it immediately
+instead, start the existing service:
+
+```sh
+sudo systemctl start chatting-prune-worker.service
+sudo journalctl -u chatting-prune-worker.service
+```
+
+For transcript removal alone, without age-based deletion:
+
+```sh
+sudo -u worker /run/current-system/sw/bin/chatting-db-maintenance strip-audit-transcripts --db /var/lib/worker/chatting-worker.db
+```
+
+Both operations leave freed SQLite pages available for reuse; they do not
+automatically compact the database file. The app provides maintenance commands
+but does not schedule retention itself.
 
 ```sh
 sqlite3 /var/lib/worker/chatting-worker.db "select run_id, result_status, created_at from run_records order by created_at desc limit 20;"
