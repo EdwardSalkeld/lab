@@ -73,12 +73,12 @@ Runtime and unit changes require busy supervisors to drain before verification.
 
 The handler's built-in cron scheduler runs database maintenance daily at 04:00
 UTC. The installed values live in `nixos/hosts/magpie/chatting-config.nix`:
-`retentionDays = 14;`, `deliveryRetentionDays = 30;`, and
+`retentionDays = 14;` and
 `maintenanceCron = "0 4 * * *";`. Change these variables to adjust the policy.
 
 Lab renders only handler configuration: `maintenance_enabled`,
-`maintenance_cron`, `maintenance_timezone`, `diagnostic_retention_days` and
-`delivery_retention_days`. Cleanup SQL, batching, scheduling and task handling
+`maintenance_cron`, `maintenance_timezone` and `retention_days`.
+Cleanup SQL, batching, scheduling and task handling
 belong to Chatting. The previous systemd prune jobs have been removed.
 
 On each scheduled run, the handler cleans its own database and publishes a
@@ -90,9 +90,9 @@ database permissions; the handler never opens the worker database.
 The diagnostic window covers activity, audit and run summaries. Pending,
 attached, active and closing worker tasks are protected. Conversation history,
 workspace/routing state, inbox payloads, token accounting and app-server retry
-journals are preserved. Delivery/deduplication retains its independent 30-day
-window; pending worker sends are protected. The personal inbox DB and cache
-are not pruned.
+journals are preserved. The same retention window covers completed delivery
+and deduplication history; pending worker sends are protected. The personal inbox
+DB and cache are not pruned.
 
 After deployment, cleanup happens at the next scheduled time. The app also
 provides `python3 -m app.main_db_maintenance` for explicit worker maintenance;

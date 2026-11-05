@@ -16,7 +16,6 @@
 
 let
   retentionDays = 14;
-  deliveryRetentionDays = 30;
   maintenanceCron = "0 4 * * *";
   workspaceDir = "/srv/chatting/workspace";
   workspacesDir = "/srv/chatting/workspaces";
@@ -34,8 +33,7 @@ let
     maintenance_enabled = true;
     maintenance_cron = maintenanceCron;
     maintenance_timezone = "UTC";
-    diagnostic_retention_days = retentionDays;
-    delivery_retention_days = deliveryRetentionDays;
+    retention_days = retentionDays;
     db_path = "/var/lib/handler/chatting-message-handler.db";
     bbmb_address = "127.0.0.1:9876";
     # Prometheus now scrapes through nginx, so this need not leave the host.
