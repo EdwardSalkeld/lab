@@ -155,6 +155,11 @@ in
         "CHATTING_PERSONAL_CACHE_PATH=/var/lib/worker/personal-inbox-cache.db"
         # Personal triage feedback is data in memory, refreshed per new mail.
         "CHATTING_PERSONAL_RULES_REPO=/srv/chatting/workspace/memory"
+        # Assess bot updates and record proposed skips while delivering all
+        # messages. Review real decisions before enabling suppression.
+        # See chatting-notifications.md for the observation checks.
+        "CHATTING_NOTIFICATION_TRIAGE_MODE=observe"
+        "CHATTING_NOTIFICATION_RULES_REPO=/srv/chatting/workspace/memory"
         # Summaries go through the logged-in Codex CLI, which is started with
         # --ignore-user-config and so does not see the model named in
         # codex-config.toml. Name it here or Codex picks its own default.
