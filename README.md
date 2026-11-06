@@ -8,7 +8,7 @@ Run from the repository root with Nix, uv and Go installed:
 
 ```sh
 nix run --no-update-lock-file --inputs-from . nixpkgs#nixfmt-tree
-uvx --from ruff==0.17.2 ruff format .
+uvx --from ruff==0.17.4 ruff format .
 gofmt -w tools
 ```
 
@@ -16,7 +16,7 @@ The independent CI checks use these commands:
 
 ```sh
 nix run --no-update-lock-file --inputs-from . nixpkgs#nixfmt-tree -- --ci
-uvx --from ruff==0.17.2 ruff format --check .
+uvx --from ruff==0.17.4 ruff format --check .
 gofmt -d tools
 test -z "$(gofmt -l tools)"
 ```
