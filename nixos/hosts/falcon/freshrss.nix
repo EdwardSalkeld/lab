@@ -157,18 +157,36 @@ in
       timestamp=$(${pkgs.coreutils}/bin/date --utc +%Y%m%dT%H%M%SZ)
       temporary_archive=${backupDir}/.state-$timestamp.tar.gz.tmp
       archive=${backupDir}/state-$timestamp.tar.gz
-      ${pkgs.gnutar}/bin/tar --create --gzip --file "$temporary_archive" \
-        --exclude='./cache' \
-        --exclude='./users/*/db.sqlite*' \
-        --exclude='./users/*/sqlite-backups' \
-        --directory=${dataDir} .
+      manifest=$(${pkgs.coreutils}/bin/mktemp)
+      trap '${pkgs.coreutils}/bin/rm -f "$manifest" "$temporary_archive"' EXIT
+      # Enumerate once, then do not re-read directory contents in tar. Live
+      # SQLite/WAL and log writes change parent directory mtimes during use.
+      # Directory entries are still preserved, including empty directories.
+      for attempt in 1 2 3; do
+        (cd ${dataDir} && ${pkgs.findutils}/bin/find . \
+          \( -path './cache' -o -path './users/*/sqlite-backups' \
+             -o -path './users/*/db.sqlite*' -o -name 'log*.txt' \) -prune \
+          -o -print0) > "$manifest"
+        status=0
+        ${pkgs.gnutar}/bin/tar --create --gzip --file "$temporary_archive" \
+          --no-recursion --null --directory=${dataDir} \
+          --files-from="$manifest" || status=$?
+        if [ "$status" -eq 0 ]; then
+          break
+        fi
+        if [ "$status" -ne 1 ] || [ "$attempt" -eq 3 ]; then
+          exit "$status"
+        fi
+        # Discard and retry a changed metadata file, never publish a partial tar.
+        ${pkgs.coreutils}/bin/sleep "$attempt"
+      done
       ${pkgs.coreutils}/bin/chmod 0600 "$temporary_archive"
       ${pkgs.coreutils}/bin/mv "$temporary_archive" "$archive"
       ${pkgs.findutils}/bin/find ${backupDir} -maxdepth 1 -type f \
-        -name 'state-*.tar.gz' -printf '%T@ %p\\n' \
+        -name 'state-*.tar.gz' -printf '%T@ %p\n' \
         | ${pkgs.coreutils}/bin/sort -nr \
         | ${pkgs.coreutils}/bin/tail -n +9 \
-        | ${pkgs.findutils}/bin/cut -d' ' -f2- \
+        | ${pkgs.coreutils}/bin/cut -d' ' -f2- \
         | ${pkgs.findutils}/bin/xargs --no-run-if-empty ${pkgs.coreutils}/bin/rm -f
     '';
     serviceConfig = {
