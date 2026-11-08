@@ -163,7 +163,7 @@ in
         # Summaries go through the logged-in Codex CLI, which is started with
         # --ignore-user-config and so does not see the model named in
         # codex-config.toml. Name it here or Codex picks its own default.
-        "CHATTING_PERSONAL_SUMMARY_MODEL=gpt-6-sol"
+        "CHATTING_PERSONAL_SUMMARY_MODEL=gpt-6-luna"
       ];
       EnvironmentFile = config.sops.templates."chatting-worker.env".path;
       ExecStart = "${workerBin} --config ${workerConfigPath}";
