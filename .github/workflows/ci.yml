@@ -34,6 +34,8 @@ jobs:
               - 'scripts/bootstrap-ci-deploy.sh'
               - 'scripts/check-ci-deploy.py'
               - 'scripts/check-kite-backups.py'
+              - 'scripts/update-chatting-vendor-hash.py'
+              - 'scripts/test_update_chatting_vendor_hash.py'
             nix_shared:
               - '.github/workflows/**'
               - '.sops.yaml'
@@ -207,6 +209,8 @@ jobs:
             # fall back to building from source if a substitute still fails.
             http2 = false
             fallback = true
+      - name: Chatting dependency update regression checks
+        run: python3 scripts/test_update_chatting_vendor_hash.py
       - name: flake check
         run: nix flake check --no-update-lock-file
       - name: deployment refusal and recovery checks

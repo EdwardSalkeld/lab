@@ -18,7 +18,22 @@ Lab deploys Chatting on `magpie`:
 
 After Chatting CI passes on `main`, Chatting's
 `.github/workflows/open-lab-deploy-pr.yml` currently opens a lab PR that bumps
-the `chatting` flake input. Merging and switching that PR is the deploy.
+the `chatting` flake input. The updater must then run
+`python3 scripts/update-chatting-vendor-hash.py` from the Lab checkout before
+publishing the PR. This helper refreshes `chattingHandler.vendorHash` and builds
+the resulting handler package. Merging and switching that PR is the deploy.
+
+The helper temporarily uses a placeholder dependency hash to force Nix to
+calculate the current dependency output, even when an old fixed-output result
+is cached. It accepts only the expected Chatting Go-module hash mismatch,
+writes the reported hash, and verifies `nix build .#chatting-handler`. Unexpected
+Nix failures or a failed verification restore the original flake.nix and fail
+the update; the workflow must not publish a PR after such a failure. Ordinary
+application changes with unchanged dependencies retain the same vendorHash.
+
+Run the helper regression checks with
+`python3 scripts/test_update_chatting_vendor_hash.py`. They cover changed and
+unchanged dependencies, unrelated/error output, failed builds and restoration.
 
 ### Python runtime upgrades
 
