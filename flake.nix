@@ -64,7 +64,7 @@
         version = "2026-07-27";
         src = chattingSrc;
         modRoot = "go/handler";
-        vendorHash = "sha256-X688aHyLW8I8aOxogekDnt7531FoPo60i/1rU2vxFPk=";
+        vendorHash = "sha256-JSdSizwhJKUMTLw8NqgTilkEWHf27gJWSweBd6DtJuE=";
         subPackages = [ "cmd/chatting-handler" ];
         doCheck = false;
       };
