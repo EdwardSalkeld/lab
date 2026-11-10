@@ -149,6 +149,8 @@ in
         "HOME=/var/lib/worker"
         "TMPDIR=/var/lib/worker/chatting-tmp"
         "CHATTING_CONFIG_DIR=/etc/chatting"
+        "CHATTING_MODEL_HIGH=gpt-6.1-terra"
+        "CHATTING_MODEL_LOW=gpt-6-luna"
         # Personal mailbox classification runs as a thread of this worker,
         # sharing its TypeSafe key. It stays off until the cache path is set.
         # /var/lib/worker is already in ReadWritePaths.
