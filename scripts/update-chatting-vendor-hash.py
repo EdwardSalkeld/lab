@@ -36,7 +36,14 @@ def update_vendor_hash(repo: Path, run=subprocess.run) -> str:
 
     def build(target: str) -> subprocess.CompletedProcess:
         result = run(
-            ["nix", "build", target, "--no-link", "--print-build-logs"],
+            [
+                "nix",
+                "build",
+                target,
+                "--no-link",
+                "--no-update-lock-file",
+                "--print-build-logs",
+            ],
             cwd=repo,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

@@ -63,6 +63,7 @@ class UpdateVendorHashTests(unittest.TestCase):
                     [".#chatting-handler.goModules", ".#chatting-handler"],
                 )
                 self.assertTrue(all("--no-link" in c for c in calls))
+                self.assertTrue(all("--no-update-lock-file" in c for c in calls))
                 self.assertEqual(self.flake.read_text(), FLAKE.replace(OLD_HASH, value))
 
     def test_probe_failure_restores_original_without_building_or_using_stray_hash(self):
