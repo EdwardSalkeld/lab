@@ -1,0 +1,15 @@
+[Unit]
+Description=Forward Proxmox host journal to Loki
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/default/proxmox-journal-alloy
+ExecStart=/usr/local/lib/proxmox-journal-alloy/alloy run --server.http.listen-addr=127.0.0.1:9080 --disable-reporting --storage.path=/var/lib/proxmox-journal-alloy /etc/proxmox-journal-alloy/config.alloy
+Restart=always
+RestartSec=5
+StateDirectory=proxmox-journal-alloy
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

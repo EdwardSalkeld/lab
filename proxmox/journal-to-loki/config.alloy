@@ -1,0 +1,22 @@
+loki.relabel "journal" {
+  forward_to = []
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label = "systemd_unit"
+  }
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label = "level"
+  }
+}
+
+loki.source.journal "journal" {
+  forward_to = [loki.write.default.receiver]
+  relabel_rules = loki.relabel.journal.rules
+  max_age = "24h"
+  labels = { host = sys.env("HOSTNAME"), source = "journal" }
+}
+
+loki.write "default" {
+  endpoint { url = "https://loki.int.alcachofa.faith/loki/api/v1/push" }
+}
