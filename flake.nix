@@ -24,11 +24,10 @@
       flake = false;
     };
     # chatting is pinned to a release tag and built by its own flake; change
-    # the tag and run `nix flake update chatting` to move it.
-    chatting = {
-      url = "github:EdwardSalkeld/chatting/v0.1.687";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # the tag and run `nix flake update chatting` to move it. Its nixpkgs is
+    # deliberately not made to follow ours, so the packages built here are the
+    # ones Chatting's CI built and tested for that release.
+    chatting.url = "github:EdwardSalkeld/chatting/v0.1.687";
     media-collection-manager = {
       url = "github:brokensbone/media-collection-manager";
     };

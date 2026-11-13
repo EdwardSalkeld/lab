@@ -10,8 +10,8 @@ Lab deploys Chatting on `magpie`:
 
 - `flake.nix` takes Chatting as a flake input pinned to a release tag and uses
   the `chatting-handler` and `chatting-worker` packages built by Chatting's own
-  flake, with Chatting's nixpkgs following lab's. Lab builds only `bbmb-server`
-  itself.
+  flake with Chatting's own nixpkgs pin, so they are the packages Chatting's CI
+  built and tested for that release. Lab builds only `bbmb-server` itself.
 - `nixos/hosts/magpie/chatting.nix` defines the systemd units.
 - `nixos/hosts/magpie/chatting-config.nix` renders `/etc/chatting/handler.json`
   and `/etc/chatting/worker.json`.
@@ -27,13 +27,16 @@ and run `nix flake update chatting`.
 ### Python runtime upgrades
 
 Chatting requires Python 3.14 or newer. The worker wrapper comes from
-Chatting's flake, which selects `python314`; because that flake's nixpkgs
-follows lab's, lab's nixpkgs pin decides the patch release. The worker package
-build compiles the app and runs the installed wrapper with `--help`, so
-incompatible syntax or missing startup dependencies fail before deployment.
+Chatting's flake, which selects `python314` from Chatting's own nixpkgs pin.
+Lab's nixpkgs updates therefore do not change the worker's interpreter or the
+libraries it links; those move when a Chatting release updates its pin. The
+worker package build compiles the app and runs the installed wrapper with
+`--help`, so incompatible syntax or missing startup dependencies fail before
+deployment.
 
-The worker service's helper commands use a Python that lab selects separately.
-When a Chatting release moves to a newer Python minor version:
+The worker service's helper commands use a Python that lab selects separately,
+from lab's nixpkgs, so the two can differ in patch release. When a Chatting
+release moves to a newer Python minor version:
 
 - In `nixos/hosts/magpie/chatting.nix`, select the matching `pkgs.python3xx` in
   the worker service's `path`, keeping executor helper commands on the same
