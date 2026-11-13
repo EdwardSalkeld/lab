@@ -104,11 +104,6 @@ let
 
     context_refs = contextRefs;
 
-    github_assignee_login = "billyacachofa";
-    # The GitHub App now delivers assignments and PR feedback. Running the old
-    # polling connector too would create duplicate tasks for those events.
-    github_repositories = [ ];
-
     # Opt-in personal mailbox triage, separate from the bot mailbox above and
     # from the executor.
     #
