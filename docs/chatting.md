@@ -19,9 +19,10 @@ Lab deploys Chatting on `magpie`:
   sops-nix. Config refers to secrets by env-var name (the `*_env` keys).
 
 Chatting publishes a `v0.1.<n>` release for each commit on its `main` that
-passes CI. To move Lab to a newer one, change the tag in the `chatting` input in
-`flake.nix` and run `nix flake update chatting`. Merging and switching that PR
-is the deploy.
+passes CI, and its `.github/workflows/open-lab-deploy-pr.yml` then opens a lab
+PR that moves the tag in the `chatting` input and relocks it. Merging and
+switching that PR is the deploy. To move by hand, change the tag in `flake.nix`
+and run `nix flake update chatting`.
 
 ### Python runtime upgrades
 
