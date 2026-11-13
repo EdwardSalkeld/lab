@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # The update-chatting workflow proposes each Chatting release itself.
+      - dependency-name: chatting
 
   - package-ecosystem: github-actions
     directory: /

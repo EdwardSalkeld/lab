@@ -51,6 +51,25 @@ the worker manager restarts, idle supervisors are replaced with the new runtime;
 busy supervisors finish their current task first. Allow them to drain and check
 the new worker/supervisor interpreters before declaring the upgrade complete.
 
+### Release updates
+
+`.github/workflows/update-chatting.yml` runs every 15 minutes and compares the
+release tag pinned in `flake.nix` with Chatting's latest release. When a newer
+one exists it moves the tag, relocks the input and opens or updates a
+"Deploy chatting vX.Y.Z" pull request on the `chatting-release` branch. Merging
+that PR is the deploy.
+
+- It needs a repository secret, `LAB_PR_TOKEN`: a token for this repository
+  with read and write access to contents and pull requests. The workflow's own
+  token cannot open pull requests here, and pull requests it did open would not
+  start the CI that `main` requires. Without the secret the workflow does
+  nothing.
+- A scheduled run leaves an open bump for the same release alone. Run the
+  workflow by hand to rebuild the bump on top of current `main`, for example
+  after another PR has changed `flake.lock`.
+- It only moves forwards, and does nothing while `flake.nix` does not pin
+  Chatting to a release tag.
+
 ## Services and credentials
 
 `nixos/hosts/magpie/chatting.nix` defines `chatting-bbmb`,

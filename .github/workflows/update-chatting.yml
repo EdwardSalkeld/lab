@@ -1,0 +1,146 @@
+name: update-chatting
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-chatting
+  cancel-in-progress: false
+
+env:
+  CHATTING_REPO: EdwardSalkeld/chatting
+  BRANCH: chatting-release
+
+jobs:
+  open-pr:
+    name: open release bump PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Pull requests opened with the workflow's own token do not start CI, and
+      # main requires CI, so the bump must be pushed and opened with a
+      # repository token. Without one this job does nothing rather than failing
+      # every quarter of an hour.
+      - name: check for the PR token
+        id: token
+        env:
+          LAB_PR_TOKEN: ${{ secrets.LAB_PR_TOKEN }}
+        run: |
+          if [[ -n "$LAB_PR_TOKEN" ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::LAB_PR_TOKEN is not set; skipping."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: checkout
+        if: steps.token.outputs.present == 'true'
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.LAB_PR_TOKEN }}
+
+      - name: compare the pin with the newest release
+        id: release
+        if: steps.token.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
+          pinned_tag() {
+            sed -nE 's|.*url = "github:'"$CHATTING_REPO"'/(v[0-9]+\.[0-9]+\.[0-9]+)";.*|\1|p'
+          }
+
+          latest="$(gh api "repos/$CHATTING_REPO/releases/latest" --jq .tag_name)"
+          if [[ ! "$latest" =~ $tag_pattern ]]; then
+            echo "unexpected release tag: $latest" >&2
+            exit 64
+          fi
+
+          current="$(pinned_tag < flake.nix)"
+          if [[ ! "$current" =~ $tag_pattern ]]; then
+            echo "::notice::flake.nix does not pin chatting to a release tag; skipping."
+            echo "bump=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Only ever move forwards, whatever GitHub calls the latest release.
+          newest="$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -n 1)"
+          if [[ "$latest" == "$current" || "$newest" != "$latest" ]]; then
+            echo "chatting is already at $current (latest release $latest)."
+            echo "bump=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # An open bump for this release is left alone so its CI is not
+          # restarted on every run. A manual run rebuilds it, which is the way
+          # to refresh a bump that has fallen behind main.
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" ]] &&
+            git fetch --quiet origin "refs/heads/$BRANCH" 2> /dev/null &&
+            [[ "$(git show FETCH_HEAD:flake.nix | pinned_tag)" == "$latest" ]]; then
+            echo "$BRANCH already proposes $latest."
+            echo "bump=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "bump=true"
+            echo "current=$current"
+            echo "latest=$latest"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: install nix
+        if: steps.release.outputs.bump == 'true'
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            http2 = false
+
+      - name: move the pin
+        if: steps.release.outputs.bump == 'true'
+        env:
+          CURRENT: ${{ steps.release.outputs.current }}
+          LATEST: ${{ steps.release.outputs.latest }}
+        run: |
+          sed -i -E 's|(url = "github:'"$CHATTING_REPO"'/)'"$CURRENT"'";|\1'"$LATEST"'";|' flake.nix
+          nix flake update chatting
+          if git diff --quiet -- flake.nix flake.lock; then
+            echo "moving the pin from $CURRENT to $LATEST changed nothing" >&2
+            exit 1
+          fi
+
+      - name: push the branch and open the PR
+        if: steps.release.outputs.bump == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.LAB_PR_TOKEN }}
+          CURRENT: ${{ steps.release.outputs.current }}
+          LATEST: ${{ steps.release.outputs.latest }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --quiet --force-create "$BRANCH"
+          git commit --quiet --all --message "Deploy chatting $LATEST"
+          # The branch holds only this generated commit, rebuilt from main each time.
+          git push --quiet --force origin "$BRANCH"
+
+          title="Deploy chatting $LATEST"
+          body_file="$(mktemp)"
+          cat > "$body_file" <<EOF
+          Moves the \`chatting\` flake input from $CURRENT to $LATEST.
+
+          - [Release notes](https://github.com/$CHATTING_REPO/releases/tag/$LATEST)
+          - [Changes since $CURRENT](https://github.com/$CHATTING_REPO/compare/$CURRENT...$LATEST)
+
+          Merging this deploys it.
+          EOF
+
+          if [[ "$(gh pr view "$BRANCH" --json state --jq .state 2> /dev/null)" == "OPEN" ]]; then
+            gh pr edit "$BRANCH" --title "$title" --body-file "$body_file"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$body_file"
+          fi
