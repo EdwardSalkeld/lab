@@ -60,8 +60,8 @@ the worker activity UI uses 9465. Check the Nix configuration for installed
 addresses and access rules.
 
 The handler receives integration secrets through SOPS-rendered environment
-files. `gh` must be authenticated as the handler user for GitHub polling and
-issue comments. Codex must be logged in as the worker user; use
+files. `gh` must be authenticated as the handler user for GitHub issue comments
+and workflow-run lookups. Codex must be logged in as the worker user; use
 `scripts/magpie-codex-reauth.sh` to restore that login.
 
 The worker unit preserves supervisors across manager restarts. Its systemd
@@ -133,9 +133,9 @@ registration details follow.
 
 ### Live GitHub task delivery
 
-Lab enables `github_webhook_delivery_enabled` and empties `github_repositories`
-to disable the previous assignment/review polling connector. GitHub email
-notifications for Billy's account were disabled separately by Edward. GitHub
+Lab enables `github_webhook_delivery_enabled`, so GitHub events arrive only by
+webhook; the older assignment/review polling connector is not configured. GitHub
+email notifications for Billy's account were disabled separately by Edward. GitHub
 App installation coverage is managed in GitHub; it is independent of these
 handler settings.
 
@@ -151,8 +151,7 @@ its `github_webhook_received` receipt, `mode: queued`, and the resulting webhook
 task in the work-item activity view. Confirm the expected work item/workspace
 and app-server session are used. No synthetic actionable events are needed.
 Logging-only historical events are not replayed automatically. Set delivery back
-to false to pause webhook tasks; restore the polling selectors as well if
-switching back to polling. Pausing does not discard already pending tasks.
+to false to pause webhook tasks. Pausing does not discard already pending tasks.
 
 ### App registration
 
