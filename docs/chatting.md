@@ -8,43 +8,45 @@ The installed values here describe Lab, not every Chatting installation.
 
 Lab deploys Chatting on `magpie`:
 
-- `flake.nix` builds `chatting-handler` from `go/handler`, wraps
-  `python -m app.worker.main` as `chatting-worker`, and builds `bbmb-server`.
+- `flake.nix` takes Chatting as a flake input pinned to a release tag and uses
+  the `chatting-handler` and `chatting-worker` packages built by Chatting's own
+  flake with Chatting's own nixpkgs pin, so they are the packages Chatting's CI
+  built and tested for that release. Lab builds only `bbmb-server` itself.
 - `nixos/hosts/magpie/chatting.nix` defines the systemd units.
 - `nixos/hosts/magpie/chatting-config.nix` renders `/etc/chatting/handler.json`
   and `/etc/chatting/worker.json`.
 - `nixos/hosts/magpie/chatting-secrets.nix` renders the secret env files with
   sops-nix. Config refers to secrets by env-var name (the `*_env` keys).
 
-After Chatting CI passes on `main`, Chatting's
-`.github/workflows/open-lab-deploy-pr.yml` currently opens a lab PR that bumps
-the `chatting` flake input. Merging and switching that PR is the deploy.
+Chatting publishes a `v0.1.<n>` release for each commit on its `main` that
+passes CI, and its `.github/workflows/open-lab-deploy-pr.yml` then opens a lab
+PR that moves the tag in the `chatting` input and relocks it. Merging and
+switching that PR is the deploy. To move by hand, change the tag in `flake.nix`
+and run `nix flake update chatting`.
 
 ### Python runtime upgrades
 
-Chatting requires Python 3.14 or newer. Lab selects Python 3.14 explicitly for
-both the worker wrapper and the worker service's helper commands. The worker
-package build compiles the app and runs the installed wrapper with `--help`,
-so incompatible syntax or missing startup dependencies fail before deployment.
+Chatting requires Python 3.14 or newer. The worker wrapper comes from
+Chatting's flake, which selects `python314` from Chatting's own nixpkgs pin.
+Lab's nixpkgs updates therefore do not change the worker's interpreter or the
+libraries it links; those move when a Chatting release updates its pin. The
+worker package build compiles the app and runs the installed wrapper with
+`--help`, so incompatible syntax or missing startup dependencies fail before
+deployment.
 
-Lab selects its interpreter independently of Chatting's project configuration.
-Bumping only the `chatting` flake input does not upgrade Python. When upgrading
-the interpreter in future:
+The worker service's helper commands use a Python that lab selects separately,
+from lab's nixpkgs, so the two can differ in patch release. When a Chatting
+release moves to a newer Python minor version:
 
-- In lab's `flake.nix`, use
-  update `chattingWorkerPython`, currently
-  `pkgs.python314.withPackages (ps: [ ps.croniter ]);`.
-- In `nixos/hosts/magpie/chatting.nix`, select `pkgs.python314` in the worker
-  service's `path` to match, keeping executor helper commands on the same minor
-  version. Changing Magpie's `environment.systemPackages` entry is optional for
-  interactive shells.
+- In `nixos/hosts/magpie/chatting.nix`, select the matching `pkgs.python3xx` in
+  the worker service's `path`, keeping executor helper commands on the same
+  minor version. Changing Magpie's `environment.systemPackages` entry is
+  optional for interactive shells.
 - Build `.#chatting-worker` and Magpie's system configuration, then deploy
-  through lab's usual switch process with the updated `chatting` input.
+  through lab's usual switch process.
 
-Lab's locked nixpkgs already provides Python 3.14.7 and a working
-`python314.withPackages` environment with croniter (checked 2026-10-24); no
-nixpkgs update or custom Python build is needed. Nix controls the patch release
-and supplies dependencies; deployment does not run `uv sync`.
+Nix supplies the interpreter and the worker has no third-party Python
+dependencies; deployment does not run `uv sync`.
 
 The supervisor generation includes `sys.executable` and the environment. After
 the worker manager restarts, idle supervisors are replaced with the new runtime;

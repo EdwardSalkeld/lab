@@ -23,11 +23,11 @@
       url = "github:EdwardSalkeld/exercise-tracker";
       flake = false;
     };
-    # chatting tracks its default branch; bump with `nix flake update chatting`.
-    chatting = {
-      url = "github:EdwardSalkeld/chatting";
-      flake = false;
-    };
+    # chatting is pinned to a release tag and built by its own flake; change
+    # the tag and run `nix flake update chatting` to move it. Its nixpkgs is
+    # deliberately not made to follow ours, so the packages built here are the
+    # ones Chatting's CI built and tested for that release.
+    chatting.url = "github:EdwardSalkeld/chatting/v0.1.687";
     media-collection-manager = {
       url = "github:brokensbone/media-collection-manager";
     };
@@ -57,33 +57,9 @@
       pkgs = import nixpkgs { inherit system; };
       pkgsUnstable = import nixpkgs-unstable { inherit system; };
       chattingSrc = chatting;
+      chattingPackages = chatting.packages.${system};
       mediaCollectionManagerPackages = media-collection-manager.packages.${system};
       bbmbSrc = bbmb;
-      chattingHandler = pkgs.buildGoModule {
-        pname = "chatting-handler";
-        version = "2026-07-27";
-        src = chattingSrc;
-        modRoot = "go/handler";
-        vendorHash = "sha256-JSdSizwhJKUMTLw8NqgTilkEWHf27gJWSweBd6DtJuE=";
-        subPackages = [ "cmd/chatting-handler" ];
-        doCheck = false;
-      };
-      chattingWorkerPython = pkgs.python314.withPackages (ps: [ ps.croniter ]);
-      chattingWorker = pkgs.writeShellApplication {
-        name = "chatting-worker";
-        runtimeInputs = [ chattingWorkerPython ];
-        text = ''
-          export PYTHONPATH=${chattingSrc}''${PYTHONPATH:+:$PYTHONPATH}
-          exec python -m app.worker.main "$@"
-        '';
-        derivationArgs.postCheck = ''
-          # Check the app with the interpreter shipped by this wrapper before
-          # a system switch can install it. Shell checks alone miss Python errors.
-          export PYTHONPYCACHEPREFIX="$TMPDIR/pycache"
-          ${chattingWorkerPython}/bin/python -m compileall -q ${chattingSrc}/app
-          "$target" --help > /dev/null
-        '';
-      };
       bbmbServer = pkgs.buildGo127Module {
         pname = "bbmb-server";
         version = "v10";
@@ -101,8 +77,8 @@
         name = "chatting-runtime";
         paths = [
           bbmbServer
-          chattingHandler
-          chattingWorker
+          chattingPackages.chatting-handler
+          chattingPackages.chatting-worker
         ];
       };
       bitwardenMirror = pkgs.buildGoModule {
@@ -153,9 +129,9 @@
       packages.${system} = {
         bbmb-server = bbmbServer;
         bitwarden-mirror = bitwardenMirror;
-        chatting-handler = chattingHandler;
+        chatting-handler = chattingPackages.chatting-handler;
         chatting-runtime = chattingRuntime;
-        chatting-worker = chattingWorker;
+        chatting-worker = chattingPackages.chatting-worker;
         octopus-dl = octopusDl;
         linear-export = linearExport;
         exercise-tracker = exerciseTracker;

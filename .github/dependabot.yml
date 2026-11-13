@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Chatting opens a deploy PR here for each of its releases.
+      - dependency-name: chatting
 
   - package-ecosystem: github-actions
     directory: /
