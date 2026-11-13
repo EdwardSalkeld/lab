@@ -18,7 +18,11 @@
       }
     },
     "chatting": {
-      "flake": false,
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
         "lastModified": 1794573115,
         "narHash": "sha256-/1h2h0Y9FfBlvRcbHNXFEHc96HwRz7mUBRI7FzVTC6E=",
@@ -29,6 +33,7 @@
       },
       "original": {
         "owner": "EdwardSalkeld",
+        "ref": "v0.1.687",
         "repo": "chatting",
         "type": "github"
       }
