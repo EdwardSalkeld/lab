@@ -27,7 +27,7 @@
     # the tag and run `nix flake update chatting` to move it. Its nixpkgs is
     # deliberately not made to follow ours, so the packages built here are the
     # ones Chatting's CI built and tested for that release.
-    chatting.url = "github:EdwardSalkeld/chatting/v0.1.690";
+    chatting.url = "github:EdwardSalkeld/chatting/v0.1.695";
     media-collection-manager = {
       url = "github:brokensbone/media-collection-manager";
     };
