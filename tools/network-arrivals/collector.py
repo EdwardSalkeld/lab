@@ -1,6 +1,7 @@
 """Read OPNsense observations; retain identities, not a claim of physical presence."""
 
 import base64
+from contextlib import closing
 import datetime as dt
 import ipaddress
 import json
@@ -309,7 +310,11 @@ def main():
         leases = api.rows("dnsmasq/leases/search")
         hosts = api.rows("hostdiscovery/service/search")
         now = dt.datetime.now(UTC)
-        with psycopg2.connect(config["database"], connect_timeout=10) as connection:
+        # Helpers own their commit/rollback contexts. Only manage the connection
+        # lifetime here: psycopg2 rejects nested connection transaction contexts.
+        with closing(
+            psycopg2.connect(config["database"], connect_timeout=10)
+        ) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT initialized FROM collector_state WHERE id=1")
                 baseline = not cursor.fetchone()[0]
