@@ -1,0 +1,316 @@
+{
+  "uid": "network-arrivals",
+  "title": "Network arrivals",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": [
+    "network",
+    "inventory"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Collector last success (age)",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "description": "Blank or over 180 seconds means collection is missing or stale. Inventory is retained during outages.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 180
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fdp9rmnopl3wgf"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - network_arrivals_last_success_timestamp_seconds",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "New identities \u00b7 24h",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "network-inventory-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT count(*) AS identities FROM events WHERE kind='new_identity' AND observed_at > now()-interval '24 hours'",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "New identities \u00b7 7d",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "network-inventory-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT count(*) AS identities FROM events WHERE kind='new_identity' AND observed_at > now()-interval '7 days'",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Latest poll succeeded",
+      "type": "stat",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "FAILED",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "OK",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fdp9rmnopl3wgf"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "network_arrivals_poll_success",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Arrival history",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 9
+      },
+      "description": "Quiet first-install baseline; DHCP renewals do not create arrivals. A new address means the first observation of that MAC/zone/address combination.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Observed",
+            "desc": true
+          }
+        ]
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "network-inventory-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT e.observed_at AS \"Observed\", e.kind AS \"Event\", COALESCE(NULLIF(d.friendly_name,''),NULLIF(e.hostname,''),e.mac) AS \"Device\", e.mac AS \"MAC\", e.zone AS \"Zone\", host(e.address) AS \"IP\", e.source AS \"Source\", e.id AS \"Event ID\" FROM events e JOIN devices d USING(mac) WHERE $__timeFilter(e.observed_at) ORDER BY e.observed_at DESC,e.id DESC LIMIT 500",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Inventory \u00b7 most recent observation per identity and zone",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 10
+      },
+      "description": "An observation or unexpired DHCP lease is not proof a device is online. Private MACs are separate identities. Old addresses remain in the database. First observed means first collected here, not the original join time.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Observed",
+            "desc": true
+          }
+        ]
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "network-inventory-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT DISTINCT ON (d.mac,o.zone) d.first_observed AS \"First observed\", d.friendly_name AS \"Name\", d.hostname AS \"Hostname\", d.mac AS \"MAC\", d.vendor AS \"Vendor\", o.zone AS \"Zone\", host(o.address) AS \"IP\", o.source AS \"Source\", o.last_observed AS \"Last source observation\", o.last_activity AS \"Last Hostwatch activity\", o.lease_expires AS \"Lease expires\" FROM devices d JOIN observations o USING(mac) ORDER BY d.mac,o.zone,o.last_observed DESC,o.last_activity DESC NULLS LAST,o.first_observed DESC, o.address LIMIT 2000",
+          "rawQuery": true,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Collector journal",
+      "type": "logs",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 8
+      },
+      "description": "Structured arrival events and collection failures. Events can be replayed after a crash; Event ID is stable. Journals flow through existing Alloy to Loki (30 day retention).",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "ce6j6e2q9rapsa"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{host=\"partridge\", source=\"journal\", systemd_unit=\"network-arrivals.service\"} | json | event != \"poll_complete\"",
+          "queryType": "range"
+        }
+      ]
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": []
+  }
+}
