@@ -142,6 +142,53 @@ class Database(unittest.TestCase):
         self.assertEqual(len(emitted), 3)
         self.assertEqual(len({r["event_id"] for r in emitted}), 3)
 
+    def test_main_collects_baseline_arrival_and_preserves_state_on_api_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            metrics = Path(directory) / "collector.prom"
+            settings = Path(directory) / "settings.json"
+            settings.write_text(
+                json.dumps(
+                    dict(
+                        CONFIG,
+                        database=os.environ["TEST_DATABASE"],
+                        metrics_path=str(metrics),
+                    )
+                )
+            )
+            first = lease()
+            second = lease("02:11:22:33:44:56")
+            first["expire"] = second["expire"] = 0
+            with (
+                patch.object(c.sys, "argv", ["collector.py", str(settings)]),
+                patch.object(c, "API") as api,
+                patch("builtins.print"),
+            ):
+                api.return_value.rows.side_effect = [[first], []]
+                self.assertEqual(c.main(), 0)
+                self.assertEqual(self.counts(), {})
+                self.assertIn("network_arrivals_poll_success 1", metrics.read_text())
+                api.return_value.rows.side_effect = [[first, second], []]
+                self.assertEqual(c.main(), 0)
+                self.assertEqual(self.counts(), {"new_identity": 1})
+                previous = next(
+                    line
+                    for line in metrics.read_text().splitlines()
+                    if "last_success_timestamp" in line
+                )
+                api.return_value.rows.side_effect = [
+                    [first, second],
+                    RuntimeError("Hostwatch unavailable"),
+                ]
+                self.assertEqual(c.main(), 1)
+                self.assertIn(previous, metrics.read_text())
+                self.assertIn("network_arrivals_poll_success 0", metrics.read_text())
+                self.assertEqual(self.counts(), {"new_identity": 1})
+            with self.db.cursor() as cursor:
+                cursor.execute("SELECT initialized FROM collector_state WHERE id=1")
+                self.assertTrue(cursor.fetchone()[0])
+                cursor.execute("SELECT count(*) FROM events WHERE NOT published")
+                self.assertEqual(cursor.fetchone()[0], 0)
+
     def test_failed_initialization_and_outbox_recovery(self):
         with self.assertRaises(ValueError):
             self.save([])
