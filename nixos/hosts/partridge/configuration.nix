@@ -11,6 +11,7 @@
     ./loki.nix
     ./linear-export.nix
     ./octopus-dl.nix
+    ./network-arrivals.nix
     ./opnsense-exporter.nix
     ./postgres-backup.nix
     ./postgres-readonly.nix

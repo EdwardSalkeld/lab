@@ -1261,6 +1261,19 @@ in
           editable = true;
         }
         {
+          name = "network-inventory-postgres";
+          uid = "network-inventory-postgres";
+          type = "postgres";
+          access = "proxy";
+          url = "/run/postgresql";
+          user = "grafana";
+          jsonData = {
+            database = "network_inventory";
+            sslmode = "disable";
+          };
+          editable = false;
+        }
+        {
           name = "exercise-tracker-postgres";
           uid = "exercise-tracker-postgres";
           type = "postgres";

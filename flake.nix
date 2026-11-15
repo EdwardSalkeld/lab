@@ -165,6 +165,25 @@
             ''
           );
 
+          network-arrivals =
+            pkgs.runCommand "network-arrivals-check"
+              {
+                nativeBuildInputs = [
+                  (pkgs.python3.withPackages (p: [ p.psycopg2 ]))
+                  pkgs.postgresql
+                ];
+              }
+              ''
+                export HOME="$TMPDIR"
+                export PYTHONDONTWRITEBYTECODE=1
+                initdb -D "$TMPDIR/pg" --no-locale -A trust >/dev/null
+                trap 'pg_ctl -D "$TMPDIR/pg" -m immediate stop >/dev/null' EXIT
+                pg_ctl -D "$TMPDIR/pg" -o "-k $TMPDIR -c listen_addresses=" -w start >/dev/null
+                export TEST_DATABASE="dbname=postgres host=$TMPDIR"
+                python3 -m unittest discover -s ${./tools/network-arrivals} -v
+                touch "$out"
+              '';
+
           router-syslog =
             pkgs.runCommand "router-syslog-check"
               {
