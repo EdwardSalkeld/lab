@@ -27,7 +27,7 @@ let
 in
 {
   # Reuse the encrypted monitoring credential, in a separately owned template.
-  # OPNsense privileges must be extended before deployment; see the runbook.
+  # Required OPNsense privileges are granted; see the runbook.
   sops.templates."network-arrivals.env" = {
     owner = user;
     group = user;

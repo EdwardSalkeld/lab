@@ -12,14 +12,16 @@ The NixOS module reuses the existing SOPS-encrypted OPNsense monitoring key,
 rendered into a separate 0400 environment file for the collector's Unix user.
 It does not expose keys to Grafana or node-exporter. No secret is in the store.
 
-**Before deploying:** add `Interfaces: Hostwatch` and
-`Services: Dnsmasq DNS/DHCP: Settings` to the existing `prometheus` OPNsense user.
+The existing `prometheus` OPNsense user has `Interfaces: Hostwatch` and
+`Services: Dnsmasq DNS/DHCP: Settings` (granted in the web UI on 2026-11-15).
+Both search endpoints were verified from Partridge with the existing key: HTTP
+200, 16 lease rows and 330 Hostwatch rows. Retain these privileges when deploying.
 Do not grant All pages or administrator membership. These built-in privileges
 also cover service/settings operations: this key must not be described as a
 strictly read-only credential. The collector itself only calls the two search
 endpoints below; its POSTs paginate read operations, never change settings.
 A dedicated key can replace this shared credential later by changing the SOPS
-references. The PR does not modify permissions or deploy itself.
+references. The NixOS configuration does not manage router permissions or deploy itself.
 
 - `/api/dnsmasq/leases/search`
 - `/api/hostdiscovery/service/search`
