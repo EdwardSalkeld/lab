@@ -61,6 +61,31 @@
     "d /var/lib/jellyfin/cache 0750 jellyfin jellyfin -"
   ];
 
+  # /media is a separate filesystem: adjust the existing film root only after
+  # it is mounted, so the import worker can create group-owned directories.
+  systemd.services.mcm-film-permissions = {
+    description = "Allow media group writes to the film import root";
+    wantedBy = [ "multi-user.target" ];
+    requires = [ "media.mount" ];
+    after = [ "media.mount" ];
+    before = [ "mcm-worker.service" ];
+    unitConfig.ConditionPathIsMountPoint = "/media";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      test -d /media/film && test ! -L /media/film
+      ${pkgs.coreutils}/bin/chgrp media /media/film
+      ${pkgs.coreutils}/bin/chmod 2775 /media/film
+    '';
+  };
+
+  systemd.services.mcm-worker = {
+    requires = [ "mcm-film-permissions.service" ];
+    after = [ "mcm-film-permissions.service" ];
+  };
+
   users.groups.media = {
     gid = 1001;
   };
