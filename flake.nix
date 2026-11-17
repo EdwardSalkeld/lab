@@ -78,6 +78,7 @@
         paths = [
           bbmbServer
           chattingPackages.chatting-handler
+          chattingPackages.chatting-platform
           chattingPackages.chatting-worker
         ];
       };

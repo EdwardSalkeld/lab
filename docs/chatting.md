@@ -56,9 +56,11 @@ the new worker/supervisor interpreters before declaring the upgrade complete.
 ## Services and credentials
 
 `nixos/hosts/magpie/chatting.nix` defines `chatting-bbmb`,
-`chatting-handler` and `chatting-worker`. BBMB listens on 9876 with metrics on
-9877; the handler uses 9464 for metrics/admin and loopback 9467 for egress;
-the worker activity UI uses 9465. Check the Nix configuration for installed
+`chatting-handler`, `chatting-worker` and `chatting-platform`. BBMB listens on
+9876 with metrics on 9877; the handler uses 9464 for metrics/admin and loopback
+9467 for egress; the worker activity UI uses 9465. The platform UI listens on
+loopback 9466, proxies the handler and worker ports, and is served at
+`https://chatting.int.alcachofa.faith` to LAN and tailnet clients only. Check the Nix configuration for installed
 addresses and access rules.
 
 The handler receives integration secrets through SOPS-rendered environment
