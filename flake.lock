@@ -22,16 +22,16 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1794616131,
-        "narHash": "sha256-SSTp4nHDOh0UYJzcPzdsqv3YZsrWK3CgGdjy5eVFn9Q=",
+        "lastModified": 1794927526,
+        "narHash": "sha256-R+vYcL4iXu7cXDJdkuczvMTCvQha9jBSesTd8pxnLyE=",
         "owner": "EdwardSalkeld",
         "repo": "chatting",
-        "rev": "9563546840c2556adf83eaa3f5e2f6a31efa1b5d",
+        "rev": "f5f98bf0bb5c91aeeb9a1b86d549b9a909e40cc2",
         "type": "github"
       },
       "original": {
         "owner": "EdwardSalkeld",
-        "ref": "v0.1.695",
+        "ref": "v0.1.704",
         "repo": "chatting",
         "type": "github"
       }
