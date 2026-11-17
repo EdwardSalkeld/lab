@@ -6,6 +6,7 @@ let
   workerDomain = "chatting-worker.int.alcachofa.faith";
   handlerDomain = "chatting-handler.int.alcachofa.faith";
   bbmbDomain = "chatting-bbmb.int.alcachofa.faith";
+  platformDomain = "chatting.int.alcachofa.faith";
   hostDomain = "magpie.int.alcachofa.faith";
   hooksDomain = "hooks.alcachofa.faith";
 in
@@ -38,6 +39,7 @@ in
       extraDomainNames = [
         handlerDomain
         bbmbDomain
+        platformDomain
         hostDomain
         hooksDomain
       ];
@@ -85,6 +87,23 @@ in
         forceSSL = true;
         useACMEHost = workerDomain;
         locations."/".proxyPass = "http://127.0.0.1:9464";
+      };
+
+      # The platform UI has no auth, so only LAN and tailnet clients get in.
+      # Its write guard compares Origin with Host, which works because
+      # recommendedProxySettings passes Host through.
+      ${platformDomain} = {
+        forceSSL = true;
+        useACMEHost = workerDomain;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:9466";
+          extraConfig = ''
+            allow 10.4.0.0/23;
+            allow 100.64.0.0/10;
+            allow fd7a:115c:a1e0::/48;
+            deny all;
+          '';
+        };
       };
 
       # Metrics only, no UI. It exists so Prometheus has an HTTPS target and

@@ -11,6 +11,7 @@ let
   workerConfigPath = "/etc/chatting/worker.json";
   bbmbBin = "${chattingRuntimePackage}/bin/bbmb-server";
   handlerBin = "${chattingRuntimePackage}/bin/chatting-handler";
+  platformBin = "${chattingRuntimePackage}/bin/chatting-platform";
   workerBin = "${chattingRuntimePackage}/bin/chatting-worker";
 in
 {
@@ -189,6 +190,33 @@ in
         "/srv/chatting/workspace"
         "/srv/chatting/workspaces"
       ];
+      Restart = "always";
+      RestartSec = "5s";
+      UMask = "0077";
+    };
+  };
+
+  # Read-mostly operator UI over the handler (9464) and worker (9465). Its
+  # defaults are loopback 9466 and those two ports, so it needs no config file.
+  # It keeps no state and holds no secrets.
+  systemd.services.chatting-platform = {
+    description = "Chatting platform UI";
+    wantedBy = [ "chatting.target" ];
+    partOf = [ "chatting.target" ];
+    after = [
+      "chatting-handler.service"
+      "chatting-worker.service"
+    ];
+    serviceConfig = {
+      Type = "simple";
+      DynamicUser = true;
+      ExecStart = platformBin;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectHome = true;
+      ProtectSystem = "strict";
+      IPAddressAllow = "localhost";
+      IPAddressDeny = "any";
       Restart = "always";
       RestartSec = "5s";
       UMask = "0077";
