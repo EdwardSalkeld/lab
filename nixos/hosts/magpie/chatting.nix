@@ -142,6 +142,17 @@ in
       pkgs.rsync
       pkgs.sqlite
     ];
+    # `gh auth setup-git` writes its own store path into ~/.gitconfig, which
+    # breaks every GitHub fetch once a gh upgrade is garbage collected. Config
+    # from the environment is read last: the empty value clears any helpers
+    # from ~/.gitconfig, then this unit's gh is used instead.
+    environment = {
+      GIT_CONFIG_COUNT = "2";
+      GIT_CONFIG_KEY_0 = "credential.https://github.com.helper";
+      GIT_CONFIG_VALUE_0 = "";
+      GIT_CONFIG_KEY_1 = "credential.https://github.com.helper";
+      GIT_CONFIG_VALUE_1 = "!${pkgs.gh}/bin/gh auth git-credential";
+    };
     serviceConfig = {
       Type = "simple";
       User = "worker";
