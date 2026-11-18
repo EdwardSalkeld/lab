@@ -119,16 +119,19 @@
   users.users.handler = {
     isSystemUser = true;
     group = "handler";
+    extraGroups = [ "chatting-attachments" ];
   };
 
   users.users.worker = {
     isSystemUser = true;
     group = "worker";
+    extraGroups = [ "chatting-attachments" ];
   };
 
   users.groups.bbmb = { };
   users.groups.handler = { };
   users.groups.worker = { };
+  users.groups.chatting-attachments = { };
 
   systemd.tmpfiles.rules = [
     "d /srv/chatting 0755 root root -"
@@ -144,6 +147,9 @@
     # than left to the handler's runtime MkdirAll, whose 0700 (UMask=0077)
     # would lock the worker out.
     "d /srv/chatting/attachments 0755 handler handler -"
+    # Outbound copies are group-readable by the handler, without exposing
+    # private per-item workspaces. Remove abandoned copies after one day.
+    "d /srv/chatting/outbound-attachments 2770 worker chatting-attachments 1d"
     "d /etc/chatting 0755 root root -"
     "d /var/lib/bbmb 0750 bbmb bbmb -"
     "d /var/lib/handler 0700 handler handler -"
