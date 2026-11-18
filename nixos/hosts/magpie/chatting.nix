@@ -151,6 +151,7 @@ in
         "TMPDIR=/var/lib/worker/chatting-tmp"
         "CHATTING_CONFIG_DIR=/etc/chatting"
         "CHATTING_MODEL_HIGH=gpt-6.1-terra"
+        "CHATTING_OUTBOUND_ATTACHMENT_DIR=/srv/chatting/outbound-attachments"
         "CHATTING_MODEL_LOW=gpt-6-luna"
         # Personal mailbox classification runs as a thread of this worker,
         # sharing its TypeSafe key. It stays off until the cache path is set.
@@ -189,6 +190,7 @@ in
         "/var/lib/worker"
         "/srv/chatting/workspace"
         "/srv/chatting/workspaces"
+        "/srv/chatting/outbound-attachments"
       ];
       Restart = "always";
       RestartSec = "5s";

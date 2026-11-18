@@ -92,12 +92,11 @@ let
     telegram_attachment_dir = "/srv/chatting/attachments";
     # The handler refuses to send an outbound attachment whose local path falls
     # outside this allowlist (a fail-closed guard against a caller naming an
-    # arbitrary file to exfiltrate). Permit the three places a legitimate
-    # attachment lives: the shared attachment dir (inbound photos echoed back),
-    # the shared workspace, and the per-item workspaces (files the agent
-    # produced). Empty would block every outbound file attachment.
+    # arbitrary file to exfiltrate). Include inbound attachments, outbound
+    # staging, and the workspaces. Files must also be readable by the handler.
     egress_attachment_allowed_dirs = [
       "/srv/chatting/attachments"
+      "/srv/chatting/outbound-attachments"
       workspaceDir
       workspacesDir
     ];
