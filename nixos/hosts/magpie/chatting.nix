@@ -172,7 +172,6 @@ in
         # Skip routine bot updates using the reviewed owner policy in memory.
         # Keep useful results and forward on uncertainty or checker failure.
         # See chatting-notifications.md for decision and rollback checks.
-        "CHATTING_NOTIFICATION_TRIAGE_MODE=enforce"
         "CHATTING_NOTIFICATION_RULES_REPO=/srv/chatting/workspace/memory"
         # Summaries go through the logged-in Codex CLI, which is started with
         # --ignore-user-config and so does not see the model named in
