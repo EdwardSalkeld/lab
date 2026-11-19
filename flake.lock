@@ -73,11 +73,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1794909492,
-        "narHash": "sha256-nU0YNxZgIxudiC/Hs5+2/vFA0lag+MugbxjKblYnJ5Q=",
+        "lastModified": 1795074074,
+        "narHash": "sha256-JqlvherhJMxDF/oe/NSKgDNBQUvMhC1BjOp8n6OoY3Q=",
         "owner": "brokensbone",
         "repo": "media-collection-manager",
-        "rev": "7b2f9a3de88727fa64b18990415d31be13e1cac2",
+        "rev": "1b5e7e508a5cbda8bb3e1b16fa80924d85ae538a",
         "type": "github"
       },
       "original": {
@@ -120,11 +120,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1793341285,
-        "narHash": "sha256-Y1CiZ4SoBUjLQyQM/pY+rS2dXD3CHLPstF0lmOc73D4=",
+        "lastModified": 1794386569,
+        "narHash": "sha256-x9sADJvoVG0L6RejZB+/BB4YiGZFBZrfTlhF4uBq1tQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1c89083e451e891152365b799595cf7790a43325",
+        "rev": "d4f25a3e562008648d45bcf2d70bcc7422cad84e",
         "type": "github"
       },
       "original": {
