@@ -67,7 +67,11 @@
     fsType = "ext4";
   };
 
-  services.postgresql.enable = true;
+  services.postgresql = {
+    enable = true;
+    # Major upgrades require a manual pg_upgrade before this generation is activated.
+    package = pkgs.postgresql_18;
+  };
 
   services.prometheus.exporters.postgres = {
     enable = true;
