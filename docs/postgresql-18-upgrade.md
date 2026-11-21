@@ -32,7 +32,7 @@ Changing the NixOS package alone does not migrate the database.
    directory as `postgres`, using the old cluster's locale, encoding, checksum
    setting and locale archive. Run the 18 `pg_upgrade --check` with both Nix
    package paths and matching socket settings, then run `pg_upgrade --copy`.
-   Do not remove or modify the 17 data directory.
+   Retain the 17 data directory for recovery.
 3. Switch to the prebuilt PostgreSQL 18 NixOS generation, start PostgreSQL and
    dependent services, and resume paused timers. Confirm the actual server
    version and data directory, database and role access, key application
@@ -52,3 +52,26 @@ generation rollback alone does not migrate data backwards.
 
 Upstream guidance: <https://www.postgresql.org/docs/18/pgupgrade.html> and
 <https://www.postgresql.org/docs/18/release-18.html>.
+
+## Cutover notes: 2026-11-21
+
+- The 18.7 NixOS system was built in CI and staged before downtime. Both live
+  and offline `pg_upgrade --check` passed, followed by a successful copy-mode
+  upgrade. PostgreSQL stopped at 10:31:44 UTC and 18 was ready at 10:31:58.
+- The 17 cluster remains in `/var/lib/postgresql/17`; its system closure is
+  retained by the `postgres17-rollback` GC root. The old cluster does not
+  include writes made after cutover. Do not run `delete_old_cluster.sh` until
+  a later deliberate cleanup.
+- A pre-upgrade logical dump and restic snapshot were made. Snapshot
+  `976a8ed8` retains that dump in a separate `partridge-pg17-upgrade` host
+  group, so regular daily pruning of Partridge snapshots does not discard it.
+  Post-upgrade dump and restic snapshot `e461146b` succeeded; the dump's zstd
+  integrity check passed and it identifies PostgreSQL 18.7.
+- Staged missing-statistics and full analysis completed. Database and role
+  access, matching collation versions, PostgreSQL exporter (`pg_up 1`),
+  Grafana database health, Forgejo database health, exercise tracker health,
+  active client connections and the network-arrivals job were checked. No
+  systemd units were failed. These checks do not cover every application flow.
+- PostgreSQL's disk had 4.2 GiB available with both clusters retained. The
+  network-arrivals timer was paused during cutover because it can start the
+  server, and Forgejo and other clients were restarted afterward.
