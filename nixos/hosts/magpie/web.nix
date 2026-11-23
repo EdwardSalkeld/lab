@@ -81,12 +81,21 @@ in
         forceSSL = true;
         useACMEHost = workerDomain;
         locations."/".proxyPass = "http://127.0.0.1:9465";
+        locations."= /internal/secret-file".return = "404";
       };
 
       ${handlerDomain} = {
         forceSSL = true;
         useACMEHost = workerDomain;
         locations."/".proxyPass = "http://127.0.0.1:9464";
+        # Capability URLs are only served via the platform, never logged here.
+        locations."^~ /secrets/" = {
+          return = "404";
+          extraConfig = ''
+            access_log off;
+            error_log /dev/null crit;
+          '';
+        };
       };
 
       # The platform UI has no auth, so only LAN and tailnet clients get in.
@@ -102,6 +111,17 @@ in
             allow 100.64.0.0/10;
             allow fd7a:115c:a1e0::/48;
             deny all;
+          '';
+        };
+        locations."^~ /secrets/" = {
+          proxyPass = "http://127.0.0.1:9466";
+          extraConfig = ''
+            allow 10.4.0.0/23;
+            allow 100.64.0.0/10;
+            allow fd7a:115c:a1e0::/48;
+            deny all;
+            access_log off;
+            error_log /dev/null crit;
           '';
         };
       };

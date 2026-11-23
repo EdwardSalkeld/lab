@@ -34,6 +34,9 @@ let
     retention_days = retentionDays;
     db_path = "/var/lib/handler/chatting-message-handler.db";
     bbmb_address = "127.0.0.1:9876";
+    # One-use secret submission links are handled by the platform UI.
+    secrets_workspace_root = workspacesDir;
+    secrets_public_base_url = "https://chatting.int.alcachofa.faith";
     # Prometheus now scrapes through nginx, so this need not leave the host.
     metrics_host = "127.0.0.1";
     poll_interval_seconds = 30;
