@@ -23,7 +23,7 @@
 
   # The worker can create several GiB of dead build outputs between daily GC
   # runs. Check frequently, but only collect when root has crossed the
-  # 75% high-water mark, preserving useful build cache while keeping headroom
+  # 85% high-water mark, preserving useful build cache while keeping headroom
   # proportional to the root filesystem's size.
   systemd.services.nix-gc-on-root-pressure = {
     description = "Collect unreachable Nix paths when Magpie root is under pressure";
@@ -36,8 +36,8 @@
     script = ''
       root_usage="$(df -P / | awk 'NR == 2 { sub(/%$/, "", $5); print $5 }')"
 
-      if [ "$root_usage" -lt 75 ]; then
-        echo "root usage is ''${root_usage}%; below the 75% Nix GC threshold"
+      if [ "$root_usage" -lt 85 ]; then
+        echo "root usage is ''${root_usage}%; below the 85% Nix GC threshold"
         exit 0
       fi
 
@@ -50,10 +50,50 @@
     description = "Check Magpie root usage for Nix GC pressure collection";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "*:0/15";
+      OnCalendar = "hourly";
       Persistent = true;
       RandomizedDelaySec = "2m";
       Unit = "nix-gc-on-root-pressure.service";
+    };
+  };
+
+  systemd.services.chatting-tool-cache-cleanup = {
+    description = "Prune worker tool caches overnight";
+    path = with pkgs; [
+      coreutils
+      findutils
+      go
+      nodejs
+      procps
+      uv
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "worker";
+      Group = "worker";
+      Environment = "HOME=/var/lib/worker";
+    };
+    script = ''
+      echo "Cache sizes before cleanup:"
+      du -sh /var/lib/worker/.cache/uv /var/lib/worker/.cache/go-build /var/lib/worker/go/pkg/mod /var/lib/worker/.npm /var/lib/worker/.cache/ms-playwright 2>/dev/null || true
+      uv cache prune
+      npm cache verify
+      # Rebuildable Go caches are cleared if they exceed their budgets.
+      size_kb() { if [ -d "$1" ]; then du -sk "$1" | cut -f1; else echo 0; fi; }
+      if [ "$(size_kb /var/lib/worker/.cache/uv)" -gt 2097152 ]; then uv cache clean; fi
+      if [ "$(size_kb /var/lib/worker/.npm)" -gt 1048576 ]; then npm cache clean --force; fi
+      if [ "$(size_kb /var/lib/worker/.cache/go-build)" -gt 1048576 ]; then go clean -cache; fi
+      if [ "$(size_kb /var/lib/worker/go/pkg/mod)" -gt 2097152 ]; then go clean -modcache; fi
+      echo "Cache sizes after cleanup:"
+      du -sh /var/lib/worker/.cache/uv /var/lib/worker/.cache/go-build /var/lib/worker/go/pkg/mod /var/lib/worker/.npm /var/lib/worker/.cache/ms-playwright 2>/dev/null || true
+    '';
+  };
+  systemd.timers.chatting-tool-cache-cleanup = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* 03:30:00";
+      Persistent = false;
+      RandomizedDelaySec = "10m";
     };
   };
 
