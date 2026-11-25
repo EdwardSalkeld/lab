@@ -203,6 +203,13 @@
                 touch "$out"
               '';
 
+          nix-shellcheck = import ./nixos/checks/shellcheck.nix {
+            inherit (pkgs) lib;
+            inherit pkgs;
+            inherit (self) nixosConfigurations;
+            repoRoot = self;
+          };
+
           bitwarden-mirror-go-tests =
             pkgs.runCommand "bitwarden-mirror-go-tests"
               {
@@ -281,6 +288,7 @@
             ./nixos/modules/journal-logging.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
+            ./nixos/modules/shell-scripts.nix
             ./nixos/hosts/partridge/configuration.nix
           ];
         };
@@ -298,6 +306,7 @@
             ./nixos/modules/journal-logging.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
+            ./nixos/modules/shell-scripts.nix
             ./nixos/hosts/magpie/configuration.nix
           ];
         };
@@ -314,6 +323,7 @@
             ./nixos/modules/journal-logging.nix
             ./nixos/modules/proxmox-vm-base.nix
             ./nixos/modules/remote-deploy.nix
+            ./nixos/modules/shell-scripts.nix
             ./nixos/hosts/kite/configuration.nix
           ];
         };
@@ -326,6 +336,7 @@
             ./nixos/modules/holding-page.nix
             ./nixos/modules/journal-logging.nix
             ./nixos/modules/remote-deploy.nix
+            ./nixos/modules/shell-scripts.nix
             ./nixos/hosts/falcon/configuration.nix
           ];
         };

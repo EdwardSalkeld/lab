@@ -16,6 +16,15 @@ let
     unitConfig.RequiresMountsFor = [ "/data" ];
     unitConfig.AssertPathIsMountPoint = "/data";
   };
+  backupStart = pkgs.writeShellScript "kite-backup-start" ''
+    date +%s > /run/restic-backups-kite-full/started
+  '';
+  backupComplete = pkgs.writeShellScript "kite-backup-complete" ''
+    started=$(cat /run/restic-backups-kite-full/started)
+    duration=$(( $(date +%s) - started ))
+    echo "Finished backup at $(date --iso-8601=seconds) after $duration seconds"
+    touch /var/lib/kite-backup/verified
+  '';
 in
 {
   options.alcachofa.kite.backups = {
@@ -23,6 +32,11 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    alcachofa.shellScripts = [
+      backupStart
+      backupComplete
+    ];
+
     sops.secrets = {
       "kite-backup/restic_repository" = {
         sopsFile = ./secrets/kite-backup.yaml;
@@ -106,17 +120,10 @@ in
     systemd.services.restic-backups-kite-full = lib.recursiveUpdate guard {
       serviceConfig = {
         BindReadOnlyPaths = [ "/data/full:${archivePath}" ];
-        ExecStartPre = pkgs.writeShellScript "kite-backup-start" ''
-          date +%s > /run/restic-backups-kite-full/started
-        '';
+        ExecStartPre = backupStart;
         # Only emit this marker after a successful backup. Reuse the existing
         # log format so the dashboard can show both sides of the hand-off.
-        ExecStartPost = pkgs.writeShellScript "kite-backup-complete" ''
-          started=$(cat /run/restic-backups-kite-full/started)
-          duration=$(( $(date +%s) - started ))
-          echo "Finished backup at $(date --iso-8601=seconds) after $duration seconds"
-          touch /var/lib/kite-backup/verified
-        '';
+        ExecStartPost = backupComplete;
         StateDirectory = "kite-backup";
       };
     };
