@@ -302,8 +302,8 @@
           specialArgs = { inherit mediaCollectionManagerPackages; };
         };
 
-        # Falcon is a Hetzner Cloud VM, not a Proxmox guest. It also skips
-        # lab-base for now, because its own copy of those settings has diverged.
+        # Falcon is a public Hetzner Cloud VM, not a Proxmox guest. It keeps its
+        # own base settings on purpose (stricter SSH, exporter on tailscale0 only).
         falcon = mkHost "falcon" {
           labBase = false;
           proxmoxGuest = false;
