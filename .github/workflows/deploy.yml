@@ -12,8 +12,9 @@ on:
         default: false
 
 # Serialize deploys; never cancel an in-flight one (would leave a half-applied
-# terraform run / rebuild / dangling state lock). Each queued run deploys the
-# exact commit it built.
+# terraform run / rebuild / dangling state lock). GitHub keeps only the newest
+# pending run and cancels older pending ones, so a burst of merges deploys just
+# the latest commit. Each run deploys the exact commit it built.
 concurrency:
   group: deploy-lab
   cancel-in-progress: false
@@ -69,9 +70,19 @@ jobs:
           test "${#hosts[@]}" -gt 0
           systems='{}'
           for host in "${hosts[@]}"; do
-            path="$(nix build --no-link --print-out-paths ".#nixosConfigurations.${host}.config.system.build.toplevel")"
+            attr=".#nixosConfigurations.${host}.config.system.build.toplevel"
+            path="$(nix eval --raw "${attr}.outPath")"
             test -n "$path"
-            cachix push "$CACHE_NAME" "$path"
+            # cachix uploads a closure concurrently, so a push cut short could
+            # leave the toplevel cached without all its references. The host's
+            # realise then refuses to switch until the closure is pushed again.
+            if nix path-info --store "https://${CACHE_NAME}.cachix.org" "$path" > /dev/null 2>&1; then
+              echo "${host}: ${path} is already cached"
+            else
+              built="$(nix build --no-link --print-out-paths "$attr")"
+              test "$built" = "$path"
+              cachix push "$CACHE_NAME" "$path"
+            fi
             systems="$(jq -c --arg host "$host" --arg path "$path" '. + {($host): $path}' <<<"$systems")"
             printf '%s\n' "$path" > "bootstrap-manifest/${host}"
           done
@@ -82,6 +93,49 @@ jobs:
           name: bootstrap-manifest
           path: bootstrap-manifest/
           if-no-files-found: error
+
+  # Lets PR nix-checks substitute unchanged checks. It is kept out of the deploy
+  # path so a slow or failing check build never holds up a host switch.
+  publish-checks:
+    name: build and publish flake checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout exact deploy commit
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: install nix
+        uses: cachix/install-nix-action@v32
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            http2 = false
+            fallback = true
+      - name: configure writable cache
+        uses: cachix/cachix-action@v17
+        with:
+          name: ${{ vars.LAB_NIX_CACHE_NAME }}
+          authToken: ${{ secrets.LAB_NIX_CACHE_AUTH_TOKEN }}
+          useDaemon: false
+          skipPush: true
+      - name: build and publish uncached checks
+        env:
+          CACHE_NAME: ${{ vars.LAB_NIX_CACHE_NAME }}
+          CACHIX_AUTH_TOKEN: ${{ secrets.LAB_NIX_CACHE_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          mapfile -t checks < <(nix eval --json .#checks.x86_64-linux --apply builtins.attrNames | jq -r '.[]')
+          for check in "${checks[@]}"; do
+            attr=".#checks.x86_64-linux.${check}"
+            path="$(nix eval --raw "${attr}.outPath")"
+            if nix path-info --store "https://${CACHE_NAME}.cachix.org" "$path" > /dev/null 2>&1; then
+              echo "${check}: ${path} is already cached"
+            else
+              built="$(nix build --no-link --print-out-paths "$attr")"
+              test "$built" = "$path"
+              cachix push "$CACHE_NAME" "$path"
+            fi
+          done
 
   # Infra first: reconcile the Proxmox VMs before rebuilding their configs.
   apply-terraform:
