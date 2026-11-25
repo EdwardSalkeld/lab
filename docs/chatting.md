@@ -11,7 +11,8 @@ Lab deploys Chatting on `magpie`:
 - `flake.nix` takes Chatting as a flake input pinned to a release tag and uses
   the `chatting-handler` and `chatting-worker` packages built by Chatting's own
   flake with Chatting's own nixpkgs pin, so they are the packages Chatting's CI
-  built and tested for that release. Lab builds only `bbmb-server` itself.
+  built and tested for that release. Lab builds only `bbmb-server` itself,
+  from `pkgs/bbmb-server`.
 - `nixos/hosts/magpie/chatting.nix` defines the systemd units.
 - `nixos/hosts/magpie/chatting-config.nix` renders `/etc/chatting/handler.json`
   and `/etc/chatting/worker.json`.

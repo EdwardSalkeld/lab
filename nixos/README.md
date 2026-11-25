@@ -9,7 +9,10 @@ flake's `nixosConfigurations`:
 - `falcon`: Hetzner Cloud host for FreshRSS and the public proxies.
 
 Shared modules are under `modules/`. The Proxmox VMs import
-`modules/proxmox-vm-base.nix`; Falcon is not a Proxmox guest and does not.
+`modules/lab-base.nix` (users, SSH, sudo, Nix settings, node exporter and the
+shared package list) and `modules/proxmox-guest.nix` (boot loader, QEMU guest
+agent, fstrim and DHCP). Falcon is not a Proxmox guest and still keeps its own
+copy of the lab-base settings. Each host sets its own `system.stateVersion`.
 [AGENTS.md](../AGENTS.md#hosts) has the full host table.
 
 ## Installing Packages
@@ -25,7 +28,7 @@ environment.systemPackages = with pkgs; [
 ];
 ```
 
-Packages every Proxmox VM needs go in `nixos/modules/proxmox-vm-base.nix`;
+Packages every Proxmox VM needs go in `nixos/modules/lab-base.nix`;
 Falcon keeps its own list in `nixos/hosts/falcon/configuration.nix`. Merging
 the change to `main` deploys it.
 
@@ -194,7 +197,7 @@ reintroduced in a dedicated branch.
 ## Prometheus Exporters
 
 All Proxmox VM hosts include node exporter on port `9100` from
-`nixos/modules/proxmox-vm-base.nix`.
+`nixos/modules/lab-base.nix`.
 
 `partridge` also exposes PostgreSQL metrics on port `9187`. The exporter runs
 locally as the `postgres` Unix user, so it does not need a database password.

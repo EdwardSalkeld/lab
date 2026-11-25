@@ -8,17 +8,9 @@ let
   hostDomain = "kite.int.alcachofa.faith";
 in
 {
-  sops = {
-    defaultSopsFile = ./secrets/acme-cloudflare.yaml;
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-    secrets."acme/cloudflare_dns_api_token".key = "cloudflare_dns_api_token";
-    templates."acme-cloudflare.env" = {
-      mode = "0400";
-      content = ''
-        CF_DNS_API_TOKEN=${config.sops.placeholder."acme/cloudflare_dns_api_token"}
-      '';
-    };
-  };
+  imports = [ ../../modules/web-tls.nix ];
+
+  alcachofa.webTls.cloudflareTokenSopsFile = ./secrets/acme-cloudflare.yaml;
 
   # Do not trust the whole Tailnet interface: both applications must be reached
   # through Nginx, whether the client is on the LAN or reaches Kite via Falcon.

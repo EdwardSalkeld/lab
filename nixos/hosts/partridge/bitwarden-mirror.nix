@@ -11,7 +11,6 @@ let
 in
 {
   sops.defaultSopsFile = ./secrets/bitwarden-mirror.yaml;
-  sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
   sops.secrets = {
     "bitwarden-mirror/source_bw_clientid" = {

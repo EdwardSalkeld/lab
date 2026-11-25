@@ -8,12 +8,17 @@
 {
   imports = [
     ../../modules/python.nix
+    ../../modules/web-tls.nix
     ./hardware-configuration.nix
     ./freshrss.nix
     ./navidrome.nix
     ./webhooks.nix
     ./web.nix
   ];
+
+  # Navidrome, webhooks and the landing page each have their own certificate,
+  # all issued over DNS-01 with this token.
+  alcachofa.webTls.cloudflareTokenSopsFile = ./secrets/acme-cloudflare.yaml;
 
   networking = {
     hostName = "falcon";
