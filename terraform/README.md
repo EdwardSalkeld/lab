@@ -7,7 +7,7 @@ Active resources:
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
-- `proxmox_virtual_environment_vm.kite` when `enable_kite_vm = true`
+- `proxmox_virtual_environment_vm.kite`
 
 ## Quick Ops
 
@@ -157,12 +157,6 @@ online resize used Edward's passwordless sudo access.
 
 `luna` is planned as the second Proxmox host. The first planned guest is
 `kite`, a NixOS VM for Jellyfin, Navidrome, and MCM.
-
-The VM resource is enabled once Luna credentials are available:
-
-```hcl
-enable_kite_vm = true
-```
 
 After Proxmox is installed on `luna` and its API token exists, set
 `LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` to create `kite` through the

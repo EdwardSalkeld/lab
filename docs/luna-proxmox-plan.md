@@ -145,7 +145,6 @@ Prepared in this branch:
 
 - Terraform resource `proxmox_virtual_environment_vm.kite`
 - Terraform provider alias `proxmox.luna`
-- Feature flag `enable_kite_vm`, defaulting to `true`
 - NixOS host `.#nixosConfigurations.kite`
 - NixOS check `.#checks.x86_64-linux.kite`
 
@@ -179,11 +178,10 @@ named `luna` through `sol`.
 
 7. Decide whether the external disks are passed through to the VM or mounted on
    the Proxmox host and exposed through a different mechanism.
-8. Confirm `kite` Terraform is enabled:
+8. Point Terraform at luna:
 
    ```hcl
    LUNA_PROXMOXENDPOINT = "https://luna:8006/"
-   enable_kite_vm = true
    ```
 
 9. Apply Terraform to create the VM.

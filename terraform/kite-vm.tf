@@ -1,5 +1,4 @@
 resource "proxmox_virtual_environment_vm" "kite" {
-  count    = var.enable_kite_vm ? 1 : 0
   provider = proxmox.luna
 
   name        = var.kite_vm_name
@@ -101,7 +100,12 @@ resource "proxmox_virtual_environment_vm" "kite" {
 
     precondition {
       condition     = var.LUNA_PROXMOXENDPOINT != null && var.LUNA_PROXMOXTOKEN != null
-      error_message = "Set LUNA_PROXMOXENDPOINT and LUNA_PROXMOXTOKEN before enabling kite on standalone luna."
+      error_message = "Set LUNA_PROXMOXENDPOINT and LUNA_PROXMOXTOKEN to manage kite on standalone luna."
     }
   }
+}
+
+moved {
+  from = proxmox_virtual_environment_vm.kite[0]
+  to   = proxmox_virtual_environment_vm.kite
 }
