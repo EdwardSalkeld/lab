@@ -42,6 +42,11 @@ let
     poll_interval_seconds = 30;
     github_webhook_secret_env = "CHATTING_GITHUB_WEBHOOK_SECRET";
     github_webhook_delivery_enabled = true;
+    # The GitHub account Billy acts as: mentions of it and assignments to it
+    # start work, and its own events are dropped as self actions.
+    github_webhook_login = "BillyAcachofa";
+    # Other identities Billy acts through, also dropped as self actions.
+    github_webhook_self_logins = [ "billybotapp[bot]" ];
     # lab is public, so any GitHub user can comment where Billy is watching.
     # Only these senders' events become worker tasks (chatting#422).
     github_webhook_trusted_senders = [
