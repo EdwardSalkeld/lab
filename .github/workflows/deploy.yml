@@ -12,8 +12,9 @@ on:
         default: false
 
 # Serialize deploys; never cancel an in-flight one (would leave a half-applied
-# terraform run / rebuild / dangling state lock). Each queued run deploys the
-# exact commit it built.
+# terraform run / rebuild / dangling state lock). GitHub keeps only the newest
+# pending run and cancels older pending ones, so a burst of merges deploys just
+# the latest commit. Each run deploys the exact commit it built.
 concurrency:
   group: deploy-lab
   cancel-in-progress: false
