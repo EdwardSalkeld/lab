@@ -66,6 +66,7 @@
         name:
         {
           specialArgs ? { },
+          labBase ? true,
           proxmoxGuest ? true,
         }:
         nixpkgs.lib.nixosSystem {
@@ -79,10 +80,8 @@
             ./nixos/modules/holding-page.nix
             ./nixos/modules/journal-logging.nix
           ]
-          ++ nixpkgs.lib.optionals proxmoxGuest [
-            ./nixos/modules/lab-base.nix
-            ./nixos/modules/proxmox-guest.nix
-          ]
+          ++ nixpkgs.lib.optional labBase ./nixos/modules/lab-base.nix
+          ++ nixpkgs.lib.optional proxmoxGuest ./nixos/modules/proxmox-guest.nix
           ++ [
             ./nixos/modules/remote-deploy.nix
             ./nixos/modules/shell-scripts.nix
@@ -305,7 +304,10 @@
 
         # Falcon is a Hetzner Cloud VM, not a Proxmox guest. It also skips
         # lab-base for now, because its own copy of those settings has diverged.
-        falcon = mkHost "falcon" { proxmoxGuest = false; };
+        falcon = mkHost "falcon" {
+          labBase = false;
+          proxmoxGuest = false;
+        };
       };
     };
 }
