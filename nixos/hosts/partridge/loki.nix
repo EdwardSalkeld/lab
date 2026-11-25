@@ -11,6 +11,7 @@ in
   };
 
   alcachofa.partridge.reverseProxy.routes.${lokiDomain}.port = lokiPort;
+  alcachofa.remoteDeploy.postSwitchHttpChecks = [ "http://127.0.0.1:${toString lokiPort}/ready" ];
 
   services.loki = {
     enable = true;

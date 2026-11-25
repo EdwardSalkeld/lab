@@ -21,6 +21,9 @@ in
   };
 
   alcachofa.partridge.reverseProxy.routes.${prometheusDomain}.port = prometheusPort;
+  alcachofa.remoteDeploy.postSwitchHttpChecks = [
+    "http://127.0.0.1:${toString prometheusPort}/-/ready"
+  ];
 
   services.prometheus.exporters.blackbox = {
     enable = true;

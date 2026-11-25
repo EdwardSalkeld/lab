@@ -27,52 +27,45 @@ let
     http_checks=(${postSwitchHttpChecks})
 
     read -r command sha cache_name cache_key expected_path extra <<<"''${SSH_ORIGINAL_COMMAND:-}"
-    if [[ "''${SSH_ORIGINAL_COMMAND:-}" == lab-switch ]]; then
-      # Transitional compatibility while hosts are bootstrapped individually.
-      # The existing main workflow still sends the bare command. Only this
-      # legacy path retains build-on-target until #325 is merged.
-      flake="github:EdwardSalkeld/lab#${host}"
-      nix_options=(--refresh)
-    elif [[ "$command" != lab-switch || ! "$sha" =~ ^[0-9a-f]{40}$ ||
-          ! "$cache_name" =~ ^[a-z0-9][a-z0-9-]*$ ||
-          ! "$cache_key" =~ ^[a-z0-9.-]+-1:[A-Za-z0-9+/=]+$ ||
-          ! "$expected_path" =~ ^/nix/store/[a-z0-9]{32}-[A-Za-z0-9.+_-]+$ ||
-          -n "''${extra:-}" ]]; then
+    if [[ "$command" != lab-switch || ! "$sha" =~ ^[0-9a-f]{40}$ ||
+        ! "$cache_name" =~ ^[a-z0-9][a-z0-9-]*$ ||
+        ! "$cache_key" =~ ^[a-z0-9.-]+-1:[A-Za-z0-9+/=]+$ ||
+        ! "$expected_path" =~ ^/nix/store/[a-z0-9]{32}-[A-Za-z0-9.+_-]+$ ||
+        -n "''${extra:-}" ]]; then
       echo 'invalid lab-switch request' >&2
       exit 2
-    else
-      if [[ "$cache_name" != ${lib.escapeShellArg cfg.cacheName} ||
-            "$cache_key" != ${lib.escapeShellArg cfg.cachePublicKey} ]]; then
-        echo 'deploy cache does not match the installed trust configuration' >&2
-        exit 2
-      fi
+    fi
+    if [[ "$cache_name" != ${lib.escapeShellArg cfg.cacheName} ||
+          "$cache_key" != ${lib.escapeShellArg cfg.cachePublicKey} ]]; then
+      echo 'deploy cache does not match the installed trust configuration' >&2
+      exit 2
+    fi
 
-      # The output path is checked after fetching so a stale or mismatched CI
-      # result cannot be activated.
-      source="github:EdwardSalkeld/lab/''${sha}"
-      flake="''${source}#${host}"
-      cache_url="https://''${cache_name}.cachix.org"
-      nix_options=(--option extra-substituters "$cache_url"
-                   --option extra-trusted-public-keys "$cache_key"
-                   --option require-sigs true
-                   --option builders ""
-                   --option max-jobs 0)
-      if ! actual_path="$("$nix" eval --raw "''${nix_options[@]}" \
-          "''${source}#nixosConfigurations.${host}.config.system.build.toplevel.outPath")"; then
-        echo "could not evaluate the CI-built output for ${host}" >&2
-        exit 1
-      fi
-      if [[ "$actual_path" != "$expected_path" ]]; then
-        echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
-        exit 1
-      fi
-      # Realise the output path, not its derivation. This bypasses scaffolding
-      # with allowSubstitutes=false and uses both Cachix and cache.nixos.org
-      # (Cachix intentionally omits paths available from that upstream cache).
-      if ! "$nix_store" --realise "$expected_path" "''${nix_options[@]}"; then
-        echo "could not fetch the complete CI-built closure for ${host}" >&2
-        exit 1
-      fi
+    # The output path is checked after fetching so a stale or mismatched CI
+    # result cannot be activated.
+    source="github:EdwardSalkeld/lab/''${sha}"
+    flake="''${source}#${host}"
+    cache_url="https://''${cache_name}.cachix.org"
+    nix_options=(--option extra-substituters "$cache_url"
+                 --option extra-trusted-public-keys "$cache_key"
+                 --option require-sigs true
+                 --option builders ""
+                 --option max-jobs 0)
+    if ! actual_path="$("$nix" eval --raw "''${nix_options[@]}" \
+        "''${source}#nixosConfigurations.${host}.config.system.build.toplevel.outPath")"; then
+      echo "could not evaluate the CI-built output for ${host}" >&2
+      exit 1
+    fi
+    if [[ "$actual_path" != "$expected_path" ]]; then
+      echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
+      exit 1
+    fi
+    # Realise the output path, not its derivation. This bypasses scaffolding
+    # with allowSubstitutes=false and uses both Cachix and cache.nixos.org
+    # (Cachix intentionally omits paths available from that upstream cache).
+    if ! "$nix_store" --realise "$expected_path" "''${nix_options[@]}"; then
+      echo "could not fetch the complete CI-built closure for ${host}" >&2
+      exit 1
     fi
 
     units_healthy() {
@@ -85,6 +78,17 @@ let
           --output /dev/null "$url" || return 1
       done
       return 0
+    }
+    # Poll rather than check once: Loki's /ready answers 503 for 15s after it
+    # starts, and Type=simple services such as Grafana are active before they
+    # serve HTTP. A single early check would roll back a healthy switch.
+    wait_healthy() {
+      local _
+      for _ in {1..18}; do
+        sleep 5
+        units_healthy && return 0
+      done
+      return 1
     }
     start_units() {
       local unit
@@ -135,23 +139,20 @@ let
       exit "$rc"
     fi
 
-    sleep 5
-    if ! units_healthy; then
+    if ! wait_healthy; then
       echo "post-switch health check failed on ${host}; rolling back" >&2
       rc=1
       restore_previous
-      sleep 5
     fi
 
     # Last resort: if a unit is still down (e.g. the rollback switch itself hit
     # an activation error), start it directly so a deploy never leaves the host
     # with critical services stopped.
-    if ! units_healthy; then
+    if ! wait_healthy; then
       echo "health-checked units still down after rollback; starting them directly" >&2
       rc=1
       start_units
-      sleep 5
-      if ! units_healthy; then
+      if ! wait_healthy; then
         echo "health checks still failing after service recovery on ${host}" >&2
         "$systemctl" status --no-pager "''${healthchecks[@]}" >&2 || true
       fi

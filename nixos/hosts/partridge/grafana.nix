@@ -1203,6 +1203,10 @@ let
 in
 {
   alcachofa.partridge.reverseProxy.routes.${grafanaDomain}.port = grafanaPort;
+  alcachofa.remoteDeploy.postSwitchHealthchecks = [ "grafana.service" ];
+  alcachofa.remoteDeploy.postSwitchHttpChecks = [
+    "http://127.0.0.1:${toString grafanaPort}/api/health"
+  ];
 
   sops.secrets."grafana/smtp_password" = {
     sopsFile = ./secrets/grafana-smtp.yaml;

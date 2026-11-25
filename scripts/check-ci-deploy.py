@@ -86,7 +86,11 @@ case "$name" in
       fi
     fi
     ;;
-  curl) [[ "${TEST_HTTP_FAIL:-0}" == 0 ]] || exit 1 ;;
+  curl)
+    [[ "${TEST_HTTP_FAIL:-0}" == 0 ]] || exit 1
+    # Fail the first N requests, as a service that is still starting would.
+    (( $(grep -c '^curl' "$TEST_LOG") > ${TEST_HTTP_FAILURES:-0} )) || exit 1
+    ;;
   flock) [[ "${TEST_LOCK_FAIL:-0}" == 0 ]] || exit 1 ;;
   activate) [[ "${TEST_SWITCH_FAIL:-0}" == 0 ]] || exit 1 ;;
   restore) [[ "${TEST_RECOVERY_FAIL:-0}" == 0 ]] || exit 1 ;;
@@ -122,10 +126,13 @@ esac
             '"$previous/bin/switch-to-configuration"', f'"{temp}/activate"'
         )
         if name == "switch":
-            # Exercise HTTP readiness even though Partridge has no endpoints.
-            text = text.replace(
-                "http_checks=()", "http_checks=(http://127.0.0.1:9465/api/items)"
+            # Replace Partridge's endpoints with one the stubbed curl can fail.
+            text, count = re.subn(
+                r"http_checks=\([^)]*\)",
+                "http_checks=(http://127.0.0.1:9465/api/items)",
+                text,
             )
+            assert count == 1, "http_checks assignment not found"
             text = re.sub(r"/nix/store/[^/]+/bin/curl", str(temp / "curl"), text)
             text = text.replace(f'"{temp}/activate"', f'"{temp}/restore"')
             text = text.replace('"$previous/sw/bin/nix-env"', f'"{temp}/nix-env"')
@@ -174,6 +181,7 @@ esac
     )
     for request in (
         "",
+        "lab-switch",
         "lab-switch bad test key path",
         pinned + " extra",
         f"lab-switch {sha} other {key} {expected}",
@@ -184,12 +192,16 @@ esac
     for overrides in ({"TEST_FETCH_FAIL": "1"}, {"TEST_PATH": previous}):
         result, calls = run("switch", request=pinned, **overrides)
         assert result.returncode != 0 and "nixos-rebuild" not in calls
-    result, calls = run("switch", request="lab-switch")
-    assert result.returncode == 0 and "nix build" not in calls
-    assert "--refresh" in calls
     for overrides in ({"TEST_PIN_FAIL": "1"}, {"TEST_READLINK_FAIL": "1"}):
         result, calls = run("switch", request=pinned, **overrides)
         assert result.returncode != 0 and "nixos-rebuild" not in calls
+
+    # A service that becomes ready within the polling window is not rolled back.
+    result, calls = run("switch", request=pinned, TEST_HTTP_FAILURES="3")
+    assert result.returncode == 0, result.stderr
+    assert "restore switch" not in calls
+    result, calls = run("switch", request=pinned, TEST_HTTP_FAILURES="18")
+    assert result.returncode != 0 and calls.count("restore switch") == 1
 
     restore_profile = f"nix-env --profile /nix/var/nix/profiles/system --set {previous}"
     for overrides in (
@@ -249,4 +261,4 @@ esac
     assert result.returncode != 0
     assert f"nix-env --profile /nix/var/nix/profiles/system --set {previous}" in calls
 
-print("CI deployment fetch, refusal, legacy compatibility and recovery checks passed")
+print("CI deployment fetch, refusal and recovery checks passed")

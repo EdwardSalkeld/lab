@@ -30,7 +30,12 @@
   alcachofa.journalToLoki = {
     endpoint = "http://127.0.0.1:3100/loki/api/v1/push";
   };
-  alcachofa.remoteDeploy.postSwitchHealthchecks = [ "grafana.service" ];
+  # Partridge is the subnet router and exit node: a generation that loses
+  # either of these leaves it unreachable for a fix.
+  alcachofa.remoteDeploy.postSwitchHealthchecks = [
+    "tailscaled.service"
+    "sshd.service"
+  ];
 
   services.tailscale = {
     enable = true;

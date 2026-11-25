@@ -203,7 +203,7 @@ NixOS system closures from the exact commit. It then joins Tailscale as
 `tag:ci`, SSHes to `deploy@fourth.ts.alcachofa.faith`, and asks the orchestrator
 to run `apply-terraform` followed by a pinned, cache-only `nix-switch`. See
 [`docs/ci-built-nixos-deploy.md`](../docs/ci-built-nixos-deploy.md) for cache
-setup and the required first rollout.
+setup and bootstrapping a host by hand.
 
 On pull requests that touch Terraform, CI uses the same route to ask fourth to
 run `plan-terraform <pr-number> <head-sha>`. Fourth fetches that PR ref into a
