@@ -18,6 +18,9 @@ concurrency:
   group: deploy-lab
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   build-systems:
     name: build and publish NixOS systems
