@@ -54,77 +54,13 @@
     }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ self.overlays.default ];
+      };
       pkgsUnstable = import nixpkgs-unstable { inherit system; };
       chattingSrc = chatting;
-      chattingPackages = chatting.packages.${system};
       mediaCollectionManagerPackages = media-collection-manager.packages.${system};
-      bbmbSrc = bbmb;
-      bbmbServer = pkgs.buildGo127Module {
-        pname = "bbmb-server";
-        version = "v10";
-        src = bbmbSrc;
-        modRoot = "server";
-        vendorHash = null;
-        subPackages = [ "." ];
-        doCheck = false;
-        # Upstream bbmb requires Go 1.27.
-        postInstall = ''
-          mv "$out/bin/server" "$out/bin/bbmb-server"
-        '';
-      };
-      chattingRuntime = pkgs.symlinkJoin {
-        name = "chatting-runtime";
-        paths = [
-          bbmbServer
-          chattingPackages.chatting-handler
-          chattingPackages.chatting-platform
-          chattingPackages.chatting-worker
-        ];
-      };
-      bitwardenMirror = pkgs.buildGoModule {
-        pname = "bitwarden-mirror";
-        version = "0.1.0";
-        src = ./tools/bitwarden-mirror;
-        vendorHash = null;
-        subPackages = [ "cmd/bitwarden-mirror" ];
-      };
-      octopusDl = pkgs.buildGoModule {
-        pname = "octopus-dl";
-        version = "0.1.0";
-        src = octopus-dl;
-        vendorHash = null;
-        subPackages = [ "." ];
-        # Tests run in CI; skip them here so the build does not compile the
-        # CGO sqlite test driver (a ~250k-line C file, slow and disk-hungry)
-        # that the binary itself never uses.
-        doCheck = false;
-      };
-      linearExport = pkgs.buildGoModule {
-        pname = "linear-export";
-        version = "0.1.0";
-        src = linear-export;
-        vendorHash = null;
-        subPackages = [ "." ];
-        # Tests run in CI; skip them here so the build does not compile the
-        # CGO sqlite test driver (a ~250k-line C file, slow and disk-hungry)
-        # that the binary itself never uses.
-        doCheck = false;
-      };
-      exerciseTracker = pkgs.buildGoModule {
-        pname = "exercise-tracker";
-        version = "0.1.0";
-        src = exercise-tracker;
-        vendorHash = null;
-        subPackages = [ "cmd/exercise-tracker" ];
-        # Tests run in CI; the nix build only needs the binary.
-        doCheck = false;
-        # The db-setup unit applies these migrations at activation, so they must
-        # ship in the package output, not just the source tree.
-        postInstall = ''
-          install -Dm644 sql/migrations/*.sql -t $out/share/exercise-tracker/sql/migrations/
-        '';
-      };
 
       mkHost =
         name:
@@ -152,16 +88,34 @@
         };
     in
     {
+      overlays.default = final: _prev: {
+        bbmb-server = final.callPackage ./pkgs/bbmb-server { src = bbmb; };
+        bitwarden-mirror = final.callPackage ./pkgs/bitwarden-mirror { };
+        chatting-runtime = final.callPackage ./pkgs/chatting-runtime {
+          chattingPackages = chatting.packages.${final.stdenv.hostPlatform.system};
+        };
+        exercise-tracker = final.callPackage ./pkgs/exercise-tracker { src = exercise-tracker; };
+        linear-export = final.callPackage ./pkgs/go-tool-without-sqlite-tests.nix {
+          pname = "linear-export";
+          src = linear-export;
+        };
+        octopus-dl = final.callPackage ./pkgs/go-tool-without-sqlite-tests.nix {
+          pname = "octopus-dl";
+          src = octopus-dl;
+        };
+      };
+
       packages.${system} = {
-        bbmb-server = bbmbServer;
-        bitwarden-mirror = bitwardenMirror;
-        chatting-handler = chattingPackages.chatting-handler;
-        chatting-runtime = chattingRuntime;
-        chatting-worker = chattingPackages.chatting-worker;
-        octopus-dl = octopusDl;
-        linear-export = linearExport;
-        exercise-tracker = exerciseTracker;
-        default = bitwardenMirror;
+        inherit (pkgs)
+          bbmb-server
+          bitwarden-mirror
+          chatting-runtime
+          exercise-tracker
+          linear-export
+          octopus-dl
+          ;
+        inherit (chatting.packages.${system}) chatting-handler chatting-worker;
+        default = pkgs.bitwarden-mirror;
       };
 
       checks.${system} =
@@ -327,17 +281,17 @@
       nixosConfigurations = {
         partridge = mkHost "partridge" {
           specialArgs = {
-            bitwardenMirrorPackage = bitwardenMirror;
-            octopusDlPackage = octopusDl;
-            linearExportPackage = linearExport;
-            exerciseTrackerPackage = exerciseTracker;
+            bitwardenMirrorPackage = pkgs.bitwarden-mirror;
+            octopusDlPackage = pkgs.octopus-dl;
+            linearExportPackage = pkgs.linear-export;
+            exerciseTrackerPackage = pkgs.exercise-tracker;
             grafanaPackage = pkgsUnstable.grafana;
           };
         };
 
         magpie = mkHost "magpie" {
           specialArgs = {
-            chattingRuntimePackage = chattingRuntime;
+            chattingRuntimePackage = pkgs.chatting-runtime;
             codexPackage = pkgsUnstable.codex;
           };
         };
