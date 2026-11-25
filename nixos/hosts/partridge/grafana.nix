@@ -125,6 +125,11 @@ in
     restartUnits = [ "grafana.service" ];
   };
 
+  alcachofa.shellScripts = [
+    grafanaFailureNotify
+    grafanaFolderProvenanceRepair
+  ];
+
   systemd.services.grafana.serviceConfig.EnvironmentFile =
     config.sops.templates."grafana-alerting.env".path;
   systemd.services.grafana-folder-provenance-repair = {

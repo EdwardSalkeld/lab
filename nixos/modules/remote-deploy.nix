@@ -212,4 +212,9 @@ in
   config.users.users.root.openssh.authorizedKeys.keys = [
     ''command="${remoteCommand}",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty ${fourthDeployKey}''
   ];
+  config.alcachofa.shellScripts = [
+    labSwitch
+    nixGc
+    remoteCommand
+  ];
 }

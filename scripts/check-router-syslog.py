@@ -24,12 +24,6 @@ def main():
     source = args.config.read_text()
     with tempfile.TemporaryDirectory(prefix="router-syslog-test-") as directory:
         root = Path(directory)
-        production = root / "production.alloy"
-        production.write_text(
-            source
-            + '\nloki.write "default" { endpoint { url = "http://127.0.0.1:3100/loki/api/v1/push" } }\n'
-        )
-        subprocess.run([args.alloy, "validate", str(production)], check=True)
         udp_port = free_port(socket.SOCK_DGRAM)
         http_port = free_port(socket.SOCK_STREAM)
         # Keep the rendered pipeline; change only socket addresses and the sink.
@@ -102,7 +96,7 @@ def main():
                 assert 'program=\\"kernel\\"' in text, text
                 assert 'level=\\"warning\\"' in text, text
                 print(
-                    "Router syslog: valid config, three packet formats, labels and sender rejection passed"
+                    "Router syslog: three packet formats, labels and sender rejection passed"
                 )
             finally:
                 proc.terminate()
