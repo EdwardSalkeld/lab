@@ -139,6 +139,7 @@ in
     environment.DATA_PATH = dataDir;
     script = ''
       config_file=${dataDir}/config.php
+      # shellcheck disable=SC2016 # PHP expands these variables, not the shell.
       ${pkgs.php}/bin/php -r '
         $path = $argv[1];
         $config = require $path;
