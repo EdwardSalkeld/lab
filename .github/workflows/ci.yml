@@ -20,6 +20,7 @@ jobs:
       deploy: ${{ steps.filter.outputs.deploy }}
       nix: ${{ steps.filter.outputs.nix }}
       nix_shared: ${{ steps.filter.outputs.nix_shared }}
+      nix_flake: ${{ steps.filter.outputs.nix_flake }}
       nix_lock: ${{ steps.filter.outputs.nix_lock }}
       nix_host_files: ${{ steps.filter.outputs.nix_host_files }}
     steps:
@@ -55,11 +56,12 @@ jobs:
             nix_shared:
               - '.github/workflows/**'
               - '.sops.yaml'
-              - 'flake.nix'
               - 'nixos/modules/**'
               - 'tools/**'
               - 'scripts/bootstrap-ci-deploy.sh'
               - 'scripts/check-*.py'
+            nix_flake:
+              - 'flake.nix'
             nix_lock:
               - 'flake.lock'
             nix_host:
@@ -91,13 +93,32 @@ jobs:
         id: select
         env:
           NIX_SHARED: ${{ needs.changes.outputs.nix_shared }}
+          NIX_FLAKE: ${{ needs.changes.outputs.nix_flake }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           NIX_LOCK: ${{ needs.changes.outputs.nix_lock }}
           NIX_HOST_FILES: ${{ needs.changes.outputs.nix_host_files }}
         run: |
           mapfile -t all_hosts < <(nix eval --no-update-lock-file --json .#nixosConfigurations --apply builtins.attrNames | jq -r '.[]')
           test "${#all_hosts[@]}" -gt 0
           hosts=()
-          if [[ "$NIX_SHARED" == "true" ]]; then
+
+          # A chatting or bbmb release bump changes only that input's url line,
+          # so the lock diff below can pick its host. Any other flake.nix edit
+          # builds every host.
+          flake_shared=false
+          if [[ "$NIX_FLAKE" == "true" ]]; then
+            flake_shared=true
+            if [[ "$NIX_LOCK" == "true" ]]; then
+              changed_lines="$(git diff --unified=0 "$BASE_SHA" HEAD -- flake.nix \
+                | awk '/^@@/ { hunk = 1; next } hunk && /^[-+]/')"
+              pin_line='^[-+][[:space:]]*(chatting\.)?url = "github:EdwardSalkeld/(chatting|bbmb)/[A-Za-z0-9._-]+";[[:space:]]*$'
+              if [[ -n "$changed_lines" ]] && ! grep -qvE "$pin_line" <<<"$changed_lines"; then
+                flake_shared=false
+              fi
+            fi
+          fi
+
+          if [[ "$NIX_SHARED" == "true" || "$flake_shared" == "true" ]]; then
             hosts=("${all_hosts[@]}")
           else
             mapfile -t changed_hosts < <(jq -r '.[] | split("/")[2]' <<<"${NIX_HOST_FILES:-[]}")
@@ -105,7 +126,7 @@ jobs:
 
             if [[ "$NIX_LOCK" == "true" ]]; then
               base_lock="$(mktemp)"
-              git show "${{ github.event.pull_request.base.sha }}:flake.lock" > "$base_lock"
+              git show "${BASE_SHA}:flake.lock" > "$base_lock"
 
               changed_inputs="$({
                 jq -r --slurpfile base "$base_lock" '
@@ -305,6 +326,12 @@ jobs:
             # fall back to building from source if a substitute still fails.
             http2 = false
             fallback = true
+      - name: configure read-only Lab cache
+        uses: cachix/cachix-action@v17
+        with:
+          name: ${{ vars.LAB_NIX_CACHE_NAME }}
+          # Deploy publishes the checks; PRs only consume them.
+          skipPush: true
       - name: flake check
         run: nix flake check --no-update-lock-file
       - name: deployment refusal and recovery checks
