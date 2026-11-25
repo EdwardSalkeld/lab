@@ -55,7 +55,10 @@ fallback for cache misses.
    trust-configuration update, rolled out with the bootstrap below.
 
 Fourth's dispatcher preserves command arguments and checks out the latest
-`main` before running `deploy/nix-switch.sh`, which sends each host the pinned
+`main` before running `deploy/nix-switch.sh`. The workflow sends one
+`<host>=<system-path>` argument per flake host, and the script refuses the
+request unless those are exactly the hosts on its fixed list. It then sends
+each host the pinned
 `lab-switch <commit> <cache-name> <cache-key> <system-path>` request.
 
 The cache must retain known-good closures for rollback. Existing local NixOS

@@ -26,10 +26,7 @@ jobs:
     name: build and publish NixOS systems
     runs-on: ubuntu-latest
     outputs:
-      falcon: ${{ steps.build.outputs.falcon }}
-      kite: ${{ steps.build.outputs.kite }}
-      magpie: ${{ steps.build.outputs.magpie }}
-      partridge: ${{ steps.build.outputs.partridge }}
+      systems: ${{ steps.build.outputs.systems }}
     steps:
       - name: require cache configuration
         env:
@@ -68,13 +65,17 @@ jobs:
           set -euo pipefail
           mkdir -p bootstrap-manifest
           printf '%s\n' "$GITHUB_SHA" > bootstrap-manifest/commit
-          for host in falcon kite magpie partridge; do
+          mapfile -t hosts < <(nix eval --json .#nixosConfigurations --apply builtins.attrNames | jq -r '.[]')
+          test "${#hosts[@]}" -gt 0
+          systems='{}'
+          for host in "${hosts[@]}"; do
             path="$(nix build --no-link --print-out-paths ".#nixosConfigurations.${host}.config.system.build.toplevel")"
             test -n "$path"
             cachix push "$CACHE_NAME" "$path"
-            echo "${host}=${path}" >> "$GITHUB_OUTPUT"
+            systems="$(jq -c --arg host "$host" --arg path "$path" '. + {($host): $path}' <<<"$systems")"
             printf '%s\n' "$path" > "bootstrap-manifest/${host}"
           done
+          echo "systems=${systems}" >> "$GITHUB_OUTPUT"
       - name: upload bootstrap manifest
         uses: actions/upload-artifact@v7
         with:
@@ -138,15 +139,14 @@ jobs:
           DEPLOY_SHA: ${{ github.sha }}
           CACHE_NAME: ${{ vars.LAB_NIX_CACHE_NAME }}
           CACHE_KEY: ${{ vars.LAB_NIX_CACHE_PUBLIC_KEY }}
-          FALCON_PATH: ${{ needs.build-systems.outputs.falcon }}
-          KITE_PATH: ${{ needs.build-systems.outputs.kite }}
-          MAGPIE_PATH: ${{ needs.build-systems.outputs.magpie }}
-          PARTRIDGE_PATH: ${{ needs.build-systems.outputs.partridge }}
+          SYSTEMS: ${{ needs.build-systems.outputs.systems }}
+        # Fourth's nix-switch.sh refuses the request unless it names exactly
+        # the hosts on its own fixed list.
         run: |
+          mapfile -t systems < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$SYSTEMS")
           ssh \
             -i ~/.ssh/deploy \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             deploy@fourth.ts.alcachofa.faith \
-            nix-switch "$DEPLOY_SHA" "$CACHE_NAME" "$CACHE_KEY" \
-              "$FALCON_PATH" "$KITE_PATH" "$MAGPIE_PATH" "$PARTRIDGE_PATH"
+            nix-switch "$DEPLOY_SHA" "$CACHE_NAME" "$CACHE_KEY" "${systems[@]}"
