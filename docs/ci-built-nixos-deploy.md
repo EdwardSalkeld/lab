@@ -9,11 +9,14 @@ resulting path, and retains the existing rollback and service health checks.
 A missing cache object or mismatched path fails before activation. The host's
 forced command accepts only this pinned request; it never builds a flake
 reference on the host.
-Magpie also checks the worker API, handler metrics and broker metrics after
-switching. A `Type=simple` service can briefly report active before supervisor
-startup fails, so systemd status alone is insufficient. Failed HTTP checks
-trigger the same rollback as failed unit checks; final recovery is checked
-again and reports unit status if the service still cannot answer.
+Magpie and Partridge also check HTTP endpoints after switching. A
+`Type=simple` service can briefly report active before startup fails, so
+systemd status alone is insufficient. The wrapper polls the unit and HTTP
+checks every 5 seconds for up to 90 seconds, so a service that is still
+starting (Loki's `/ready` answers 503 for its first 15 seconds) does not cause
+a rollback. Failed HTTP checks trigger the same rollback as failed unit checks;
+final recovery is checked again and reports unit status if the service still
+cannot answer.
 Hosts use `nix-store --realise` on the exact output path to fetch its signed runtime closure:
 some NixOS scaffolding disables normal derivation substitution, so a cache-only
 `nix build` is not sufficient even when the published output exists. This also

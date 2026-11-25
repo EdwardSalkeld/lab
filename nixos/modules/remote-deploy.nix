@@ -79,6 +79,17 @@ let
       done
       return 0
     }
+    # Poll rather than check once: Loki's /ready answers 503 for 15s after it
+    # starts, and Type=simple services such as Grafana are active before they
+    # serve HTTP. A single early check would roll back a healthy switch.
+    wait_healthy() {
+      local _
+      for _ in {1..18}; do
+        sleep 5
+        units_healthy && return 0
+      done
+      return 1
+    }
     start_units() {
       local unit
       for unit in "''${healthchecks[@]}"; do
@@ -128,23 +139,20 @@ let
       exit "$rc"
     fi
 
-    sleep 5
-    if ! units_healthy; then
+    if ! wait_healthy; then
       echo "post-switch health check failed on ${host}; rolling back" >&2
       rc=1
       restore_previous
-      sleep 5
     fi
 
     # Last resort: if a unit is still down (e.g. the rollback switch itself hit
     # an activation error), start it directly so a deploy never leaves the host
     # with critical services stopped.
-    if ! units_healthy; then
+    if ! wait_healthy; then
       echo "health-checked units still down after rollback; starting them directly" >&2
       rc=1
       start_units
-      sleep 5
-      if ! units_healthy; then
+      if ! wait_healthy; then
         echo "health checks still failing after service recovery on ${host}" >&2
         "$systemctl" status --no-pager "''${healthchecks[@]}" >&2 || true
       fi

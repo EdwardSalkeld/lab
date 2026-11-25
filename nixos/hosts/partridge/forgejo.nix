@@ -6,6 +6,9 @@ let
 in
 {
   alcachofa.partridge.reverseProxy.routes.${forgejoDomain}.port = forgejoPort;
+  alcachofa.remoteDeploy.postSwitchHttpChecks = [
+    "http://127.0.0.1:${toString forgejoPort}/api/healthz"
+  ];
 
   # Forgejo git SSH (built-in server on 2222, configured below).
   networking.firewall.allowedTCPPorts = [ 2222 ];

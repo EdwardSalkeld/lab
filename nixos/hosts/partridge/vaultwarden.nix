@@ -11,6 +11,9 @@ in
   };
 
   alcachofa.partridge.reverseProxy.routes.${vaultwardenDomain}.port = vaultwardenPort;
+  alcachofa.remoteDeploy.postSwitchHttpChecks = [
+    "http://127.0.0.1:${toString vaultwardenPort}/alive"
+  ];
 
   services.vaultwarden = {
     enable = true;
