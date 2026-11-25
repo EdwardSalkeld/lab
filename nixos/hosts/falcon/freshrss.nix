@@ -164,10 +164,15 @@ in
       # SQLite/WAL and log writes change parent directory mtimes during use.
       # Directory entries are still preserved, including empty directories.
       for attempt in 1 2 3; do
-        (cd ${dataDir} && ${pkgs.findutils}/bin/find . \
+        # SQLite creates and removes the WAL during checkpoints. If it vanishes
+        # between readdir and stat, find exits 1 without the race flag, and
+        # can print it despite the prune, so filter it again for tar.
+        (cd ${dataDir} && ${pkgs.findutils}/bin/find . -ignore_readdir_race \
           \( -path './cache' -o -path './users/*/sqlite-backups' \
              -o -path './users/*/db.sqlite*' -o -name 'log*.txt' \) -prune \
-          -o -print0) > "$manifest"
+          -o -print0) \
+          | ${pkgs.gnugrep}/bin/grep --null-data --invert-match '/db\.sqlite[^/]*$' \
+          > "$manifest"
         status=0
         ${pkgs.gnutar}/bin/tar --create --gzip --file "$temporary_archive" \
           --no-recursion --null --directory=${dataDir} \
