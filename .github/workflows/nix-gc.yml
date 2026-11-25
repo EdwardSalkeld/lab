@@ -17,6 +17,9 @@ concurrency:
   group: nix-gc-${{ inputs.host }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   nix-gc:
     name: nix-gc-${{ inputs.host }}

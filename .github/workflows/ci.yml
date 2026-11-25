@@ -3,12 +3,21 @@ name: ci
 on:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   changes:
     name: changes
     runs-on: ubuntu-latest
     outputs:
       terraform: ${{ steps.filter.outputs.terraform }}
+      deploy: ${{ steps.filter.outputs.deploy }}
       nix: ${{ steps.filter.outputs.nix }}
       nix_hosts: ${{ steps.nix-hosts.outputs.hosts }}
     steps:
@@ -24,6 +33,12 @@ jobs:
             terraform:
               - '.github/workflows/**'
               - 'terraform/**'
+            deploy:
+              - '.github/workflows/**'
+              - 'deploy/**'
+              - 'proxmox/**'
+              - 'scripts/*.sh'
+              - 'terraform/**'
             nix:
               - '.github/workflows/**'
               - '.sops.yaml'
@@ -32,8 +47,7 @@ jobs:
               - 'nixos/**'
               - 'tools/**'
               - 'scripts/bootstrap-ci-deploy.sh'
-              - 'scripts/check-ci-deploy.py'
-              - 'scripts/check-kite-backups.py'
+              - 'scripts/check-*.py'
             nix_shared:
               - '.github/workflows/**'
               - '.sops.yaml'
@@ -41,8 +55,7 @@ jobs:
               - 'nixos/modules/**'
               - 'tools/**'
               - 'scripts/bootstrap-ci-deploy.sh'
-              - 'scripts/check-ci-deploy.py'
-              - 'scripts/check-kite-backups.py'
+              - 'scripts/check-*.py'
             nix_lock:
               - 'flake.lock'
             nix_kite:
@@ -123,8 +136,8 @@ jobs:
             printf '%s\n' "${hosts[@]}" | jq -R . | jq -cs 'unique' | sed 's/^/hosts=/' >> "$GITHUB_OUTPUT"
           fi
 
-  terraform:
-    name: terraform
+  terraform_validate:
+    name: terraform-validate
     needs: changes
     if: needs.changes.outputs.terraform == 'true'
     runs-on: ubuntu-latest
@@ -149,8 +162,12 @@ jobs:
     name: terraform-plan
     needs:
       - changes
-      - terraform
-    if: needs.changes.outputs.terraform == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+      - terraform_validate
+    # Dependabot PRs get no repository secrets, so Tailscale cannot connect.
+    if: >-
+      needs.changes.outputs.terraform == 'true'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: tailscale
@@ -189,6 +206,61 @@ jobs:
 
           exit "$rc"
 
+  deploy_scripts:
+    name: deploy-scripts
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+      - name: shellcheck
+        run: |
+          shellcheck \
+            deploy/*.sh \
+            scripts/*.sh \
+            proxmox/journal-to-loki/install.sh \
+            proxmox/luna/network-watchdog/install.sh \
+            proxmox/luna/network-watchdog/luna-network-watchdog \
+            proxmox/luna/network-watchdog/luna-network-watchdog.conf
+      - name: Terraform plan guard fixtures and coverage
+        run: scripts/check-terraform-plan-guard.sh
+
+  # Only this job and nix are required checks, so it reports the deploy script
+  # checks as well as Terraform validation.
+  terraform:
+    name: terraform
+    needs:
+      - changes
+      - terraform_validate
+      - deploy_scripts
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: verify Terraform and deploy script jobs
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          TERRAFORM_CHANGED: ${{ needs.changes.outputs.terraform }}
+          TERRAFORM_VALIDATE: ${{ needs.terraform_validate.result }}
+          DEPLOY_CHANGED: ${{ needs.changes.outputs.deploy }}
+          DEPLOY_SCRIPTS: ${{ needs.deploy_scripts.result }}
+        run: |
+          if [[ "$CHANGES" != "success" ]]; then
+            echo "changes result: $CHANGES" >&2
+            exit 1
+          fi
+
+          status=0
+          if [[ "$TERRAFORM_CHANGED" == "true" && "$TERRAFORM_VALIDATE" != "success" ]]; then
+            echo "terraform-validate result: $TERRAFORM_VALIDATE" >&2
+            status=1
+          fi
+          if [[ "$DEPLOY_CHANGED" == "true" && "$DEPLOY_SCRIPTS" != "success" ]]; then
+            echo "deploy-scripts result: $DEPLOY_SCRIPTS" >&2
+            status=1
+          fi
+          exit "$status"
+
   nix_checks:
     name: nix-checks
     needs: changes
@@ -213,6 +285,11 @@ jobs:
         run: python3 scripts/check-ci-deploy.py
       - name: Kite backup continuity and mount guards
         run: python3 scripts/check-kite-backups.py
+      - name: FreshRSS backup under live writes
+        run: |
+          script="$(mktemp)"
+          nix eval --raw .#nixosConfigurations.falcon.config.systemd.services.freshrss-sqlite-backup.script > "$script"
+          python3 scripts/check-freshrss-backup.py "$script"
 
   nixos_build:
     name: nixos-build (${{ matrix.host }})
@@ -250,7 +327,22 @@ jobs:
           git worktree add /tmp/main-worktree origin/main
           nix build /tmp/main-worktree#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel -o /tmp/main-system
       - name: ${{ matrix.host }} closure diff
-        run: nix store diff-closures /tmp/main-system /tmp/pr-system
+        env:
+          HOST: ${{ matrix.host }}
+        run: |
+          diff="$(nix store diff-closures /tmp/main-system /tmp/pr-system)"
+          printf '%s\n' "$diff"
+          {
+            echo "### ${HOST} closure diff"
+            echo
+            if [[ -n "$diff" ]]; then
+              echo '```'
+              printf '%s\n' "$diff"
+              echo '```'
+            else
+              echo 'No closure changes.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   nix:
     name: nix

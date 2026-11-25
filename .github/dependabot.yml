@@ -1,5 +1,7 @@
 version: 2
 updates:
+  # The weekly-updates PR also bumps the Terraform provider and tool pins, so
+  # Terraform stays out of Dependabot and Nix inputs come in one PR.
   - package-ecosystem: nix
     directory: /
     schedule:
@@ -7,18 +9,29 @@ updates:
     ignore:
       # Chatting opens a deploy PR here for each of its releases.
       - dependency-name: chatting
+    groups:
+      flake-inputs:
+        patterns:
+          - "*"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    # Gives a compromised release tag time to be noticed before it runs here.
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: gomod
     directory: /tools/bitwarden-mirror
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: gomod
     directory: /tools/grafana-alerting-lint
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7

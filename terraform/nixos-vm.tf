@@ -183,4 +183,9 @@ resource "proxmox_virtual_environment_vm" "magpie" {
   operating_system {
     type = "l26"
   }
+
+  # Holds the workspace and CI data disks.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
