@@ -1,8 +1,9 @@
-{ ... }:
+{ config, ... }:
 
 let
   forgejoDomain = "code.alcachofa.faith";
   forgejoPort = 3000;
+  stateDir = config.services.forgejo.stateDir;
 in
 {
   alcachofa.partridge.reverseProxy.routes.${forgejoDomain}.port = forgejoPort;
@@ -51,4 +52,37 @@ in
       };
     };
   };
+
+  # Repositories, LFS objects, attachments and custom/conf (SECRET_KEY, which
+  # decrypts 2FA secrets in Postgres) live only on this disk; the database is
+  # covered by partridge-postgres. This shares that job's B2 repository.
+  services.restic.backups.partridge-forgejo = {
+    paths = [ stateDir ];
+    exclude = [
+      "${stateDir}/log"
+      "${stateDir}/data/tmp"
+      "${stateDir}/data/queues"
+      "${stateDir}/data/indexers"
+      "${stateDir}/data/sessions"
+      "${stateDir}/data/repo-archive"
+    ];
+    environmentFile = config.sops.templates."postgres-backup-restic.env".path;
+    # Wait out the exclusive locks of partridge-postgres's prune and the
+    # weekly check instead of failing.
+    extraBackupArgs = [ "--retry-lock 1h" ];
+    # No pruneOpts: partridge-postgres's `forget` has no --host/--path filter,
+    # so its keep policy already applies to this job's snapshot group too.
+    # A second, different policy here would make the stricter one win for both.
+    backupPrepareCommand = "systemctl stop forgejo.service";
+    backupCleanupCommand = "systemctl start forgejo.service";
+    timerConfig = {
+      OnCalendar = "*-*-* 04:00:00";
+      Persistent = true;
+      RandomizedDelaySec = "15m";
+    };
+  };
+
+  systemd.services.restic-backups-partridge-forgejo.after = [
+    "restic-backups-partridge-postgres.service"
+  ];
 }

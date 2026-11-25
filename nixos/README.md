@@ -283,8 +283,10 @@ curl http://partridge:9090/-/ready
 
 `partridge` dumps all local PostgreSQL databases to `/var/backup/postgresql`
 daily at 02:00 and backs that directory up to a dedicated Backblaze B2 restic
-repository at 03:00. Retention keeps 3 daily and 4 weekly snapshots. A restic
-check with `--read-data-subset=10%` runs weekly on Wednesday at 05:15.
+repository at 03:00. Retention keeps 3 daily and 4 weekly snapshots of each
+host and path group, so it also prunes the Forgejo snapshots in the same
+repository. A restic check with `--read-data-subset=10%` runs weekly on
+Wednesday at 05:15.
 
 The Backblaze/restic credentials live in:
 
@@ -489,6 +491,19 @@ sudo -u forgejo forgejo admin user create \
 
 DNS needs `code.alcachofa.faith` to resolve to the host, currently by CNAME to
 `partridge.ts.alcachofa.faith`.
+
+`restic-backups-partridge-forgejo` backs `/srv/code/forgejo` up daily at 04:00
+to the same B2 restic repository as the PostgreSQL backups, skipping logs,
+temp files, queues, indexers, sessions and archive downloads. It stops Forgejo
+for the length of the backup so repositories, LFS and refs are captured at
+rest. It has no prune of its own: the `partridge-postgres` job's `forget`
+applies its retention to these snapshots as well. A restore needs both the
+matching Postgres dump and this snapshot.
+
+```sh
+sudo systemctl start restic-backups-partridge-forgejo.service
+sudo restic-partridge-forgejo snapshots --path /srv/code/forgejo
+```
 
 ## Vaultwarden on `partridge`
 

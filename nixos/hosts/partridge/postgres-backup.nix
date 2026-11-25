@@ -68,7 +68,10 @@
     partridge-postgres-check = {
       paths = [ ];
       environmentFile = config.sops.templates."postgres-backup-restic.env".path;
-      checkOpts = [ "--read-data-subset=10%" ];
+      checkOpts = [
+        "--read-data-subset=10%"
+        "--retry-lock 2h"
+      ];
       timerConfig = {
         OnCalendar = "Wed *-*-* 05:15:00";
         Persistent = true;
