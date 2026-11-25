@@ -142,12 +142,15 @@
       checks.${system} =
         let
           partridgeConfig = self.nixosConfigurations.partridge.config;
-          partridgeGrafanaTemplates = builtins.toFile "partridge-grafana-alerting-templates.json" (
-            builtins.toJSON partridgeConfig.services.grafana.provision.alerting.templates.settings
-          );
-          partridgeGrafanaContactPoints = builtins.toFile "partridge-grafana-alerting-contact-points.json" (
-            builtins.toJSON partridgeConfig.services.grafana.provision.alerting.contactPoints.settings
-          );
+          partridgeGrafanaProvision = partridgeConfig.services.grafana.provision;
+          partridgeGrafanaJson =
+            name: value: builtins.toFile "partridge-grafana-${name}.json" (builtins.toJSON value);
+          partridgeGrafanaTemplates = partridgeGrafanaJson "alerting-templates" partridgeGrafanaProvision.alerting.templates.settings;
+          partridgeGrafanaContactPoints = partridgeGrafanaJson "alerting-contact-points" partridgeGrafanaProvision.alerting.contactPoints.settings;
+          partridgeGrafanaRules = partridgeGrafanaJson "alerting-rules" partridgeGrafanaProvision.alerting.rules.settings;
+          partridgeGrafanaPolicies = partridgeGrafanaJson "alerting-policies" partridgeGrafanaProvision.alerting.policies.settings;
+          partridgeGrafanaDatasources = partridgeGrafanaJson "datasources" partridgeGrafanaProvision.datasources.settings;
+          partridgeGrafanaDashboards = partridgeGrafanaJson "dashboards" partridgeGrafanaProvision.dashboards.settings;
         in
         {
           lab-python = pkgs.runCommand "lab-python-check" { } (
@@ -221,11 +224,16 @@
               {
                 nativeBuildInputs = [
                   pkgs.go
-                  partridgeConfig.services.grafana.package
+                  pkgs.curl
+                  pkgs.jq
                 ];
                 src = ./tools/grafana-alerting-lint;
                 templatesJson = partridgeGrafanaTemplates;
                 contactPointsJson = partridgeGrafanaContactPoints;
+                rulesJson = partridgeGrafanaRules;
+                policiesJson = partridgeGrafanaPolicies;
+                datasourcesJson = partridgeGrafanaDatasources;
+                dashboardsJson = partridgeGrafanaDashboards;
               }
               ''
                 cp -R "$src" source
@@ -233,39 +241,24 @@
                 cd source
                 export HOME="$TMPDIR"
                 export GOCACHE="$TMPDIR/go-cache"
-                go run . "$templatesJson" "$contactPointsJson"
+                go test ./...
+                go run . \
+                  -templates "$templatesJson" \
+                  -contact-points "$contactPointsJson" \
+                  -rules "$rulesJson" \
+                  -datasources "$datasourcesJson" \
+                  -dashboards "$dashboardsJson"
 
-                mkdir -p grafana-smoke/provisioning/alerting
-                mkdir -p grafana-smoke/provisioning/dashboards
-                mkdir -p grafana-smoke/provisioning/datasources
-                mkdir -p grafana-smoke/provisioning/plugins
-                mkdir -p grafana-smoke/data
-                mkdir -p grafana-smoke/logs
-                mkdir -p grafana-smoke/plugins
-                cp "$templatesJson" grafana-smoke/provisioning/alerting/templates.json
-                cp "$contactPointsJson" grafana-smoke/provisioning/alerting/contactpoints.json
+                provisioning="$TMPDIR/provisioning"
+                mkdir -p "$provisioning"/{alerting,dashboards,datasources,plugins}
+                cp "$templatesJson" "$provisioning/alerting/templates.yaml"
+                cp "$contactPointsJson" "$provisioning/alerting/contactpoints.yaml"
+                cp "$rulesJson" "$provisioning/alerting/rules.yaml"
+                cp "$policiesJson" "$provisioning/alerting/policies.yaml"
+                cp "$datasourcesJson" "$provisioning/datasources/datasources.yaml"
+                cp "$dashboardsJson" "$provisioning/dashboards/dashboards.yaml"
 
-                export GF_PATHS_PROVISIONING="$PWD/grafana-smoke/provisioning"
-                export GF_PATHS_DATA="$PWD/grafana-smoke/data"
-                export GF_PATHS_LOGS="$PWD/grafana-smoke/logs"
-                export GF_PATHS_PLUGINS="$PWD/grafana-smoke/plugins"
-                export GRAFANA_TELEGRAM_BOT_TOKEN=dummy
-
-                set +e
-                ${pkgs.coreutils}/bin/timeout 20s \
-                  ${partridgeConfig.services.grafana.package}/bin/grafana server \
-                  --homepath ${partridgeConfig.services.grafana.package}/share/grafana \
-                  --config ${partridgeConfig.services.grafana.package}/share/grafana/conf/defaults.ini \
-                  > grafana-smoke/stdout.log 2> grafana-smoke/stderr.log
-                status=$?
-                set -e
-
-                if [ "$status" -ne 124 ]; then
-                  cat grafana-smoke/stdout.log
-                  cat grafana-smoke/stderr.log
-                  echo "Grafana alerting smoke test failed with exit status $status" >&2
-                  exit 1
-                fi
+                bash ./smoke.sh ${partridgeConfig.services.grafana.package} "$provisioning" "$TMPDIR/grafana-smoke"
 
                 touch "$out"
               '';

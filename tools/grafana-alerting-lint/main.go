@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -27,14 +28,45 @@ type contactPointSettings struct {
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, "usage: %s templates.json contact-points.json\n", os.Args[0])
+	templatesPath := flag.String("templates", "", "alerting templates provisioning JSON")
+	contactPointsPath := flag.String("contact-points", "", "alerting contact points provisioning JSON")
+	rulesPath := flag.String("rules", "", "alerting rules provisioning JSON")
+	datasourcesPath := flag.String("datasources", "", "datasources provisioning JSON")
+	dashboardsPath := flag.String("dashboards", "", "dashboard providers provisioning JSON")
+	flag.Parse()
+	if *templatesPath == "" || *contactPointsPath == "" || *rulesPath == "" || *datasourcesPath == "" || *dashboardsPath == "" || flag.NArg() != 0 {
+		flag.Usage()
 		os.Exit(2)
 	}
 
-	templates := mustLoadTemplates(os.Args[1])
-	contactPoints := mustLoadContactPoints(os.Args[2])
+	checkTemplates(mustLoadTemplates(*templatesPath), mustLoadContactPoints(*contactPointsPath))
 
+	var rules ruleSettings
+	mustLoadJSON(*rulesPath, &rules)
+	var datasourceConfig datasourceSettings
+	mustLoadJSON(*datasourcesPath, &datasourceConfig)
+	var providers dashboardProviders
+	mustLoadJSON(*dashboardsPath, &providers)
+	dashboards, err := loadDashboards(providers)
+	if err != nil {
+		fail("load dashboards: %v", err)
+	}
+
+	datasources := indexDatasources(datasourceConfig)
+	var problems []string
+	problems = append(problems, checkRuleDatasources(rules, datasources)...)
+	problems = append(problems, checkDashboardUIDs(dashboards)...)
+	problems = append(problems, checkRuleDashboardLinks(rules, dashboards)...)
+	problems = append(problems, checkDashboardDatasources(dashboards, datasources)...)
+	if len(problems) > 0 {
+		for _, problem := range problems {
+			fmt.Fprintln(os.Stderr, problem)
+		}
+		os.Exit(1)
+	}
+}
+
+func checkTemplates(templates templateSettings, contactPoints contactPointSettings) {
 	root := template.New("grafana-alerting").Option("missingkey=zero")
 	for _, entry := range templates.Templates {
 		if _, err := root.Parse(entry.Template); err != nil {
