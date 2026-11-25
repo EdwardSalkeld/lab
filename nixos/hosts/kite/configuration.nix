@@ -107,8 +107,9 @@
     ];
   };
 
-  # `billy` is inherited from the shared VM base but is not used on Kite.
-  # Move it away from the UID preserved on the migrated data disk.
+  # `billy` comes from the shared VM base and, as on Partridge and Falcon, is
+  # deliberately in wheel. Move it away from the UID preserved on the migrated
+  # data disk.
   users.users.billy = {
     uid = 1002;
     extraGroups = [ "wheel" ];

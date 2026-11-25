@@ -155,12 +155,10 @@ online resize used Edward's passwordless sudo access.
 
 ## Kite VM
 
-`luna` is planned as the second Proxmox host. The first planned guest is
-`kite`, a NixOS VM for Jellyfin, Navidrome, and MCM.
-
-After Proxmox is installed on `luna` and its API token exists, set
-`LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` to create `kite` through the
-standalone luna Proxmox API:
+`kite` is a NixOS VM for Jellyfin, Navidrome, MPD, Photoview and MCM on
+`luna`, the second, standalone Proxmox host. Terraform reaches luna through
+its own Proxmox API, so `LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` must be
+set for any plan or apply that touches `kite`. The VM shape is:
 
 - root disk: 24 GiB
 - Jellyfin metadata/cache disk: 32 GiB
@@ -170,11 +168,12 @@ standalone luna Proxmox API:
 - memory: 8192 MiB
 - exposed service ports in the NixOS config: 4533, 8000, 8096
 
-The guest config is exposed as `.#kite`. See
-[../docs/luna-proxmox-plan.md](../docs/luna-proxmox-plan.md) before applying.
-External multi-TB media disks stay outside Terraform-managed VM disks; they
-should be mounted or passed through separately once the luna disk layout is
-known.
+The guest config is exposed as `.#kite`. Its external multi-TB media disks
+(`scsi4`, `scsi5`) and the USB DAC are attached on luna by hand, because
+Proxmox allows raw host devices only for `root@pam`, not Terraform's API token.
+`ignore_changes = [disk]` keeps plans from detaching them, and
+`prevent_destroy` guards the VM. [../docs/luna-proxmox-plan.md](../docs/luna-proxmox-plan.md)
+records how luna and kite were set up.
 
 ## Disposable Debian VM Reference
 
