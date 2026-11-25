@@ -4,18 +4,6 @@ let
   domain = "navidrome.alcachofa.faith";
 in
 {
-  sops = {
-    defaultSopsFile = ./secrets/acme-cloudflare.yaml;
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-    secrets."acme/cloudflare_dns_api_token".key = "cloudflare_dns_api_token";
-    templates."acme-cloudflare.env" = {
-      mode = "0400";
-      content = ''
-        CF_DNS_API_TOKEN=${config.sops.placeholder."acme/cloudflare_dns_api_token"}
-      '';
-    };
-  };
-
   security.acme.certs.${domain} = {
     dnsProvider = "cloudflare";
     environmentFile = config.sops.templates."acme-cloudflare.env".path;

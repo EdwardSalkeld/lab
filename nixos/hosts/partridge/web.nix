@@ -5,18 +5,9 @@ let
   partridgeTailnetDomain = "partridge.ts.alcachofa.faith";
 in
 {
-  sops.secrets."acme/cloudflare_dns_api_token" = {
-    sopsFile = ./secrets/acme-cloudflare.yaml;
-    key = "cloudflare_dns_api_token";
-    mode = "0400";
-  };
+  imports = [ ../../modules/web-tls.nix ];
 
-  sops.templates."acme-cloudflare.env" = {
-    mode = "0400";
-    content = ''
-      CF_DNS_API_TOKEN=${config.sops.placeholder."acme/cloudflare_dns_api_token"}
-    '';
-  };
+  alcachofa.webTls.cloudflareTokenSopsFile = ./secrets/acme-cloudflare.yaml;
 
   networking.firewall.allowedTCPPorts = [
     80

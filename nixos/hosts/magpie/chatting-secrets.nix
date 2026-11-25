@@ -11,7 +11,6 @@
 
 {
   sops.defaultSopsFile = ./secrets/chatting.json;
-  sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
   sops.secrets = {
     "chatting/imap_password".key = "imap_password";
