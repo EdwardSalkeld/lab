@@ -241,7 +241,13 @@
                 cd source
                 export HOME="$TMPDIR"
                 export GOCACHE="$TMPDIR/go-cache"
-                go run . "$templatesJson" "$contactPointsJson"
+                go test ./...
+                go run . \
+                  -templates "$templatesJson" \
+                  -contact-points "$contactPointsJson" \
+                  -rules "$rulesJson" \
+                  -datasources "$datasourcesJson" \
+                  -dashboards "$dashboardsJson"
 
                 provisioning="$TMPDIR/provisioning"
                 mkdir -p "$provisioning"/{alerting,dashboards,datasources,plugins}
