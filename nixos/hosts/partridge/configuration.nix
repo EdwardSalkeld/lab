@@ -96,4 +96,6 @@
     vim
     wget
   ];
+
+  system.stateVersion = "25.11";
 }

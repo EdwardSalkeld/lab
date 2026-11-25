@@ -1,3 +1,5 @@
+# Settings shared by the lab's hosts. Falcon does not import this yet: it keeps
+# its own copy in nixos/hosts/falcon/configuration.nix, which has diverged.
 {
   lib,
   pkgs,
@@ -13,15 +15,7 @@
     "flakes"
   ];
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.systemd-boot.configurationLimit = 10;
-
-  networking.useDHCP = lib.mkDefault true;
-
   services.openssh.enable = true;
-  services.qemuGuest.enable = true;
-  services.fstrim.enable = true;
   services.tailscale.package = tailscalePackage;
 
   services.prometheus.exporters.node = {
@@ -82,6 +76,4 @@
     vim
     wget
   ];
-
-  system.stateVersion = "25.11";
 }
