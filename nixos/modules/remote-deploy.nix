@@ -41,33 +41,6 @@ let
       exit 2
     fi
 
-    # The output path is checked after fetching so a stale or mismatched CI
-    # result cannot be activated.
-    source="github:EdwardSalkeld/lab/''${sha}"
-    flake="''${source}#${host}"
-    cache_url="https://''${cache_name}.cachix.org"
-    nix_options=(--option extra-substituters "$cache_url"
-                 --option extra-trusted-public-keys "$cache_key"
-                 --option require-sigs true
-                 --option builders ""
-                 --option max-jobs 0)
-    if ! actual_path="$("$nix" eval --raw "''${nix_options[@]}" \
-        "''${source}#nixosConfigurations.${host}.config.system.build.toplevel.outPath")"; then
-      echo "could not evaluate the CI-built output for ${host}" >&2
-      exit 1
-    fi
-    if [[ "$actual_path" != "$expected_path" ]]; then
-      echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
-      exit 1
-    fi
-    # Realise the output path, not its derivation. This bypasses scaffolding
-    # with allowSubstitutes=false and uses both Cachix and cache.nixos.org
-    # (Cachix intentionally omits paths available from that upstream cache).
-    if ! "$nix_store" --realise "$expected_path" "''${nix_options[@]}"; then
-      echo "could not fetch the complete CI-built closure for ${host}" >&2
-      exit 1
-    fi
-
     units_healthy() {
       local unit url
       for unit in "''${healthchecks[@]}"; do
@@ -96,6 +69,52 @@ let
         "$systemctl" start "$unit" || true
       done
     }
+
+    # Re-deploying an unchanged host only needs its health confirmed. The
+    # profile must match too, or a reboot would bring back an older system.
+    if current="$(readlink -e /run/current-system)" &&
+        [[ "$current" == "$expected_path" ]] &&
+        profile="$(readlink -e /nix/var/nix/profiles/system)" &&
+        [[ "$profile" == "$expected_path" ]]; then
+      echo "${host} already runs $expected_path; skipping the switch"
+      units_healthy || wait_healthy || {
+        echo "health checks failing on unchanged ${host}; starting units directly" >&2
+        start_units
+        if ! wait_healthy; then
+          echo "health checks still failing after service recovery on ${host}" >&2
+          "$systemctl" status --no-pager "''${healthchecks[@]}" >&2 || true
+          exit 1
+        fi
+      }
+      exit 0
+    fi
+
+    # The output path is checked after fetching so a stale or mismatched CI
+    # result cannot be activated.
+    source="github:EdwardSalkeld/lab/''${sha}"
+    flake="''${source}#${host}"
+    cache_url="https://''${cache_name}.cachix.org"
+    nix_options=(--option extra-substituters "$cache_url"
+                 --option extra-trusted-public-keys "$cache_key"
+                 --option require-sigs true
+                 --option builders ""
+                 --option max-jobs 0)
+    if ! actual_path="$("$nix" eval --raw "''${nix_options[@]}" \
+        "''${source}#nixosConfigurations.${host}.config.system.build.toplevel.outPath")"; then
+      echo "could not evaluate the CI-built output for ${host}" >&2
+      exit 1
+    fi
+    if [[ "$actual_path" != "$expected_path" ]]; then
+      echo "CI path mismatch for ${host}: expected $expected_path; got $actual_path" >&2
+      exit 1
+    fi
+    # Realise the output path, not its derivation. This bypasses scaffolding
+    # with allowSubstitutes=false and uses both Cachix and cache.nixos.org
+    # (Cachix intentionally omits paths available from that upstream cache).
+    if ! "$nix_store" --realise "$expected_path" "''${nix_options[@]}"; then
+      echo "could not fetch the complete CI-built closure for ${host}" >&2
+      exit 1
+    fi
 
     # Capture the running system before nixos-rebuild can change the profile.
     # A failed switch may leave the profile advanced, or create no generation

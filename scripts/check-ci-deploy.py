@@ -97,7 +97,11 @@ case "$name" in
   hostname) echo partridge ;;
   readlink)
     [[ "${TEST_READLINK_FAIL:-0}" == 0 ]] || exit 1
-    echo "$TEST_PREVIOUS"
+    if [[ "$*" == *profiles/system* ]]; then
+      echo "${TEST_PROFILE:-$TEST_PREVIOUS}"
+    else
+      echo "$TEST_PREVIOUS"
+    fi
     ;;
 esac
 """)
@@ -203,6 +207,40 @@ esac
     result, calls = run("switch", request=pinned, TEST_HTTP_FAILURES="18")
     assert result.returncode != 0 and calls.count("restore switch") == 1
 
+    # A host already running the requested system and booting into it skips
+    # the fetch and switch but is still health checked.
+    result, calls = run("switch", request=pinned, TEST_PREVIOUS=expected)
+    assert result.returncode == 0, result.stderr
+    assert "skipping the switch" in result.stdout
+    assert "nix eval" not in calls and "nix-store" not in calls
+    assert "nixos-rebuild" not in calls and "nix-env" not in calls
+    assert "restore" not in calls and "systemctl start " not in calls
+    assert "systemctl is-active" in calls and "curl " in calls
+    result, calls = run(
+        "switch", request=pinned, TEST_PREVIOUS=expected, TEST_HTTP_FAILURES="3"
+    )
+    assert result.returncode == 0, result.stderr
+    assert "nixos-rebuild" not in calls and "systemctl start " not in calls
+    result, calls = run(
+        "switch", request=pinned, TEST_PREVIOUS=expected, TEST_HTTP_FAIL="1"
+    )
+    assert result.returncode != 0
+    assert "nixos-rebuild" not in calls and "restore" not in calls
+    assert "systemctl start " in calls
+    assert "health checks still failing after service recovery" in result.stderr
+    result, calls = run(
+        "switch", request=pinned, TEST_PREVIOUS=expected, TEST_PROFILE=previous
+    )
+    assert result.returncode == 0, result.stderr
+    assert "skipping the switch" not in result.stdout
+    assert "nixos-rebuild switch" in calls
+    result, calls = run(
+        "switch",
+        request=f"lab-switch {sha} other {key} {expected}",
+        TEST_PREVIOUS=expected,
+    )
+    assert result.returncode != 0 and not calls
+
     restore_profile = f"nix-env --profile /nix/var/nix/profiles/system --set {previous}"
     for overrides in (
         {"TEST_SWITCH_FAIL": "1"},
@@ -210,8 +248,9 @@ esac
         {"TEST_HTTP_FAIL": "1"},
         {"TEST_HEALTH_UNTIL_RECOVERY": "1"},
         {"TEST_SWITCH_FAIL": "1", "TEST_HEALTH_FAIL": "1"},
-        # Re-deploying the same closure must not select an older generation.
-        {"TEST_SWITCH_FAIL": "1", "TEST_PREVIOUS": expected},
+        # Re-deploying the running closure when the profile has moved on must
+        # still switch, and must not select an older generation.
+        {"TEST_SWITCH_FAIL": "1", "TEST_PREVIOUS": expected, "TEST_PROFILE": previous},
     ):
         result, calls = run("switch", request=pinned, **overrides)
         prior = overrides.get("TEST_PREVIOUS", previous)
