@@ -2,6 +2,7 @@
 # Forget its old state without asking the provider to delete an absent CT.
 # Keep outside terraform/: tfsec cannot parse Terraform state migration blocks.
 # Retain the old filename for dispatchers executing plan scripts from main.
+# No script on this branch copies it; delete it once main's plan script stops.
 removed {
   from = proxmox_virtual_environment_container.sparrow
 

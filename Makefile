@@ -42,6 +42,7 @@ test:
 	scripts/check-terraform-plan-guard.sh
 	python3 -m unittest discover -s proxmox/luna/network-watchdog/tests
 	python3 scripts/check-ci-deploy.py
+	python3 scripts/check-host-lists.py
 	python3 scripts/check-kite-backups.py
 	script="$$(mktemp)" && \
 		$(NIX) eval --raw .#nixosConfigurations.falcon.config.systemd.services.freshrss-sqlite-backup.script > "$$script" && \

@@ -1,24 +1,21 @@
 ## NixOS Configurations
 
-This directory is the start of the repo-owned NixOS configuration.
+This directory holds the NixOS configuration for every host in the root
+flake's `nixosConfigurations`:
 
-Current targets:
+- `partridge`: monitoring, PostgreSQL, Forgejo and Vaultwarden VM on `sol`.
+- `magpie`: chatting and Forgejo runner VM on `sol`.
+- `kite`: media VM on `luna` for Jellyfin, Navidrome, MPD, Photoview and MCM.
+- `falcon`: Hetzner Cloud host for FreshRSS and the public proxies.
 
-- `partridge`: the first repo-managed NixOS VM.
-- `magpie`: repo-managed NixOS host for the chatting split runtime.
-- `kite`: repo-managed NixOS media VM for Jellyfin, Navidrome, and MCM.
+Shared modules are under `modules/`. The Proxmox VMs import
+`modules/proxmox-vm-base.nix`; Falcon is not a Proxmox guest and does not.
+[AGENTS.md](../AGENTS.md#hosts) has the full host table.
 
 ## Installing Packages
 
-On the current manually installed VM, the immediate path is to edit
-`/etc/nixos/configuration.nix` and run:
-
-```sh
-sudo nixos-rebuild switch
-```
-
 For a permanent system package, add it to `environment.systemPackages` in
-the system configuration:
+the host's configuration under `nixos/hosts/<host>/`:
 
 ```nix
 environment.systemPackages = with pkgs; [
@@ -28,12 +25,9 @@ environment.systemPackages = with pkgs; [
 ];
 ```
 
-After a host is adopted into this repo, add shared packages to
-`nixos/modules/proxmox-vm-base.nix`, then rebuild the host. For `partridge`:
-
-```sh
-sudo nixos-rebuild switch --flake .#partridge
-```
+Packages every Proxmox VM needs go in `nixos/modules/proxmox-vm-base.nix`;
+Falcon keeps its own list in `nixos/hosts/falcon/configuration.nix`. Merging
+the change to `main` deploys it.
 
 For a temporary shell with a package:
 
@@ -50,9 +44,10 @@ nix profile install nixpkgs#htop
 Prefer `environment.systemPackages` for lab infrastructure so the machine can
 be recreated from the repo.
 
-## Deploying `partridge`
+## Switching a host by hand
 
-From a checkout on `partridge`:
+The normal deploy is the GitHub workflow below. To switch by hand from a
+checkout on a host:
 
 ```sh
 ./scripts/nixos-switch.sh
@@ -70,108 +65,58 @@ accepts other `nixos-rebuild` actions plus a `rollback` shortcut for
 ./scripts/nixos-switch.sh rollback
 ```
 
-From another machine with SSH access:
+From another machine with SSH access, for example to `partridge`:
 
 ```sh
 nixos-rebuild switch --flake .#partridge --target-host edward@partridge --use-remote-sudo
 ```
 
-## Deploying `magpie`
+The next deploy from `main` replaces anything switched by hand.
 
-`magpie` is now the base host for moving `chatting` off Blink. Terraform still
-creates a blank VM with the NixOS ISO attached, matching the manual install
-flow used for `partridge`, but the host role is no longer disposable.
+## Installing `magpie`
 
-Use [install-vm-runbook.md](./install-vm-runbook.md) for the install flow. The
-short version is: use the Proxmox console only to set a temporary root password
-and start `sshd`, then finish partitioning and installing over SSH.
+`magpie` runs chatting. Terraform creates it as a blank VM with the NixOS ISO
+attached, like the other Proxmox VMs. Use
+[install-vm-runbook.md](./install-vm-runbook.md) for the install flow: use the
+Proxmox console only to set a temporary root password and start `sshd`, then
+finish partitioning and installing over SSH.
 
-The checked-in hardware config assumes the root filesystem is labelled `nixos`
-and the EFI filesystem is labelled `BOOT`. Either use those labels during the
-manual install or replace `nixos/hosts/magpie/hardware-configuration.nix` with
-the generated file before switching to the flake config.
+The checked-in hardware config expects these filesystem labels:
 
-The first committed `magpie` role is intentionally narrow:
+- `nixos`: root filesystem
+- `BOOT`: EFI filesystem
+- `workspace`: the `scsi1` workspace disk, mounted at `/srv/chatting/workspace`
+- `dockerdata`: the `scsi2` CI disk, mounted at `/var/lib/docker` for the
+  Forgejo runner
 
-- service users `bbmb`, `handler`, and `worker`
-- sudo user `edward`
-- non-sudo SSH user `billy` with journal access
-- base runtime/build packages needed to replace the current `chatting`
-  container toolchain
-- an optional dedicated `scsi1` workspace disk mounted at `/srv/chatting/workspace`
-- root-owned config under `/etc/chatting` and private service state under
-  `/var/lib/{bbmb,handler,worker}`
-
-If the workspace disk is attached, format it once before relying on it:
+Use those labels during the install, or replace
+`nixos/hosts/magpie/hardware-configuration.nix` with the generated file. Format
+the two data disks once before relying on them, finding each blank disk by its
+Terraform serial (`magpie-workspace`, `magpie-ci`):
 
 ```sh
-sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
+lsblk -o NAME,SIZE,FSTYPE,LABEL,SERIAL
+sudo mkfs.ext4 -L workspace /dev/sdX
+sudo mkfs.ext4 -L dockerdata /dev/sdY
 ```
 
-If the disk is absent, the host still boots and `/srv/chatting/workspace` just
-lives on the root filesystem until the extra disk is added later.
+Both are mounted `nofail`, so the host still boots without them.
+`terraform/README.md` covers growing the root and workspace disks.
 
 ### `chatting` services on `magpie`
 
-The host now includes a `chatting.target` plus three systemd services:
+`chatting.target` groups three systemd services:
 
 - `chatting-bbmb.service`
 - `chatting-handler.service`
 - `chatting-worker.service`
 
-They stay inert until the host has the expected repo checkout, config, and
-state staged:
-
-- repo checkout at `/srv/chatting/repo`
-- rendered config files at `/etc/chatting/handler.json` and `/etc/chatting/worker.json`
-- worker workspace at `/srv/chatting/workspace`
-
-The expected config-render helper lives in the `chatting` repo under:
-
-```text
-deploy/host_runtime/
-```
-
-Keep the migration mechanics host-side rather than in the `chatting` repo. The
-intended cutover shape is:
-
-1. put the wanted `chatting` checkout on `magpie` at `/srv/chatting/repo`
-2. copy Blink's current `configs/handler/` and `configs/worker/` directories to
-   a temporary path on `magpie`
-3. render host config files on `magpie` with:
-
-```sh
-cd /srv/chatting/repo
-python3 deploy/host_runtime/render_runtime_config.py \
-  --source-root /tmp/chatting-configs \
-  --output-root /tmp/chatting-rendered \
-  --workspace-dir /srv/chatting/workspace
-sudo install -m 0644 /tmp/chatting-rendered/handler.json /etc/chatting/handler.json
-sudo install -m 0644 /tmp/chatting-rendered/worker.json /etc/chatting/worker.json
-sudo install -m 0400 /tmp/chatting-rendered/handler.env /etc/chatting/handler.env
-sudo install -m 0400 /tmp/chatting-rendered/worker.env /etc/chatting/worker.env
-```
-
-4. rsync the live state from Blink when ready. Keep the transport simple and
-host-side; the important source-to-target mappings are:
-
-- `/var/lib/docker/volumes/chatting_handler-data/_data/` -> `/var/lib/handler/`
-- `/var/lib/docker/volumes/chatting_worker-data/_data/` -> `/var/lib/worker/`
-- `/var/lib/docker/volumes/chatting_codex-auth/_data/` -> `/var/lib/worker/.codex/`
-- `/var/lib/docker/volumes/chatting_claude-auth/_data/` -> `/var/lib/worker/.claude/`
-- `/var/lib/docker/volumes/chatting_gh-auth/_data/` -> `/var/lib/handler/.config/gh/`
-- `/var/lib/docker/volumes/chatting_gh-auth/_data/` -> `/var/lib/worker/.config/gh/`
-- `/mnt/ext2tb/4/billy/` -> `/srv/chatting/workspace/`
-
-5. switch `magpie` onto the updated `lab` config so Nix builds the packaged
-runtime, then start the grouped services:
-
-```sh
-cd /path/to/lab
-sudo nixos-rebuild switch --flake .#magpie
-sudo systemctl start chatting.target
-sudo systemctl status chatting-bbmb chatting-handler chatting-worker
-```
+Nix builds the runtime from the pinned `chatting` and `bbmb` flake inputs and
+renders `/etc/chatting/handler.json`, `/etc/chatting/worker.json` and the
+sops-backed secret env files. Service state lives under
+`/var/lib/{bbmb,handler,worker}` and the worker's workspaces under
+`/srv/chatting/workspaces`. [Chatting on Lab](../docs/chatting.md) covers
+upgrades, services, retention and webhook ingress.
 
 ### Recovering Codex login on `magpie`
 
@@ -198,8 +143,9 @@ automatically retried; resend any needed requests after login succeeds.
 
 ## GitHub Deploy Workflow
 
-On pushes to `main`, the `deploy` workflow first builds and publishes all four
-NixOS system closures from the exact commit. It then joins Tailscale as
+On pushes to `main`, the `deploy` workflow first builds and publishes the
+system closure of every host in the flake's `nixosConfigurations` from the
+exact commit. It then joins Tailscale as
 `tag:ci`, SSHes to `deploy@fourth.ts.alcachofa.faith`, and asks the orchestrator
 to run `apply-terraform` followed by a pinned, cache-only `nix-switch`. See
 [`docs/ci-built-nixos-deploy.md`](../docs/ci-built-nixos-deploy.md) for cache
@@ -230,9 +176,16 @@ endpoint. The first deployment of this wiring must still be applied manually so
 the `deploy` user and forced command exist before the workflow can connect.
 
 The manually triggered `nix-gc` workflow uses the same restricted path. Choose
-`magpie` or `partridge` when dispatching it; fourth asks the selected host to
-start its configured `nix-gc.service` and logs root filesystem usage before and
-after collection.
+a host when dispatching it; fourth runs `deploy/nix-gc-<host>.sh`, which asks
+the selected host to start its configured `nix-gc.service` and logs root
+filesystem usage before and after collection.
+
+CI builds and deploys whatever hosts the flake defines, but fourth only acts on
+the fixed host lists in `deploy/nix-switch.sh` and `deploy/nix-gc.sh`, since
+they are the boundary for what a CI request can reach. When adding or removing
+a host, also update those lists, the `nix-gc-<host>.sh` wrappers and the
+`nix-gc` workflow's choices. `scripts/check-host-lists.py` fails CI until they
+all match the flake.
 
 The July 2026 `wren` bootstrap experiment has been torn down. Keep `partridge`
 focused on its normal service role until the next disposable VM path is
@@ -390,8 +343,10 @@ https://grafana.alcachofa.faith
 Grafana uses the local PostgreSQL service for storage. Its Prometheus and Loki
 datasources are provisioned with the same UIDs as Blink's old Grafana
 datasources, so imported dashboards can keep their datasource references.
-Prometheus and Loki both point at local Partridge services. Dashboards
-themselves are managed through Grafana's UI rather than Nix provisioning.
+Prometheus and Loki both point at local Partridge services. Dashboards are
+provisioned from the JSON files under `nixos/hosts/partridge/grafana/dashboards/`,
+one folder each for Ops, Fitness, Music and Chatting, with UI edits disabled.
+Change a dashboard by editing its JSON in the repo.
 
 Grafana also has a provisioned `scheduler-postgres` datasource for Octopus
 usage data in Partridge's local `scheduler` database. Apply the schema after
@@ -424,6 +379,11 @@ switch that enables it, authenticate the machine once:
 sudo tailscale up
 ```
 
+Partridge is the tailnet's subnet router: it advertises `10.4.0.0/23` so
+tailnet devices away from home can reach the LAN, and it is an exit node. Both
+take effect once approved in the tailnet policy. Falcon is a second exit node
+and accepts Partridge's route.
+
 Once authenticated, connect over the tailnet with normal SSH:
 
 ```sh
@@ -442,22 +402,9 @@ https://partridge.ts.alcachofa.faith
 TLS certificates are issued by Let's Encrypt through the NixOS ACME module
 using Cloudflare DNS-01 validation.
 
-Before switching this config for the first time, create the Cloudflare token
-environment file on `partridge`:
-
-```sh
-sudo install -d -m 0700 /var/lib/secrets
-sudo install -m 0600 /dev/null /var/lib/secrets/acme-cloudflare.env
-sudoedit /var/lib/secrets/acme-cloudflare.env
-```
-
-The file should contain:
-
-```sh
-CF_DNS_API_TOKEN=your_cloudflare_token_here
-```
-
-The token needs Cloudflare `Zone:Read` and `DNS:Edit` permissions for the zone.
+The Cloudflare token is sops-encrypted in
+`nixos/hosts/partridge/secrets/acme-cloudflare.yaml`, and sops-nix renders it
+into the `acme-cloudflare.env` file the ACME module reads. The token needs Cloudflare `Zone:Read` and `DNS:Edit` permissions for the zone.
 DNS also needs to point `partridge.int.alcachofa.faith` and
 `partridge.ts.alcachofa.faith` at addresses reachable by the clients that will
 use them.
@@ -472,8 +419,10 @@ https://code.alcachofa.faith
 
 It stores app state and repositories under `/srv/code/forgejo` on the dedicated
 `partridge-code` disk. Its database is Postgres, using the local PostgreSQL
-service backed by `/var/lib/postgresql`. SSH clone support is disabled for now;
-use HTTPS remotes.
+service backed by `/var/lib/postgresql`. Git over SSH uses Forgejo's built-in
+SSH server on port 2222 as user `git`, for example
+`ssh://git@code.alcachofa.faith:2222/<owner>/<repo>.git`. HTTPS remotes also
+work.
 
 Registration is disabled. After the first switch, create an admin user from the
 host:
@@ -540,22 +489,18 @@ imports a fresh Bitwarden JSON export. The temporary plaintext export lives in
 
 Secrets are expected in `nixos/hosts/partridge/secrets/bitwarden-mirror.yaml`
 as a sops-encrypted document with the keys shown in the adjacent `.example`
-file. Replace the placeholder Partridge recipient in `.sops.yaml` with the
-host age recipient before encrypting real credentials.
+file, encrypted to the recipients in `.sops.yaml`.
 
 ## Building An Image Later
 
 NixOS can build images from normal system configurations with:
 
 ```sh
-nixos-rebuild build-image --image-variant proxmox --flake .#image-name
+nixos-rebuild build-image --image-variant proxmox --flake .#<host>
 ```
 
-This repo also exposes direct build outputs:
-
-```sh
-nix build .#image-name
-```
+The flake does not expose any image outputs yet; add one alongside
+`nixosConfigurations` when an image is needed.
 
 `proxmox-vma` should be the native Proxmox backup/archive image format.
 `proxmox-qcow-efi` is useful if importing a disk into an existing Terraform VM
