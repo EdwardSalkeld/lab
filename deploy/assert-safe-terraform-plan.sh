@@ -10,7 +10,7 @@ fi
 unsafe_changes="$(jq -r '
     .resource_changes[]?
     | select(
-        .address == "proxmox_virtual_environment_vm.kite[0]"
+        .address == "proxmox_virtual_environment_vm.kite"
         or .address == "proxmox_virtual_environment_vm.magpie"
         or .address == "proxmox_virtual_environment_vm.partridge"
       )

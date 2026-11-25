@@ -7,7 +7,7 @@ Active resources:
 - `proxmox_virtual_environment_download_file.nixos_minimal_iso`
 - `proxmox_virtual_environment_vm.partridge`
 - `proxmox_virtual_environment_vm.magpie`
-- `proxmox_virtual_environment_vm.kite` when `enable_kite_vm = true`
+- `proxmox_virtual_environment_vm.kite`
 
 ## Quick Ops
 
@@ -153,27 +153,10 @@ or require a guest reboot. Keep Terraform's desired size aligned with the
 host to avoid drift. Guest resize requires privileged access; the completed
 online resize used Edward's passwordless sudo access.
 
-## Retired Chatting Test Container
-
-Sparrow (CT 76300 on `sol`) was deleted on 2026-10-12 after testing finished.
-Its Terraform resource and deployment installer have been removed. The plan
-and apply scripts copy `deploy/sparrow-import.tf.template` into the Terraform
-root to forget any remaining state without deleting the absent container again.
-The template stays outside the Terraform root because tfsec cannot parse state
-migration blocks. The historical filename is retained for compatibility with
-dispatchers running older plan scripts; it now contains a retirement directive,
-not an import. See [../docs/sparrow-chatting-test.md](../docs/sparrow-chatting-test.md).
-
 ## Kite VM
 
 `luna` is planned as the second Proxmox host. The first planned guest is
 `kite`, a NixOS VM for Jellyfin, Navidrome, and MCM.
-
-The VM resource is enabled once Luna credentials are available:
-
-```hcl
-enable_kite_vm = true
-```
 
 After Proxmox is installed on `luna` and its API token exists, set
 `LUNA_PROXMOXENDPOINT` and `LUNA_PROXMOXTOKEN` to create `kite` through the
