@@ -8,7 +8,9 @@ on:
         description: NixOS host to collect
         required: true
         type: choice
+        # scripts/check-host-lists.py keeps these equal to the flake's hosts.
         options:
+          - falcon
           - kite
           - magpie
           - partridge
