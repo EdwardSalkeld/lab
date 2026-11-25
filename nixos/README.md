@@ -198,8 +198,9 @@ automatically retried; resend any needed requests after login succeeds.
 
 ## GitHub Deploy Workflow
 
-On pushes to `main`, the `deploy` workflow first builds and publishes all four
-NixOS system closures from the exact commit. It then joins Tailscale as
+On pushes to `main`, the `deploy` workflow first builds and publishes the
+system closure of every host in the flake's `nixosConfigurations` from the
+exact commit. It then joins Tailscale as
 `tag:ci`, SSHes to `deploy@fourth.ts.alcachofa.faith`, and asks the orchestrator
 to run `apply-terraform` followed by a pinned, cache-only `nix-switch`. See
 [`docs/ci-built-nixos-deploy.md`](../docs/ci-built-nixos-deploy.md) for cache
@@ -230,9 +231,16 @@ endpoint. The first deployment of this wiring must still be applied manually so
 the `deploy` user and forced command exist before the workflow can connect.
 
 The manually triggered `nix-gc` workflow uses the same restricted path. Choose
-`magpie` or `partridge` when dispatching it; fourth asks the selected host to
-start its configured `nix-gc.service` and logs root filesystem usage before and
-after collection.
+a host when dispatching it; fourth runs `deploy/nix-gc-<host>.sh`, which asks
+the selected host to start its configured `nix-gc.service` and logs root
+filesystem usage before and after collection.
+
+CI builds and deploys whatever hosts the flake defines, but fourth only acts on
+the fixed host lists in `deploy/nix-switch.sh` and `deploy/nix-gc.sh`, since
+they are the boundary for what a CI request can reach. When adding or removing
+a host, also update those lists, the `nix-gc-<host>.sh` wrappers and the
+`nix-gc` workflow's choices. `scripts/check-host-lists.py` fails CI until they
+all match the flake.
 
 The July 2026 `wren` bootstrap experiment has been torn down. Keep `partridge`
 focused on its normal service role until the next disposable VM path is

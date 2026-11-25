@@ -19,7 +19,9 @@ jobs:
       terraform: ${{ steps.filter.outputs.terraform }}
       deploy: ${{ steps.filter.outputs.deploy }}
       nix: ${{ steps.filter.outputs.nix }}
-      nix_hosts: ${{ steps.nix-hosts.outputs.hosts }}
+      nix_shared: ${{ steps.filter.outputs.nix_shared }}
+      nix_lock: ${{ steps.filter.outputs.nix_lock }}
+      nix_host_files: ${{ steps.filter.outputs.nix_host_files }}
     steps:
       - name: checkout
         uses: actions/checkout@v7
@@ -29,6 +31,7 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v4
         with:
+          list-files: json
           filters: |
             terraform:
               - '.github/workflows/**'
@@ -42,6 +45,7 @@ jobs:
             nix:
               - '.github/workflows/**'
               - '.sops.yaml'
+              - 'deploy/nix-*.sh'
               - 'flake.lock'
               - 'flake.nix'
               - 'nixos/**'
@@ -58,27 +62,48 @@ jobs:
               - 'scripts/check-*.py'
             nix_lock:
               - 'flake.lock'
-            nix_kite:
-              - 'nixos/hosts/kite/**'
-            nix_falcon:
-              - 'nixos/hosts/falcon/**'
-            nix_magpie:
-              - 'nixos/hosts/magpie/**'
-            nix_partridge:
-              - 'nixos/hosts/partridge/**'
-      - name: select NixOS hosts
-        id: nix-hosts
-        run: |
-          hosts=()
-          if [[ "${{ steps.filter.outputs.nix_shared }}" == "true" ]]; then
-            hosts=(falcon kite magpie partridge)
-          else
-            [[ "${{ steps.filter.outputs.nix_falcon }}" == "true" ]] && hosts+=(falcon)
-            [[ "${{ steps.filter.outputs.nix_kite }}" == "true" ]] && hosts+=(kite)
-            [[ "${{ steps.filter.outputs.nix_magpie }}" == "true" ]] && hosts+=(magpie)
-            [[ "${{ steps.filter.outputs.nix_partridge }}" == "true" ]] && hosts+=(partridge)
+            nix_host:
+              - 'nixos/hosts/**'
 
-            if [[ "${{ steps.filter.outputs.nix_lock }}" == "true" ]]; then
+  nix_hosts:
+    name: nix-hosts
+    needs: changes
+    if: needs.changes.outputs.nix == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      hosts: ${{ steps.select.outputs.hosts }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: install nix
+        uses: cachix/install-nix-action@v32
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            # cache.nixos.org intermittently corrupts zstd NARs over HTTP/2
+            # ("Stream error in the HTTP/2 framing layer"); force HTTP/1.1 and
+            # fall back to building from source if a substitute still fails.
+            http2 = false
+            fallback = true
+      - name: select NixOS hosts
+        id: select
+        env:
+          NIX_SHARED: ${{ needs.changes.outputs.nix_shared }}
+          NIX_LOCK: ${{ needs.changes.outputs.nix_lock }}
+          NIX_HOST_FILES: ${{ needs.changes.outputs.nix_host_files }}
+        run: |
+          mapfile -t all_hosts < <(nix eval --no-update-lock-file --json .#nixosConfigurations --apply builtins.attrNames | jq -r '.[]')
+          test "${#all_hosts[@]}" -gt 0
+          hosts=()
+          if [[ "$NIX_SHARED" == "true" ]]; then
+            hosts=("${all_hosts[@]}")
+          else
+            mapfile -t changed_hosts < <(jq -r '.[] | split("/")[2]' <<<"${NIX_HOST_FILES:-[]}")
+            hosts+=("${changed_hosts[@]}")
+
+            if [[ "$NIX_LOCK" == "true" ]]; then
               base_lock="$(mktemp)"
               git show "${{ github.event.pull_request.base.sha }}:flake.lock" > "$base_lock"
 
@@ -125,16 +150,17 @@ jobs:
               done <<< "$changed_inputs"
 
               if [[ "$shared_lock_change" == "true" ]]; then
-                hosts=(falcon kite magpie partridge)
+                hosts=("${all_hosts[@]}")
               fi
             fi
           fi
 
-          if [[ "${#hosts[@]}" -eq 0 ]]; then
-            echo 'hosts=[]' >> "$GITHUB_OUTPUT"
-          else
-            printf '%s\n' "${hosts[@]}" | jq -R . | jq -cs 'unique' | sed 's/^/hosts=/' >> "$GITHUB_OUTPUT"
-          fi
+          # Drops nixos/hosts/ directories and lock inputs of hosts the flake
+          # no longer defines.
+          all_json="$(printf '%s\n' "${all_hosts[@]}" | jq -R . | jq -cs .)"
+          printf '%s\n' "${hosts[@]}" | jq -R 'select(. != "")' \
+            | jq -cs --argjson all "$all_json" 'unique | map(select(IN($all[])))' \
+            | sed 's/^/hosts=/' >> "$GITHUB_OUTPUT"
 
   terraform_validate:
     name: terraform-validate
@@ -283,6 +309,8 @@ jobs:
         run: nix flake check --no-update-lock-file
       - name: deployment refusal and recovery checks
         run: python3 scripts/check-ci-deploy.py
+      - name: fourth's host allowlists match the flake
+        run: python3 scripts/check-host-lists.py
       - name: Kite backup continuity and mount guards
         run: python3 scripts/check-kite-backups.py
       - name: FreshRSS backup under live writes
@@ -293,13 +321,13 @@ jobs:
 
   nixos_build:
     name: nixos-build (${{ matrix.host }})
-    needs: changes
-    if: needs.changes.outputs.nix == 'true' && needs.changes.outputs.nix_hosts != '[]'
+    needs: nix_hosts
+    if: needs.nix_hosts.outputs.hosts != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        host: ${{ fromJSON(needs.changes.outputs.nix_hosts) }}
+        host: ${{ fromJSON(needs.nix_hosts.outputs.hosts) }}
     steps:
       - name: checkout
         uses: actions/checkout@v7
@@ -349,6 +377,7 @@ jobs:
     needs:
       - changes
       - nix_checks
+      - nix_hosts
       - nixos_build
     if: always()
     runs-on: ubuntu-latest
@@ -366,10 +395,16 @@ jobs:
           fi
 
           nix_checks="${{ needs.nix_checks.result }}"
+          nix_hosts="${{ needs.nix_hosts.result }}"
           nixos_build="${{ needs.nixos_build.result }}"
 
           if [[ "$nix_checks" != "success" ]]; then
             echo "nix-checks result: $nix_checks" >&2
+            exit 1
+          fi
+
+          if [[ "$nix_hosts" != "success" ]]; then
+            echo "nix-hosts result: $nix_hosts" >&2
             exit 1
           fi
 
