@@ -125,6 +125,31 @@
           install -Dm644 sql/migrations/*.sql -t $out/share/exercise-tracker/sql/migrations/
         '';
       };
+
+      mkHost =
+        name:
+        {
+          specialArgs ? { },
+          proxmoxGuest ? true,
+        }:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            tailscalePackage = pkgsUnstable.tailscale;
+          }
+          // specialArgs;
+          modules = [
+            sops-nix.nixosModules.sops
+            ./nixos/modules/holding-page.nix
+            ./nixos/modules/journal-logging.nix
+          ]
+          ++ nixpkgs.lib.optional proxmoxGuest ./nixos/modules/proxmox-vm-base.nix
+          ++ [
+            ./nixos/modules/remote-deploy.nix
+            ./nixos/modules/shell-scripts.nix
+            ./nixos/hosts/${name}/configuration.nix
+          ];
+        };
     in
     {
       packages.${system} = {
@@ -300,74 +325,29 @@
         };
 
       nixosConfigurations = {
-        partridge = nixpkgs.lib.nixosSystem {
-          inherit system;
+        partridge = mkHost "partridge" {
           specialArgs = {
             bitwardenMirrorPackage = bitwardenMirror;
             octopusDlPackage = octopusDl;
             linearExportPackage = linearExport;
             exerciseTrackerPackage = exerciseTracker;
             grafanaPackage = pkgsUnstable.grafana;
-            tailscalePackage = pkgsUnstable.tailscale;
           };
-          modules = [
-            sops-nix.nixosModules.sops
-            ./nixos/modules/holding-page.nix
-            ./nixos/modules/journal-logging.nix
-            ./nixos/modules/proxmox-vm-base.nix
-            ./nixos/modules/remote-deploy.nix
-            ./nixos/modules/shell-scripts.nix
-            ./nixos/hosts/partridge/configuration.nix
-          ];
         };
 
-        magpie = nixpkgs.lib.nixosSystem {
-          inherit system;
+        magpie = mkHost "magpie" {
           specialArgs = {
             chattingRuntimePackage = chattingRuntime;
             codexPackage = pkgsUnstable.codex;
-            tailscalePackage = pkgsUnstable.tailscale;
           };
-          modules = [
-            sops-nix.nixosModules.sops
-            ./nixos/modules/holding-page.nix
-            ./nixos/modules/journal-logging.nix
-            ./nixos/modules/proxmox-vm-base.nix
-            ./nixos/modules/remote-deploy.nix
-            ./nixos/modules/shell-scripts.nix
-            ./nixos/hosts/magpie/configuration.nix
-          ];
         };
 
-        kite = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = {
-            inherit mediaCollectionManagerPackages;
-            tailscalePackage = pkgsUnstable.tailscale;
-          };
-          modules = [
-            sops-nix.nixosModules.sops
-            ./nixos/modules/holding-page.nix
-            ./nixos/modules/journal-logging.nix
-            ./nixos/modules/proxmox-vm-base.nix
-            ./nixos/modules/remote-deploy.nix
-            ./nixos/modules/shell-scripts.nix
-            ./nixos/hosts/kite/configuration.nix
-          ];
+        kite = mkHost "kite" {
+          specialArgs = { inherit mediaCollectionManagerPackages; };
         };
 
-        falcon = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs.tailscalePackage = pkgsUnstable.tailscale;
-          modules = [
-            sops-nix.nixosModules.sops
-            ./nixos/modules/holding-page.nix
-            ./nixos/modules/journal-logging.nix
-            ./nixos/modules/remote-deploy.nix
-            ./nixos/modules/shell-scripts.nix
-            ./nixos/hosts/falcon/configuration.nix
-          ];
-        };
+        # Falcon is a Hetzner Cloud VM, not a Proxmox guest.
+        falcon = mkHost "falcon" { proxmoxGuest = false; };
       };
     };
 }
