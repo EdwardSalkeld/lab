@@ -174,6 +174,7 @@ esac
     )
     for request in (
         "",
+        "lab-switch",
         "lab-switch bad test key path",
         pinned + " extra",
         f"lab-switch {sha} other {key} {expected}",
@@ -184,9 +185,6 @@ esac
     for overrides in ({"TEST_FETCH_FAIL": "1"}, {"TEST_PATH": previous}):
         result, calls = run("switch", request=pinned, **overrides)
         assert result.returncode != 0 and "nixos-rebuild" not in calls
-    result, calls = run("switch", request="lab-switch")
-    assert result.returncode == 0 and "nix build" not in calls
-    assert "--refresh" in calls
     for overrides in ({"TEST_PIN_FAIL": "1"}, {"TEST_READLINK_FAIL": "1"}):
         result, calls = run("switch", request=pinned, **overrides)
         assert result.returncode != 0 and "nixos-rebuild" not in calls
@@ -249,4 +247,4 @@ esac
     assert result.returncode != 0
     assert f"nix-env --profile /nix/var/nix/profiles/system --set {previous}" in calls
 
-print("CI deployment fetch, refusal, legacy compatibility and recovery checks passed")
+print("CI deployment fetch, refusal and recovery checks passed")
