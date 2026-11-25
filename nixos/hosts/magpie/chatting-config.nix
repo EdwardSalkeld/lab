@@ -42,6 +42,16 @@ let
     poll_interval_seconds = 30;
     github_webhook_secret_env = "CHATTING_GITHUB_WEBHOOK_SECRET";
     github_webhook_delivery_enabled = true;
+    # lab is public, so any GitHub user can comment where Billy is watching.
+    # Only these senders' events become worker tasks (chatting#422).
+    github_webhook_trusted_senders = [
+      "EdwardSalkeld"
+      "brokensbone"
+      "github-advanced-security[bot]"
+      "github-actions[bot]"
+      "dependabot[bot]"
+      "copilot-pull-request-reviewer[bot]"
+    ];
     allowed_egress_channels = [
       "email"
       "telegram"
