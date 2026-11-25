@@ -1,2 +1,5 @@
+# Not py314: scripts/ and the Luna tests run on the GitHub runner's Python
+# 3.12, and network-arrivals runs on nixpkgs' python3 (3.13). Ruff rewrites
+# syntax for the target, such as unparenthesised except tuples on 3.14.
 target-version = "py312"
 include = ["*.py"]
