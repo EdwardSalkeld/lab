@@ -65,8 +65,8 @@ margin.
 ## Adding a host
 
 1. Drop the prepared plate at `nixos/hosts/<host>/bird.jpg`.
-2. Add `./nixos/modules/holding-page.nix` to that host's module list in
-   `flake.nix`.
+2. Build the host with `mkHost` in `flake.nix`, which already includes
+   `./nixos/modules/holding-page.nix` in every host's module list.
 3. Put the hostname on a certificate the host already has, via
    `extraDomainNames`. Falcon is the exception and carries its own, having no
    name in the int zone — see `nixos/hosts/falcon/web.nix`.
