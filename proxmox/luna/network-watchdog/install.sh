@@ -2,7 +2,8 @@
 # Install reviewed watchdog assets on Luna from a checkout of this repository.
 set -Eeuo pipefail
 
-readonly source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+readonly source_dir
 readonly library_dir=/usr/local/lib/luna-network-watchdog
 readonly config_file=/etc/default/luna-network-watchdog
 

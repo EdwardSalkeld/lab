@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Check shell syntax
-        run: bash -n proxmox/luna/network-watchdog/{luna-network-watchdog,luna-network-watchdog.conf,install.sh}
+      - name: shellcheck
+        run: shellcheck proxmox/luna/network-watchdog/{luna-network-watchdog,luna-network-watchdog.conf,install.sh}
       - name: Check recovery decisions with mocked host commands
         run: python3 -m unittest discover -s proxmox/luna/network-watchdog/tests -v
