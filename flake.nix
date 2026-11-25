@@ -210,6 +210,34 @@
             repoRoot = self;
           };
 
+          # Validates each host's /etc/alloy as Alloy loads it, as one directory,
+          # so references between files (router-syslog writing to the journal
+          # config's loki.write) are checked too. alloy fmt is left out: it
+          # indents with tabs and the Nix-rendered configs use spaces.
+          alloy-config = pkgs.runCommand "alloy-config-check" { } (
+            pkgs.lib.concatMapStrings (
+              host:
+              let
+                config = self.nixosConfigurations.${host}.config;
+                files = pkgs.lib.filterAttrs (name: _: pkgs.lib.hasPrefix "alloy/" name) config.environment.etc;
+              in
+              pkgs.lib.optionalString config.services.alloy.enable ''
+                mkdir "$TMPDIR/${host}"
+                ${pkgs.lib.concatStrings (
+                  pkgs.lib.mapAttrsToList (name: file: ''
+                    cp ${file.source} "$TMPDIR/${host}/${pkgs.lib.removePrefix "alloy/" name}"
+                  '') files
+                )}
+                ${config.services.alloy.package}/bin/alloy validate "$TMPDIR/${host}"
+              ''
+            ) (builtins.attrNames self.nixosConfigurations)
+            + ''
+              # install.sh downloads the same Alloy release and sets HOSTNAME.
+              HOSTNAME=sol ${pkgs.grafana-alloy}/bin/alloy validate ${./proxmox/journal-to-loki/config.alloy}
+              touch "$out"
+            ''
+          );
+
           bitwarden-mirror-go-tests =
             pkgs.runCommand "bitwarden-mirror-go-tests"
               {
