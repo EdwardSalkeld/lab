@@ -186,6 +186,7 @@ let
         "${workspaceDir}/chatting"
         "${workspaceDir}/lab"
         "${workspaceDir}/bbmb"
+        "${workspaceDir}/media-collection-manager"
       ];
       jobs = [
         {
