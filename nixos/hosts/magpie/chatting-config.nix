@@ -180,6 +180,36 @@ let
     bbmb_address = "127.0.0.1:9876";
     max_attempts = 2;
     executor_pool_size = 2;
+    speculative_work = {
+      enabled = true;
+      repositories = [
+        "${workspaceDir}/chatting"
+        "${workspaceDir}/lab"
+        "${workspaceDir}/bbmb"
+      ];
+      jobs = [
+        {
+          name = "security";
+          prompt = "Audit this repository for a concrete security vulnerability. Verify any finding and propose a fix if warranted.";
+          model_tier = "speculative_deep";
+        }
+        {
+          name = "efficiency";
+          prompt = "Find and verify a meaningful performance or resource-use improvement in this repository.";
+          model_tier = "speculative";
+        }
+        {
+          name = "cleanup";
+          prompt = "Find a worthwhile code and test cleanup in this repository and verify it.";
+          model_tier = "speculative";
+        }
+        {
+          name = "improvement";
+          prompt = "Investigate and propose a concrete improvement to this repository.";
+          model_tier = "speculative";
+        }
+      ];
+    };
     poll_timeout_seconds = 20;
     sleep_seconds = 1.0;
     # The work item session view renders Codex's JSON event stream live.
