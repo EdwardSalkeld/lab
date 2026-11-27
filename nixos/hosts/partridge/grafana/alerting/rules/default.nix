@@ -40,5 +40,6 @@ in
     ./disk-space.nix
     ./mcm.nix
     ./backups.nix
+    ./chatting-quota.nix
   ];
 }
