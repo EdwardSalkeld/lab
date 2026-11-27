@@ -33,7 +33,9 @@ let
       MCM_MPD_HOST = "127.0.0.1";
       MCM_NAVIDROME_URL = "https://navidrome.alcachofa.faith";
       MCM_NAVIDROME_USERNAME = "billy";
-      MCM_IMPORT_INBOX_PATH = cfg.importInbox;
+      # The watched inbox contains user drops. Stage imports outside it so the
+      # watcher cannot rediscover the worker's temporary numbered directories.
+      MCM_IMPORT_INBOX_PATH = "${cfg.beetsDir}/mcm-staging";
       MCM_MUSIC_DIR = cfg.musicDir;
       MCM_TV_ROOT = cfg.tvRoot;
       MCM_FILM_ROOT = cfg.filmRoot;
